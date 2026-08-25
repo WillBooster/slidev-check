@@ -1,0 +1,29 @@
+{
+  "name": "slidev-audit",
+  "version": "0.0.0",
+  "description": "Audit rendered Slidev slides for layout problems such as overflowing elements.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "slidev-audit": "./src/cli.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "bun src/cli.ts",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "@slidev/cli": "^52.0.0",
+    "playwright-chromium": "^1.10.0"
+  },
+  "devDependencies": {
+    "@slidev/cli": "52.19.0",
+    "@slidev/theme-default": "latest",
+    "@types/bun": "latest",
+    "playwright-chromium": "1.62.1",
+    "typescript": "latest"
+  }
+}
