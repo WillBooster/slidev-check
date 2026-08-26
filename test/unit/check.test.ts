@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import path from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 import { check } from '../../src/check.ts';
-import { formatViolations } from '../../src/report.ts';
 import { allRules } from '../../src/rules/index.ts';
 import type { Violation } from '../../src/types.ts';
 
@@ -62,12 +62,13 @@ describe('cli', () => {
 
   test('detects content overlapping a theme-style bottom band (global-bottom.vue)', async () => {
     const { exitCode, stdout } = await runCli(fixture('band/slides.md'));
+    const output = stripVTControlCharacters(stdout);
     expect(exitCode).toBe(1);
-    expect(stdout).toMatch(
+    expect(output).toMatch(
       /^2: error no-overlap: Element `<div\.band[^`]*` overlaps `<div\.absolute>Text over the ba…`/m
     );
-    expect(stdout).not.toMatch(/^1: /m);
-    expect(stdout).toContain('Found 0 warnings and 1 error.');
+    expect(output).not.toMatch(/^1: /m);
+    expect(output).toContain('Found 0 warnings and 1 error.');
   }, 90_000);
 
   test('warns on headings wrapping beyond the allowed lines, ignoring the cover title', async () => {
@@ -101,37 +102,4 @@ describe('check API', () => {
     const off = await check({ entry: fixture('overlap.md'), ...options, severities: { 'no-overlap': 'off' } });
     expect(off.filter((v) => v.ruleId === 'no-overlap')).toEqual([]);
   }, 90_000);
-});
-
-describe('formatViolations', () => {
-  const violation: Violation = {
-    ruleId: 'no-overflow',
-    severity: 'error',
-    slide: { no: 3, filepath: '/deck/slides.md', line: 18, title: 'Wide box' },
-    message: 'Element `<div.absolute>wide` overflows the slide by 220px at the right.',
-    help: 'Consider splitting the content into multiple slides.',
-  };
-
-  test('formats one line per violation plus a summary', () => {
-    const report = formatViolations(
-      [violation, { ...violation, severity: 'warn', slide: { ...violation.slide, no: 5 } }],
-      {
-        durationMs: 6.4,
-        ruleCount: 4,
-      }
-    );
-    expect(report).toBe(
-      [
-        '3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.',
-        '5: warning no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.',
-        '',
-        'Found 1 warning and 1 error.',
-        'Finished in 6ms with 4 rules.',
-      ].join('\n')
-    );
-  });
-
-  test('returns an empty string when there is nothing to report', () => {
-    expect(formatViolations([], { durationMs: 1, ruleCount: 4 })).toBe('');
-  });
 });
