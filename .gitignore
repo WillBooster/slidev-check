@@ -511,3 +511,6 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/node
 
 # Project-specific settings (tail)
+
+# Throwaway local repro scripts (see oxlint.config.ts / oxfmt.config.ts).
+*.tmp.ts
