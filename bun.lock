@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "slidev-audit",
+      "dependencies": {
+        "picocolors": "1.1.1",
+      },
       "devDependencies": {
         "@slidev/cli": "52.19.0",
         "@slidev/theme-default": "latest",
