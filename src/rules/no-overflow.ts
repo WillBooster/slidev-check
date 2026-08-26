@@ -5,8 +5,14 @@ const TOLERANCE_PX = 1;
 
 type Side = 'top' | 'right' | 'bottom' | 'left';
 
-function findOverflowingElements({ containerSelector, tolerance }: { containerSelector: string; tolerance: number }) {
-  const { describe, measure, isAudited } = window.__slidevAudit;
+function findOverflowingElements({
+  containerSelector,
+  tolerance,
+}: {
+  containerSelector: string;
+  tolerance: number;
+}): RuleFinding[] {
+  const { describe, measure, isAudited } = globalThis.__slidevAudit;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -34,9 +40,8 @@ function findOverflowingElements({ containerSelector, tolerance }: { containerSe
     const sides = (Object.keys(candidate.overflow) as Side[]).filter((s) => candidate.overflow[s] > tolerance);
     const explainedByDescendant = sides.every((side) =>
       candidates.some(
-        (other) =>
-          other !== candidate && candidate.element.contains(other.element) && other.overflow[side] > tolerance,
-      ),
+        (other) => other !== candidate && candidate.element.contains(other.element) && other.overflow[side] > tolerance
+      )
     );
     if (explainedByDescendant) continue;
     const detail = sides.map((side) => `${Math.round(candidate.overflow[side])}px at the ${side}`).join(', ');

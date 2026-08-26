@@ -14,13 +14,13 @@ const count = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' :
 export function formatViolations(violations: Violation[], stats: ReportStats): string {
   if (violations.length === 0) return '';
   const lines = violations.map(
-    (v) => `${v.slide.no}: ${v.severity === 'warn' ? 'warning' : 'error'} ${v.ruleId}: ${v.message} help: ${v.help}`,
+    (v) => `${v.slide.no}: ${v.severity === 'warn' ? 'warning' : 'error'} ${v.ruleId}: ${v.message} help: ${v.help}`
   );
   const warnings = violations.filter((v) => v.severity === 'warn').length;
   lines.push(
     '',
     `Found ${count(warnings, 'warning')} and ${count(violations.length - warnings, 'error')}.`,
-    `Finished in ${Math.round(stats.durationMs)}ms with ${count(stats.ruleCount, 'rule')}.`,
+    `Finished in ${Math.round(stats.durationMs)}ms with ${count(stats.ruleCount, 'rule')}.`
   );
   return lines.join('\n');
 }

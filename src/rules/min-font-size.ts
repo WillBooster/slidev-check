@@ -2,8 +2,8 @@ import type { Rule, RuleFinding } from '../types.ts';
 
 const DEFAULT_MIN_PX = 14;
 
-function findTooSmallText({ containerSelector, min }: { containerSelector: string; min: number }) {
-  const { describe, isAudited, measureText } = window.__slidevAudit;
+function findTooSmallText({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
+  const { describe, isAudited, measureText } = globalThis.__slidevAudit;
   const container = document.querySelector(containerSelector);
   if (!container) return [];
 

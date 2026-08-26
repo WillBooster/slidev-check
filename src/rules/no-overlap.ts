@@ -5,12 +5,16 @@ const TOLERANCE_PX = 2;
 /** Painted boxes covering at least this share of the slide are treated as backgrounds and ignored. */
 const BACKGROUND_AREA_RATIO = 0.8;
 
-function findOverlappingElements({ containerSelector, tolerance, backgroundRatio }: {
+function findOverlappingElements({
+  containerSelector,
+  tolerance,
+  backgroundRatio,
+}: {
   containerSelector: string;
   tolerance: number;
   backgroundRatio: number;
-}) {
-  const { describe, measure, measureText, isAudited } = window.__slidevAudit;
+}): RuleFinding[] {
+  const { describe, measure, measureText, isAudited } = globalThis.__slidevAudit;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -28,7 +32,7 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
     ['Top', 'Right', 'Bottom', 'Left'].some(
       (side) =>
         Number.parseFloat(style.getPropertyValue(`border-${side.toLowerCase()}-width`)) > 0 &&
-        style.getPropertyValue(`border-${side.toLowerCase()}-style`) !== 'none',
+        style.getPropertyValue(`border-${side.toLowerCase()}-style`) !== 'none'
     );
 
   interface Painted {
@@ -38,7 +42,7 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
   }
   const painted: Painted[] = [];
   for (const element of container.querySelectorAll('*')) {
-    if (!isAudited(element) || element.tagName === 'svg' && element.parentElement?.closest('svg')) continue;
+    if (!isAudited(element) || (element.tagName === 'svg' && element.parentElement?.closest('svg'))) continue;
     if (element.closest('svg') && element.tagName !== 'svg') continue; // SVG internals are one picture
     const text = measureText(element);
     if (text) painted.push({ element, rect: text, kind: 'text' });
@@ -72,7 +76,8 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
       const byPartner = overlaps.get(a.element) ?? new Map<Element, Overlap>();
       overlaps.set(a.element, byPartner);
       const previous = byPartner.get(b.element);
-      if (!previous || previous.width * previous.height < width * height) byPartner.set(b.element, { a, b, width, height });
+      if (!previous || previous.width * previous.height < width * height)
+        byPartner.set(b.element, { a, b, width, height });
     }
   }
 

@@ -2,8 +2,8 @@ import type { Rule, RuleFinding } from '../types.ts';
 
 const DEFAULT_MAX = 1;
 
-function findWrappedHeadings({ containerSelector, max }: { containerSelector: string; max: number }) {
-  const { describe, isAudited } = window.__slidevAudit;
+function findWrappedHeadings({ containerSelector, max }: { containerSelector: string; max: number }): RuleFinding[] {
+  const { describe, isAudited } = globalThis.__slidevAudit;
   const container = document.querySelector(containerSelector);
   if (!container) return [];
 

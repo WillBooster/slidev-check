@@ -25,8 +25,8 @@ export interface RenderedDeck {
  * way `slidev export` does, so the audited DOM is exactly what Slidev renders.
  */
 const debug = process.env['SLIDEV_AUDIT_DEBUG']
-  ? (m: string) => console.error(`[audit-debug] ${Date.now() % 100000} ${m}`)
-  : () => undefined;
+  ? (m: string) => console.error(`[audit-debug] ${Date.now() % 100_000} ${m}`)
+  : () => {};
 
 export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> {
   debug('resolveOptions');
@@ -52,13 +52,7 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
   }));
 
   let browser: Browser | undefined;
-  // A wedged dev server can make these close calls hang; never let that block the caller.
-  const withTimeout = (promise: Promise<unknown>, ms: number) =>
-    Promise.race([
-      promise.catch(() => undefined),
-      new Promise((resolve) => setTimeout(resolve, ms).unref()),
-    ]);
-  const close = async () => {
+  const close = async (): Promise<void> => {
     debug('closing browser');
     await withTimeout(browser?.close() ?? Promise.resolve(), 10_000);
     // Vite's close() waits for open keep-alive connections and can hang; drop them first.
@@ -94,27 +88,43 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
   }
 }
 
+/** A wedged dev server can make close calls hang; never let that block the caller. */
+function withTimeout(promise: Promise<unknown>, ms: number): Promise<unknown> {
+  return Promise.race([promise.catch(() => {}), new Promise((resolve) => setTimeout(resolve, ms).unref())]);
+}
+
 /** Mirrors the waiting logic of `slidev export` so async content (Mermaid, Monaco, iframes) is settled. */
 async function waitForSlides(page: Page, timeout: number): Promise<void> {
   await page.locator('.print-slide-container').first().waitFor({ timeout });
-  await page.waitForLoadState('networkidle', { timeout }).catch(() => undefined);
+  await page.waitForLoadState('networkidle', { timeout }).catch(() => {});
   // Fonts and images change element geometry, so wait until they are settled.
   await page
     .waitForFunction(
       () => document.fonts.status !== 'loading' && [...document.images].every((image) => image.complete),
       undefined,
-      { timeout },
+      { timeout }
     )
-    .catch(() => undefined);
-  await page.locator('.slidev-slide-loading').waitFor({ state: 'detached', timeout }).catch(() => undefined);
+    .catch(() => {});
+  await page
+    .locator('.slidev-slide-loading')
+    .waitFor({ state: 'detached', timeout })
+    .catch(() => {});
   for (const element of await page.locator('[data-waitfor]').all()) {
     const selector = await element.getAttribute('data-waitfor');
-    if (selector) await element.locator(selector).waitFor({ state: 'visible', timeout }).catch(() => undefined);
+    if (selector)
+      await element
+        .locator(selector)
+        .waitFor({ state: 'visible', timeout })
+        .catch(() => {});
   }
   await Promise.all(page.frames().map((frame) => frame.waitForLoadState(undefined, { timeout })));
   const mermaid = page.locator('#mermaid-rendering-container');
   if ((await mermaid.count()) > 0) {
-    await mermaid.locator('div').first().waitFor({ state: 'detached', timeout }).catch(() => undefined);
+    await mermaid
+      .locator('div')
+      .first()
+      .waitFor({ state: 'detached', timeout })
+      .catch(() => {});
     await mermaid.evaluate((node) => ((node as HTMLElement).style.display = 'none'));
   }
 }

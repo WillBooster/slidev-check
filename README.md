@@ -1,6 +1,6 @@
 # slidev-audit
 
-Audits the *rendered* output of a [Slidev](https://sli.dev) deck and reports layout problems, linter-style.
+Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports layout problems, linter-style.
 
 It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM geometry.
 
@@ -12,7 +12,7 @@ bunx playwright-chromium install chromium    # once, if Chromium is not installe
 bunx slidev-audit slides.md
 ```
 
-The deck is rendered with the `@slidev/cli` and theme installed in *your* project, so the audited output matches what `slidev` itself shows.
+The deck is rendered with the `@slidev/cli` and theme installed in _your_ project, so the audited output matches what `slidev` itself shows.
 
 Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1`:
 

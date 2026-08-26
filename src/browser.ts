@@ -19,11 +19,13 @@ export interface BrowserHelpers {
 }
 
 declare global {
-  interface Window {
-    __slidevAudit: BrowserHelpers;
-  }
+  // eslint-disable-next-line no-var -- `var` is required for a `globalThis` property declaration.
+  var __slidevAudit: BrowserHelpers;
 }
 
+// The helpers must be defined inside `defineHelpers` because the whole function is serialized
+// and evaluated in the browser; module-scope functions would not be available there.
+/* oxlint-disable unicorn/consistent-function-scoping */
 function defineHelpers(): void {
   const union = (rects: Iterable<DOMRect>): DOMRect | undefined => {
     let result: DOMRect | undefined;
@@ -82,13 +84,14 @@ function defineHelpers(): void {
       .slice(0, 2)
       .map((c) => `.${c}`)
       .join('');
-    const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const text = (element.textContent ?? '').replaceAll(/\s+/g, ' ').trim();
     const snippet = text.length > 16 ? `${text.slice(0, 16)}…` : text;
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
-  window.__slidevAudit = { describe, measure, measureText, isAudited, union };
+  globalThis.__slidevAudit = { describe, measure, measureText, isAudited, union };
 }
+/* oxlint-enable unicorn/consistent-function-scoping */
 
 export async function installBrowserHelpers(page: Page): Promise<void> {
   await page.evaluate(defineHelpers);

@@ -11,19 +11,35 @@
     "src"
   ],
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun wb verify",
+    "cleanup": "bun wb lint --fix --format",
+    "format": "bun wb lint --format",
+    "lint": "bun wb lint",
+    "lint-fix": "bun wb lint --fix",
+    "prepare": "(bun lefthook install || true) && (test ! -f .lefthook/normalize-bun-lockfile.sh || bash .lefthook/normalize-bun-lockfile.sh)",
     "start": "bun src/cli.ts",
-    "test": "bun test"
-  },
-  "peerDependencies": {
-    "@slidev/cli": "^52.0.0",
-    "playwright-chromium": "^1.10.0"
+    "test": "bun test",
+    "typecheck": "bun wb typecheck",
+    "verify": "bun wb verify",
+    "verify-full": "bun wb verify --full"
   },
   "devDependencies": {
     "@slidev/cli": "52.19.0",
     "@slidev/theme-default": "latest",
     "@types/bun": "latest",
+    "@willbooster/oxfmt-config": "1.2.2",
+    "@willbooster/oxlint-config": "1.4.8",
+    "@willbooster/wb": "22.0.1",
+    "lefthook": "2.1.10",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.78.0",
+    "oxlint-tsgolint": "7.0.2001",
     "playwright-chromium": "1.62.1",
+    "sort-package-json": "4.0.0",
     "typescript": "latest"
+  },
+  "peerDependencies": {
+    "@slidev/cli": "^52.0.0",
+    "playwright-chromium": "^1.10.0"
   }
 }

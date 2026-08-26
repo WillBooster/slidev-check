@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import path from 'node:path';
-import { audit } from '../src/audit.ts';
-import { formatViolations } from '../src/report.ts';
-import { allRules } from '../src/rules/index.ts';
-import type { Violation } from '../src/types.ts';
+import { audit } from '../../src/audit.ts';
+import { formatViolations } from '../../src/report.ts';
+import { allRules } from '../../src/rules/index.ts';
+import type { Violation } from '../../src/types.ts';
 
-const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name);
+const fixture = (name: string): string => path.join(import.meta.dirname, '../fixtures', name);
 const options = { wait: 0, timeout: 60_000 };
 
 // Repeatedly starting and stopping Slidev's dev server inside one process can wedge it,
 // so most cases run the CLI in a subprocess, which is also how the tool is really used.
 async function runCli(entry: string, ...args: string[]): Promise<{ exitCode: number; stdout: string }> {
-  const proc = Bun.spawn(['bun', path.join(import.meta.dirname, '../src/cli.ts'), ...args, entry], {
+  const proc = Bun.spawn(['bun', path.join(import.meta.dirname, '../../src/cli.ts'), ...args, entry], {
     stdout: 'pipe',
     stderr: 'pipe',
   });
@@ -63,7 +63,9 @@ describe('cli', () => {
   test('detects content overlapping a theme-style bottom band (global-bottom.vue)', async () => {
     const { exitCode, stdout } = await runCli(fixture('band/slides.md'));
     expect(exitCode).toBe(1);
-    expect(stdout).toMatch(/^2: error no-overlap: Element `<div\.band[^`]*` overlaps `<div\.absolute>Text over the ba…`/m);
+    expect(stdout).toMatch(
+      /^2: error no-overlap: Element `<div\.band[^`]*` overlaps `<div\.absolute>Text over the ba…`/m
+    );
     expect(stdout).not.toMatch(/^1: /m);
     expect(stdout).toContain('Found 0 warnings and 1 error.');
   }, 90_000);
@@ -111,10 +113,13 @@ describe('formatViolations', () => {
   };
 
   test('formats one line per violation plus a summary', () => {
-    const report = formatViolations([violation, { ...violation, severity: 'warn', slide: { ...violation.slide, no: 5 } }], {
-      durationMs: 6.4,
-      ruleCount: 4,
-    });
+    const report = formatViolations(
+      [violation, { ...violation, severity: 'warn', slide: { ...violation.slide, no: 5 } }],
+      {
+        durationMs: 6.4,
+        ruleCount: 4,
+      }
+    );
     expect(report).toBe(
       [
         '3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.',
@@ -122,7 +127,7 @@ describe('formatViolations', () => {
         '',
         'Found 1 warning and 1 error.',
         'Finished in 6ms with 4 rules.',
-      ].join('\n'),
+      ].join('\n')
     );
   });
 

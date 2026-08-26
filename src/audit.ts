@@ -9,8 +9,9 @@ export interface AuditOptions extends RenderOptions {
   severities?: Partial<Record<string, Severity>>;
 }
 
+const settingOf = (rule: Rule): RuleSetting | undefined => defaultRules[rule.id as keyof typeof defaultRules];
+
 export async function audit(options: AuditOptions): Promise<Violation[]> {
-  const settingOf = (rule: Rule): RuleSetting | undefined => defaultRules[rule.id as keyof typeof defaultRules];
   const severityOf = (rule: Rule): Severity => {
     const setting = settingOf(rule);
     return options.severities?.[rule.id] ?? (typeof setting === 'string' ? setting : (setting?.[0] ?? 'error'));
@@ -42,7 +43,7 @@ export async function audit(options: AuditOptions): Promise<Violation[]> {
             severity: severityOf(rule) as Exclude<Severity, 'off'>,
             slide,
             ...finding,
-          })),
+          }))
         );
       }
     }
