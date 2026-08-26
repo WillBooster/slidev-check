@@ -2,7 +2,12 @@
   "name": "slidev-check",
   "version": "0.0.0",
   "description": "Audit rendered Slidev slides for layout problems such as overflowing elements.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WillBooster/slidev-check.git"
+  },
   "license": "Apache-2.0",
+  "author": "WillBooster Inc.",
   "type": "module",
   "bin": {
     "slidev-check": "./src/cli.ts"
@@ -18,7 +23,8 @@
     "lint-fix": "bun wb lint --fix",
     "prepare": "(bun lefthook install || true) && (test ! -f .lefthook/normalize-bun-lockfile.sh || bash .lefthook/normalize-bun-lockfile.sh)",
     "start": "bun src/cli.ts",
-    "test": "bun test",
+    "test": "bun wb test",
+    "test/ci": "bun wb test-on-ci",
     "typecheck": "bun wb typecheck",
     "verify": "bun wb verify",
     "verify-full": "bun wb verify --full"
@@ -29,17 +35,18 @@
   "devDependencies": {
     "@slidev/cli": "52.19.0",
     "@slidev/theme-default": "latest",
-    "@types/bun": "latest",
+    "@tsconfig/bun": "1.0.11",
+    "@types/bun": "1.3.14",
     "@willbooster/oxfmt-config": "1.2.2",
     "@willbooster/oxlint-config": "1.4.8",
     "@willbooster/wb": "22.0.1",
     "lefthook": "2.1.10",
-    "oxfmt": "0.63.0",
-    "oxlint": "1.78.0",
+    "oxfmt": "0.64.0",
+    "oxlint": "1.79.0",
     "oxlint-tsgolint": "7.0.2001",
     "playwright-chromium": "1.62.1",
     "sort-package-json": "4.0.0",
-    "typescript": "latest"
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
     "@slidev/cli": "^52.0.0",

@@ -1,14 +1,26 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "importHelpers": false,
+    "lib": ["DOM", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": true,
+    "paths": {
+      "undici-types": ["./node_modules/undici-types/index.d.ts"]
+    },
+    "resolveJsonModule": true,
+    "rootDir": ".",
     "skipLibCheck": true,
-    "types": ["bun"],
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "strict": true,
+    "target": "ESNext",
+    "types": ["bun"]
   },
-  "include": ["src", "test"]
+  "exclude": ["test/fixtures"],
+  "extends": "@tsconfig/bun/tsconfig.json",
+  "include": ["*.config.ts", "scripts/**/*", "src", "src/**/*", "test", "test/**/*"]
 }

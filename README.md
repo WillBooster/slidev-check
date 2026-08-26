@@ -1,5 +1,8 @@
 # slidev-check
 
+[![Test](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml)
+[![wbfy](https://img.shields.io/badge/wbfy-20.1.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+
 Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports layout problems, linter-style.
 
 It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM geometry.
