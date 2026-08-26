@@ -14,28 +14,18 @@ bunx slidev-audit slides.md
 
 The deck is rendered with the `@slidev/cli` and theme installed in *your* project, so the audited output matches what `slidev` itself shows.
 
-Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a fix hint, and the exit code is `1`:
+Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1`:
 
 ```
-slides.md:18  error  Element extends outside the slide (220px beyond the right edge).  no-overflow
-  slide 3 "Wide box": <div.absolute> "wide"
-  hint: The content does not fit in the slide. Split it across multiple slides first; ...
+3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
-✖ 1 problem
+Found 0 warnings and 1 error.
+Finished in 3521ms with 2 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`.
 
 Add `data-slidev-audit-ignore` to an element to exclude it (and its descendants) from all rules.
-
-## Rules
-
-| Key           | Description                                   |
-| ------------- | --------------------------------------------- |
-| `no-overflow` | Elements must stay within the slide bounds.   |
-| `no-overlap`  | Visible elements (text, images, boxes with a background or border) must not overlap each other. Nested elements and full-slide backgrounds are exempt. |
-
-Rules live in `src/rules/` and are registered in `src/rules/index.ts`. Each exports a `Rule` with a unique `id`, a `description`, and a `check` function that receives the Playwright page plus the selector of the slide container and returns findings. Measurement helpers shared by rules (`describe`, `measure`, `measureText`, `isAudited`) are installed into the page once by `src/browser.ts` and are available as `window.__slidevAudit` inside `page.evaluate`.
 
 ## Development
 

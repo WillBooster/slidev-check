@@ -83,7 +83,7 @@ function defineHelpers(): void {
       .map((c) => `.${c}`)
       .join('');
     const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
-    const snippet = text ? ` "${text.length > 40 ? `${text.slice(0, 40)}…` : text}"` : '';
+    const snippet = text.length > 16 ? `${text.slice(0, 16)}…` : text;
     return `<${tag}${id}${classes}>${snippet}`;
   };
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { audit } from './audit.ts';
 import { formatViolations } from './report.ts';
-import { rules } from './rules/index.ts';
+import { allRules } from './rules/index.ts';
 
 const HELP = `Usage: slidev-audit [options] <slides.md>
 
@@ -17,7 +17,7 @@ Options:
   -h, --help             Show this help
 
 Rules:
-${rules.map((rule) => `  ${rule.id.padEnd(22)}${rule.description}`).join('\n')}
+${allRules.map((rule) => `  ${rule.id.padEnd(22)}${rule.description}`).join('\n')}
 `;
 
 const { values, positionals } = parseArgs({
@@ -39,16 +39,18 @@ if (values.help || !entry) {
 }
 
 try {
+  const startedAt = performance.now();
   const violations = await audit({
     entry: path.resolve(entry),
     theme: values.theme,
     wait: Number(values.wait),
     timeout: Number(values.timeout),
   });
-  if (violations.length > 0) {
-    process.stdout.write(`${values.json ? JSON.stringify(violations, undefined, 2) : formatViolations(violations)}\n`);
-  }
-  process.exit(violations.length > 0 ? 1 : 0);
+  const report = values.json
+    ? JSON.stringify(violations, undefined, 2)
+    : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length });
+  if (violations.length > 0) process.stdout.write(`${report}\n`);
+  process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-audit: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exit(2);

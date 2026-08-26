@@ -11,9 +11,10 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
   backgroundRatio: number;
 }) {
   const { describe, measure, measureText, isAudited } = window.__slidevAudit;
+  // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
+  // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
-  const slideRoot = container?.querySelector('[data-slidev-no]');
-  if (!container || !slideRoot) return [];
+  if (!container) return [];
   const bounds = container.getBoundingClientRect();
 
   // Only elements that paint something themselves can visually collide:
@@ -36,7 +37,7 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
     kind: 'text' | 'box';
   }
   const painted: Painted[] = [];
-  for (const element of slideRoot.querySelectorAll('*')) {
+  for (const element of container.querySelectorAll('*')) {
     if (!isAudited(element) || element.tagName === 'svg' && element.parentElement?.closest('svg')) continue;
     if (element.closest('svg') && element.tagName !== 'svg') continue; // SVG internals are one picture
     const text = measureText(element);
@@ -79,12 +80,11 @@ function findOverlappingElements({ containerSelector, tolerance, backgroundRatio
   for (const byPartner of overlaps.values()) {
     for (const { a, b, width, height } of byPartner.values()) {
       findings.push({
-        element: describe(a.element),
-        message: `Element overlaps ${describe(b.element)} by ${Math.round(width)}×${Math.round(height)}px.`,
-        hint:
+        message: `Element \`${describe(a.element)}\` overlaps \`${describe(b.element)}\` by ${Math.round(width)}×${Math.round(height)}px.`,
+        help:
           a.kind === 'text' && b.kind === 'text'
-            ? 'Text is drawn over other text. Split the content across slides first; otherwise shorten it, widen the columns, or move one of the elements. Reducing the font size should be the last resort.'
-            : 'Elements are drawn on top of each other. Check absolute positions, negative margins, and fixed sizes; if the overlap is intentional, add `data-slidev-audit-ignore` to one of them.',
+            ? 'Consider splitting the content into multiple slides.'
+            : 'Consider adjusting the position or size of the elements.',
       });
     }
   }

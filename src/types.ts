@@ -10,15 +10,17 @@ export interface SlideLocation {
   title: string | undefined;
 }
 
+/** How a rule is applied: reported as an error, reported as a warning, or not run at all. */
+export type Severity = 'error' | 'warn' | 'off';
+
 export interface Violation {
   ruleId: string;
+  severity: Exclude<Severity, 'off'>;
   slide: SlideLocation;
-  /** What is wrong. */
+  /** What is wrong. Includes a short description of the offending element. */
   message: string;
-  /** Why it is probably happening and how to fix it. */
-  hint: string;
-  /** Short description of the offending element, e.g. `img.logo`. */
-  element: string;
+  /** How to fix it, phrased as a suggestion (`Consider ...`). */
+  help: string;
 }
 
 export interface RuleContext {
@@ -29,13 +31,14 @@ export interface RuleContext {
   /** Slide canvas size in CSS pixels. */
   width: number;
   height: number;
+  /** Rule-specific options from the configuration, if any. */
+  options: Record<string, unknown> | undefined;
 }
 
 /** Result returned by a rule for one offending element (without slide/rule metadata). */
 export interface RuleFinding {
-  element: string;
   message: string;
-  hint: string;
+  help: string;
 }
 
 export interface Rule {

@@ -7,13 +7,14 @@ type Side = 'top' | 'right' | 'bottom' | 'left';
 
 function findOverflowingElements({ containerSelector, tolerance }: { containerSelector: string; tolerance: number }) {
   const { describe, measure, isAudited } = window.__slidevAudit;
+  // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
+  // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
-  const slideRoot = container?.querySelector('[data-slidev-no]');
-  if (!container || !slideRoot) return [];
+  if (!container) return [];
   const bounds = container.getBoundingClientRect();
 
   const candidates: { element: Element; overflow: Record<Side, number> }[] = [];
-  for (const element of slideRoot.querySelectorAll('*')) {
+  for (const element of container.querySelectorAll('*')) {
     if (!isAudited(element)) continue;
     const rect = measure(element);
     if (!rect) continue;
@@ -38,11 +39,10 @@ function findOverflowingElements({ containerSelector, tolerance }: { containerSe
       ),
     );
     if (explainedByDescendant) continue;
-    const detail = sides.map((side) => `${Math.round(candidate.overflow[side])}px beyond the ${side} edge`).join(', ');
+    const detail = sides.map((side) => `${Math.round(candidate.overflow[side])}px at the ${side}`).join(', ');
     findings.push({
-      element: describe(candidate.element),
-      message: `Element extends outside the slide (${detail}).`,
-      hint: 'The content does not fit in the slide. Split it across multiple slides first; otherwise shorten the content, reduce margins, or constrain the element with `max-w-full`/`max-h-full`. Reducing the font size should be the last resort.',
+      message: `Element \`${describe(candidate.element)}\` overflows the slide by ${detail}.`,
+      help: 'Consider splitting the content into multiple slides.',
     });
   }
   return findings;
