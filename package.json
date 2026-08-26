@@ -1,7 +1,16 @@
 {
   "name": "slidev-check",
-  "version": "0.0.0",
+  "version": "0.0.0-semantically-released",
   "description": "Audit rendered Slidev slides for layout problems such as overflowing elements.",
+  "keywords": [
+    "slidev",
+    "slides",
+    "presentation",
+    "linter",
+    "layout",
+    "overflow",
+    "playwright"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/WillBooster/slidev-check.git"
@@ -9,6 +18,9 @@
   "license": "Apache-2.0",
   "author": "WillBooster Inc.",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "bin": {
     "slidev-check": "./src/cli.ts"
   },
@@ -40,16 +52,22 @@
     "@willbooster/oxfmt-config": "1.2.2",
     "@willbooster/oxlint-config": "1.4.8",
     "@willbooster/wb": "22.0.1",
+    "conventional-changelog-conventionalcommits": "10.2.1",
     "lefthook": "2.1.10",
     "oxfmt": "0.64.0",
     "oxlint": "1.79.0",
     "oxlint-tsgolint": "7.0.2001",
     "playwright-chromium": "1.62.1",
+    "semantic-release": "25.0.9",
     "sort-package-json": "4.0.0",
     "typescript": "7.0.2"
   },
   "peerDependencies": {
     "@slidev/cli": "^52.0.0",
     "playwright-chromium": "^1.10.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

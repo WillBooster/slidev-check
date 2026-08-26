@@ -1,5 +1,6 @@
 # slidev-check
 
+[![npm version](https://badge.fury.io/js/slidev-check.svg)](https://www.npmjs.com/package/slidev-check)
 [![Test](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml)
 [![wbfy](https://img.shields.io/badge/wbfy-20.1.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 
