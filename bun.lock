@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "slidev-audit",
+      "name": "slidev-check",
       "dependencies": {
         "picocolors": "1.1.1",
       },

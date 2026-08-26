@@ -3,13 +3,13 @@ import type { Rule, RuleFinding } from '../types.ts';
 const DEFAULT_MIN_PX = 14;
 
 function findTooSmallText({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
-  const { describe, isAudited, measureText } = globalThis.__slidevAudit;
+  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
   const container = document.querySelector(containerSelector);
   if (!container) return [];
 
   const findings: RuleFinding[] = [];
   for (const element of container.querySelectorAll('*')) {
-    if (!isAudited(element)) continue;
+    if (!isChecked(element)) continue;
     if (!measureText(element)) continue; // only elements that render text themselves
     const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
     if (!(fontSize < min)) continue;

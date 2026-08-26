@@ -3,13 +3,13 @@ import type { Rule, RuleFinding } from '../types.ts';
 const DEFAULT_MAX = 1;
 
 function findWrappedHeadings({ containerSelector, max }: { containerSelector: string; max: number }): RuleFinding[] {
-  const { describe, isAudited } = globalThis.__slidevAudit;
+  const { describe, isChecked } = globalThis.__slidevCheck;
   const container = document.querySelector(containerSelector);
   if (!container) return [];
 
   const findings: RuleFinding[] = [];
   for (const heading of container.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
-    if (!isAudited(heading)) continue;
+    if (!isChecked(heading)) continue;
     // The deck title on cover/intro layouts is not a slide heading.
     if (heading.closest('.slidev-layout.cover, .slidev-layout.intro')) continue;
     // Count rendered lines as the number of distinct line-box rows.

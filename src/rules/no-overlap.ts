@@ -14,7 +14,7 @@ function findOverlappingElements({
   tolerance: number;
   backgroundRatio: number;
 }): RuleFinding[] {
-  const { describe, measure, measureText, isAudited } = globalThis.__slidevAudit;
+  const { describe, measure, measureText, isChecked } = globalThis.__slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -42,7 +42,7 @@ function findOverlappingElements({
   }
   const painted: Painted[] = [];
   for (const element of container.querySelectorAll('*')) {
-    if (!isAudited(element) || (element.tagName === 'svg' && element.parentElement?.closest('svg'))) continue;
+    if (!isChecked(element) || (element.tagName === 'svg' && element.parentElement?.closest('svg'))) continue;
     if (element.closest('svg') && element.tagName !== 'svg') continue; // SVG internals are one picture
     const text = measureText(element);
     if (text) painted.push({ element, rect: text, kind: 'text' });

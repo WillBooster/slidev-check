@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import path from 'node:path';
-import { audit } from '../../src/audit.ts';
+import { check } from '../../src/check.ts';
 import { formatViolations } from '../../src/report.ts';
 import { allRules } from '../../src/rules/index.ts';
 import type { Violation } from '../../src/types.ts';
@@ -72,7 +72,7 @@ describe('cli', () => {
 
   test('warns on headings wrapping beyond the allowed lines, ignoring the cover title', async () => {
     const { exitCode, violations } = await runCliJson(fixture('heading.md'));
-    expect(exitCode).toBe(0); // warnings do not fail the audit
+    expect(exitCode).toBe(0); // warnings do not fail the check
     expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([['max-heading-lines', 'warn', 3]]);
     expect(violations[0]?.message).toMatch(/spans 2 lines, exceeding the maximum of 1/);
     expect(violations[0]?.help).toBe('Consider shortening the heading.');
@@ -87,9 +87,9 @@ describe('cli', () => {
   }, 90_000);
 });
 
-describe('audit API', () => {
+describe('check API', () => {
   test('runs only the requested rules and applies severity overrides', async () => {
-    const violations = await audit({
+    const violations = await check({
       entry: fixture('overlap.md'),
       ...options,
       rules: allRules.filter((rule) => rule.id === 'no-overlap'),
@@ -98,7 +98,7 @@ describe('audit API', () => {
     expect(violations.length).toBeGreaterThan(0);
     expect(violations.every((v) => v.ruleId === 'no-overlap' && v.severity === 'warn')).toBe(true);
 
-    const off = await audit({ entry: fixture('overlap.md'), ...options, severities: { 'no-overlap': 'off' } });
+    const off = await check({ entry: fixture('overlap.md'), ...options, severities: { 'no-overlap': 'off' } });
     expect(off.filter((v) => v.ruleId === 'no-overlap')).toEqual([]);
   }, 90_000);
 });

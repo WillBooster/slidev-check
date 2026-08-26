@@ -1,11 +1,11 @@
 {
-  "name": "slidev-audit",
+  "name": "slidev-check",
   "version": "0.0.0",
   "description": "Audit rendered Slidev slides for layout problems such as overflowing elements.",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "slidev-audit": "./src/cli.ts"
+    "slidev-check": "./src/cli.ts"
   },
   "files": [
     "src"

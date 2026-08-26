@@ -1,7 +1,7 @@
 import type { Page } from 'playwright-chromium';
 
 /**
- * Helpers shared by rules. They are installed into the audited page once
+ * Helpers shared by rules. They are installed into the checked page once
  * (see `installBrowserHelpers`) because `page.evaluate` functions cannot
  * close over Node-side values.
  */
@@ -12,15 +12,15 @@ export interface BrowserHelpers {
   measure: (element: Element) => DOMRect | undefined;
   /** Union of the client rects of the element's direct text nodes only. */
   measureText: (element: Element) => DOMRect | undefined;
-  /** Whether the element is rendered and neither hidden nor excluded with `data-slidev-audit-ignore`. */
-  isAudited: (element: Element) => element is HTMLElement | SVGElement;
+  /** Whether the element is rendered and neither hidden nor excluded with `data-slidev-check-ignore`. */
+  isChecked: (element: Element) => element is HTMLElement | SVGElement;
   /** Bounding box union of a list of rects; `undefined` when every rect is empty. */
   union: (rects: Iterable<DOMRect>) => DOMRect | undefined;
 }
 
 declare global {
   // eslint-disable-next-line no-var -- `var` is required for a `globalThis` property declaration.
-  var __slidevAudit: BrowserHelpers;
+  var __slidevCheck: BrowserHelpers;
 }
 
 // The helpers must be defined inside `defineHelpers` because the whole function is serialized
@@ -71,9 +71,9 @@ function defineHelpers(): void {
     return union(rects);
   };
 
-  const isAudited = (element: Element): element is HTMLElement | SVGElement =>
+  const isChecked = (element: Element): element is HTMLElement | SVGElement =>
     (element instanceof HTMLElement || element instanceof SVGElement) &&
-    !element.closest('[data-slidev-audit-ignore]') &&
+    !element.closest('[data-slidev-check-ignore]') &&
     element.checkVisibility({ opacityProperty: true, visibilityProperty: true, contentVisibilityAuto: true });
 
   const describe = (element: Element): string => {
@@ -89,7 +89,7 @@ function defineHelpers(): void {
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
-  globalThis.__slidevAudit = { describe, measure, measureText, isAudited, union };
+  globalThis.__slidevCheck = { describe, measure, measureText, isChecked, union };
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 

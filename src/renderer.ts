@@ -6,7 +6,7 @@ import type { SlideLocation } from './types.ts';
 export interface RenderOptions {
   entry: string;
   theme?: string;
-  /** Milliseconds to wait after the page settles before auditing. */
+  /** Milliseconds to wait after the page settles before checking. */
   wait: number;
   /** Navigation timeout in milliseconds. */
   timeout: number;
@@ -22,10 +22,10 @@ export interface RenderedDeck {
 
 /**
  * Starts Slidev's own dev server and opens its print page in Chromium, the same
- * way `slidev export` does, so the audited DOM is exactly what Slidev renders.
+ * way `slidev export` does, so the checked DOM is exactly what Slidev renders.
  */
-const debug = process.env['SLIDEV_AUDIT_DEBUG']
-  ? (m: string) => console.error(`[audit-debug] ${Date.now() % 100_000} ${m}`)
+const debug = process.env['SLIDEV_CHECK_DEBUG']
+  ? (m: string) => console.error(`[check-debug] ${Date.now() % 100_000} ${m}`)
   : () => {};
 
 export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> {

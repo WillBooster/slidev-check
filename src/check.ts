@@ -3,7 +3,7 @@ import { renderDeck, type RenderOptions } from './renderer.ts';
 import { allRules } from './rules/index.ts';
 import type { Rule, Severity, Violation } from './types.ts';
 
-export interface AuditOptions extends RenderOptions {
+export interface CheckOptions extends RenderOptions {
   rules?: readonly Rule[];
   /** Overrides of the default rule severities. */
   severities?: Partial<Record<string, Severity>>;
@@ -11,7 +11,7 @@ export interface AuditOptions extends RenderOptions {
 
 const settingOf = (rule: Rule): RuleSetting | undefined => defaultRules[rule.id as keyof typeof defaultRules];
 
-export async function audit(options: AuditOptions): Promise<Violation[]> {
+export async function check(options: CheckOptions): Promise<Violation[]> {
   const severityOf = (rule: Rule): Severity => {
     const setting = settingOf(rule);
     return options.severities?.[rule.id] ?? (typeof setting === 'string' ? setting : (setting?.[0] ?? 'error'));
@@ -28,7 +28,7 @@ export async function audit(options: AuditOptions): Promise<Violation[]> {
       const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
       if ((await deck.page.locator(containerSelector).count()) === 0) continue; // hidden slide
       for (const rule of rules) {
-        if (process.env['SLIDEV_AUDIT_DEBUG']) console.error(`[audit-debug] slide ${slide.no} rule ${rule.id}`);
+        if (process.env['SLIDEV_CHECK_DEBUG']) console.error(`[check-debug] slide ${slide.no} rule ${rule.id}`);
         const findings = await rule.check({
           page: deck.page,
           slide,

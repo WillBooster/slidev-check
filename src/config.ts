@@ -6,8 +6,8 @@ export type RuleSetting = Severity | readonly [Severity, Record<string, unknown>
 /**
  * Default setting of every rule.
  *
- * - `error`: reported and makes the audit fail (exit code 1).
- * - `warn`: reported but does not make the audit fail.
+ * - `error`: reported and makes the check fail (exit code 1).
+ * - `warn`: reported but does not make the check fail.
  * - `off`: the rule is not run.
  */
 export const defaultRules = {

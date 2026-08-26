@@ -1,17 +1,17 @@
 #!/usr/bin/env bun
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { audit } from './audit.ts';
+import { check } from './check.ts';
 import { formatViolations } from './report.ts';
 import { allRules } from './rules/index.ts';
 
-const HELP = `Usage: slidev-audit [options] <slides.md>
+const HELP = `Usage: slidev-check [options] <slides.md>
 
 Renders the slides with Slidev and reports layout problems. Prints nothing when no problem is found.
 
 Options:
   -t, --theme <name>     Override the theme
-  --wait <ms>            Extra time to wait before auditing (default: 0)
+  --wait <ms>            Extra time to wait before checking (default: 0)
   --timeout <ms>         Timeout for rendering (default: 30000)
   --json                 Print violations as JSON
   -h, --help             Show this help
@@ -40,7 +40,7 @@ if (values.help || !entry) {
 
 try {
   const startedAt = performance.now();
-  const violations = await audit({
+  const violations = await check({
     entry: path.resolve(entry),
     theme: values.theme,
     wait: Number(values.wait),
@@ -52,6 +52,6 @@ try {
   if (violations.length > 0) process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
-  process.stderr.write(`slidev-audit: ${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exit(2);
 }

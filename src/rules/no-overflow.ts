@@ -12,7 +12,7 @@ function findOverflowingElements({
   containerSelector: string;
   tolerance: number;
 }): RuleFinding[] {
-  const { describe, measure, isAudited } = globalThis.__slidevAudit;
+  const { describe, measure, isChecked } = globalThis.__slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -21,7 +21,7 @@ function findOverflowingElements({
 
   const candidates: { element: Element; overflow: Record<Side, number> }[] = [];
   for (const element of container.querySelectorAll('*')) {
-    if (!isAudited(element)) continue;
+    if (!isChecked(element)) continue;
     const rect = measure(element);
     if (!rect) continue;
     const overflow: Record<Side, number> = {
