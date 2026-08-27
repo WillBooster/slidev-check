@@ -14,7 +14,7 @@ function findOverlappingElements({
   tolerance: number;
   backgroundRatio: number;
 }): RuleFinding[] {
-  const { describe, measure, measureText, isChecked } = globalThis.__slidevCheck;
+  const { describe, fragments, textFragments, isChecked, union } = globalThis.__slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -35,34 +35,59 @@ function findOverlappingElements({
         style.getPropertyValue(`border-${side.toLowerCase()}-style`) !== 'none'
     );
 
+  // An element wrapped over several lines paints only its line fragments, so collisions are
+  // checked fragment by fragment; the bounding box only serves as a cheap pre-filter.
   interface Painted {
     element: Element;
-    rect: DOMRect;
+    bounds: DOMRect;
+    fragments: DOMRect[];
     kind: 'text' | 'box';
   }
   const painted: Painted[] = [];
+  const add = (element: Element, kind: Painted['kind'], rects: DOMRect[]): void => {
+    const rect = union(rects);
+    if (rect) painted.push({ element, bounds: rect, fragments: rects, kind });
+  };
   for (const element of container.querySelectorAll('*')) {
     if (!isChecked(element) || (element.tagName === 'svg' && element.parentElement?.closest('svg'))) continue;
     if (element.closest('svg') && element.tagName !== 'svg') continue; // SVG internals are one picture
-    const text = measureText(element);
-    if (text) painted.push({ element, rect: text, kind: 'text' });
+    add(element, 'text', textFragments(element));
     const style = getComputedStyle(element);
     if (!paints(element, style)) continue;
-    const rect = measure(element);
+    const rects = fragments(element);
+    const rect = union(rects);
     if (!rect) continue;
     const coverage = (rect.width * rect.height) / (bounds.width * bounds.height);
     if (coverage >= backgroundRatio) continue;
-    painted.push({ element, rect, kind: 'box' });
+    add(element, 'box', rects);
   }
 
-  // One finding per element pair (an element may be painted both as text and as a box):
-  // keep the largest overlap.
   interface Overlap {
     a: Painted;
     b: Painted;
     width: number;
     height: number;
   }
+  const intersects = (ra: DOMRect, rb: DOMRect): Pick<Overlap, 'width' | 'height'> | undefined => {
+    const width = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+    const height = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+    return width > tolerance && height > tolerance ? { width, height } : undefined;
+  };
+  const largestOverlap = (a: Painted, b: Painted): Overlap | undefined => {
+    if (!intersects(a.bounds, b.bounds)) return undefined;
+    let largest: Overlap | undefined;
+    for (const ra of a.fragments) {
+      for (const rb of b.fragments) {
+        const size = intersects(ra, rb);
+        if (size && (!largest || largest.width * largest.height < size.width * size.height))
+          largest = { a, b, ...size };
+      }
+    }
+    return largest;
+  };
+
+  // One finding per element pair (an element may be painted both as text and as a box):
+  // keep the largest overlap.
   const overlaps = new Map<Element, Map<Element, Overlap>>();
   for (let i = 0; i < painted.length; i++) {
     for (let j = i + 1; j < painted.length; j++) {
@@ -70,14 +95,13 @@ function findOverlappingElements({
       const b = painted[j]!;
       // Nested content is expected to sit on top of its container.
       if (a.element === b.element || a.element.contains(b.element) || b.element.contains(a.element)) continue;
-      const width = Math.min(a.rect.right, b.rect.right) - Math.max(a.rect.left, b.rect.left);
-      const height = Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top);
-      if (width <= tolerance || height <= tolerance) continue;
+      const overlap = largestOverlap(a, b);
+      if (!overlap) continue;
       const byPartner = overlaps.get(a.element) ?? new Map<Element, Overlap>();
       overlaps.set(a.element, byPartner);
       const previous = byPartner.get(b.element);
-      if (!previous || previous.width * previous.height < width * height)
-        byPartner.set(b.element, { a, b, width, height });
+      if (!previous || previous.width * previous.height < overlap.width * overlap.height)
+        byPartner.set(b.element, overlap);
     }
   }
 
