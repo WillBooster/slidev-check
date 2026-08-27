@@ -12,6 +12,14 @@ export interface BrowserHelpers {
   measure: (element: Element) => DOMRect | undefined;
   /** Union of the client rects of the element's direct text nodes only. */
   measureText: (element: Element) => DOMRect | undefined;
+  /**
+   * Every painted piece of the element: its own client rects (one per line for inline
+   * elements) and those of its direct text nodes. Unlike `measure`, the pieces of an
+   * element wrapped over several lines do not cover the space between them.
+   */
+  fragments: (element: Element) => DOMRect[];
+  /** The painted pieces of the element's direct text nodes only, one per line. */
+  textFragments: (element: Element) => DOMRect[];
   /** Whether the element is rendered and neither hidden nor excluded with `data-slidev-check-ignore`. */
   isChecked: (element: Element) => element is HTMLElement | SVGElement;
   /** Bounding box union of a list of rects; `undefined` when every rect is empty. */
@@ -44,7 +52,7 @@ function defineHelpers(): void {
     return result;
   };
 
-  const measureText = (element: Element): DOMRect | undefined => {
+  const textFragments = (element: Element): DOMRect[] => {
     // Range rects follow the font's ascent/descent, which exceed the line box when
     // line-height is tight, so each rect is clamped to the line height. Otherwise
     // consecutive lines of normal text would be reported as overlapping.
@@ -55,21 +63,24 @@ function defineHelpers(): void {
       const range = document.createRange();
       range.selectNodeContents(child);
       for (const rect of range.getClientRects()) {
+        if (rect.width === 0 || rect.height === 0) continue;
         if (Number.isNaN(lineHeight) || rect.height <= lineHeight) rects.push(rect);
         else rects.push(new DOMRect(rect.left, rect.top + (rect.height - lineHeight) / 2, rect.width, lineHeight));
       }
     }
-    return union(rects);
+    return rects;
   };
 
-  const measure = (element: Element): DOMRect | undefined => {
-    // Text nodes can stick out of their block parent (e.g. a long unbreakable word),
-    // so they are measured explicitly in addition to the element box.
-    const rects = [...element.getClientRects()];
-    const text = measureText(element);
-    if (text) rects.push(text);
-    return union(rects);
-  };
+  // Text nodes can stick out of their block parent (e.g. a long unbreakable word),
+  // so they are measured explicitly in addition to the element box.
+  const fragments = (element: Element): DOMRect[] => [
+    ...[...element.getClientRects()].filter((rect) => rect.width > 0 || rect.height > 0),
+    ...textFragments(element),
+  ];
+
+  const measureText = (element: Element): DOMRect | undefined => union(textFragments(element));
+
+  const measure = (element: Element): DOMRect | undefined => union(fragments(element));
 
   const isChecked = (element: Element): element is HTMLElement | SVGElement =>
     (element instanceof HTMLElement || element instanceof SVGElement) &&
@@ -89,7 +100,7 @@ function defineHelpers(): void {
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
-  globalThis.__slidevCheck = { describe, measure, measureText, isChecked, union };
+  globalThis.__slidevCheck = { describe, measure, measureText, fragments, textFragments, isChecked, union };
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 
