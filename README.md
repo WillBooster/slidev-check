@@ -10,9 +10,9 @@ Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports lay
 
 It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM geometry.
 
-![Example output of slidev-check](docs/usage.svg)
-
 ## Usage
+
+![Example output of slidev-check](docs/usage.svg)
 
 ```sh
 bun add -d slidev-check                      # @slidev/cli and playwright-chromium are peer dependencies
@@ -31,8 +31,6 @@ Found 0 warnings and 1 error.
 Finished in 3521ms with 4 rules.
 ```
 
-Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`.
-
 Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
 
 ## Development
@@ -41,3 +39,7 @@ Add `data-slidev-check-ignore` to an element to exclude it (and its descendants)
 bun run check   # type check
 bun test
 ```
+
+## License
+
+Apache License &copy; WillBooster Inc.
