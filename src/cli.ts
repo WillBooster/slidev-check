@@ -53,8 +53,9 @@ try {
   let fixed = 0;
   if (values.fix) {
     fixed = applyFixes(violations);
-    // A fix changes the rendered deck, so the remaining violations are collected from a fresh render.
-    if (fixed > 0) {
+    // A fix changes the rendered deck, so the remaining violations are collected from a fresh render;
+    // a fix that was skipped means the file changed underneath too.
+    if (violations.some((v) => v.fix)) {
       try {
         violations = await check(options);
       } catch (error) {
@@ -71,7 +72,7 @@ try {
   const report = values.json
     ? JSON.stringify(values.fix ? { fixed, violations } : violations, undefined, 2)
     : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length, fixed });
-  if (violations.length > 0 || fixed > 0 || values.fix) process.stdout.write(`${report}\n`);
+  if (report) process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);

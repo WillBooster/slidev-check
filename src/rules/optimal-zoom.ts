@@ -24,6 +24,8 @@ interface ZoomAnalysis {
   bottom: string;
   /** Largest zoom keeping the required margin, or `undefined` if none does. */
   optimal: number | undefined;
+  /** For the `slide` kind: whether a heading precedes the body that would be wrapped. */
+  belowHeading?: boolean;
 }
 
 // Everything used by `analyzeZoom` must be defined inside it: the whole function is serialized
@@ -102,6 +104,7 @@ function analyzeZoom({
         const inside = inTargets(element);
         if (!inside && isPositioned(element)) continue;
         for (const rect of paintedRects(element)) {
+          if (isBackground(rect, bounds)) continue;
           if (rect.bottom > bottom) {
             bottom = rect.bottom;
             lowest = element;
@@ -152,7 +155,7 @@ function analyzeZoom({
     if (at.measurable) {
       // Content height grows with the zoom (both the scale and the wrapping increase), so the
       // largest fitting zoom can be found by bisection over hundredths.
-      const hi = Math.round(maxZoom / step);
+      const hi = Math.floor(maxZoom / step + 1e-9);
       const lo = Math.round(minZoom / step);
       if (fits(hi)) optimal = hi * step;
       else if (fits(lo)) {
@@ -213,7 +216,8 @@ function analyzeZoom({
   wrapper.style.zoom = '1';
   const analysis = analyze([wrapper], 'slide', -1);
   wrapper.replaceWith(...wrapper.childNodes);
-  return analysis && (analysis.optimal === undefined || analysis.optimal < maxZoom) ? [analysis] : [];
+  if (!analysis || (analysis.optimal !== undefined && analysis.optimal > analysis.current - step / 2)) return [];
+  return [{ ...analysis, belowHeading: heading !== null }];
 }
 
 /* oxlint-enable unicorn/consistent-function-scoping */
@@ -226,7 +230,7 @@ const lines = (n: number): string => `${n} line${n === 1 ? '' : 's'}`;
 function describeExcess(analysis: ZoomAnalysis, marginLines: number, maxZoom: number): string {
   const { current, currentMargin, currentFitsWidth, bottom } = analysis;
   if (current > maxZoom) return `exceeds the maximum zoom of ${formatZoom(maxZoom)}`;
-  if (!currentFitsWidth) return 'is wider than the slide';
+  if (!currentFitsWidth) return 'sticks out of the slide horizontally';
   if (currentMargin < 0) return bottom === 'the slide bottom' ? 'overflows the slide bottom' : `overlaps ${bottom}`;
   return `leaves only ${currentMargin.toFixed(1)} lines of margin above ${bottom} (minimum ${marginLines})`;
 }
@@ -236,7 +240,10 @@ const blank = (match: string): string => match.replaceAll(/[^\n]/g, ' ');
 const markupOnly = (source: string): string =>
   source
     .replace(/^---\n[\s\S]*?\n---(?=\n|$)/, blank)
-    .replaceAll(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|<!--[\s\S]*?-->|<style[\s\S]*?<\/style>/g, blank);
+    .replaceAll(
+      /```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|<!--[\s\S]*?-->|<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g,
+      blank
+    );
 
 interface Declaration {
   /** Offset of `from` in the source. */
@@ -247,21 +254,43 @@ interface Declaration {
   percent: boolean;
 }
 
+/** The attributes of one HTML start tag, with the offset of each value in the source. */
+function* attributesOf(tag: string, tagIndex: number): Generator<{ name: string; value: string; index: number }> {
+  const base = tag.search(/[\s/>]/);
+  for (const match of tag.slice(base).matchAll(/([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g)) {
+    const [whole, name = '', double, single, bare] = match;
+    const value = double ?? single ?? bare ?? '';
+    const quoted = double !== undefined || single !== undefined;
+    yield { name, value, index: tagIndex + base + match.index + whole.length - value.length - (quoted ? 1 : 0) };
+  }
+}
+
 /** The `zoom` declarations in the `style` attributes of the slide's markup, in source order. */
 function zoomDeclarations(source: string): Declaration[] {
   const declarations: Declaration[] = [];
-  for (const attribute of markupOnly(source).matchAll(/\bstyle\s*=\s*(["'])([^"']*)\1/g)) {
-    const style = attribute[2] ?? '';
-    const styleIndex = attribute.index + attribute[0].indexOf(style, attribute[0].indexOf('=') + 1);
-    for (const declaration of style.matchAll(/(zoom\s*:[ \t]*)(\d*\.?\d+)(%?)(?=\s*(?:;|$))/gi)) {
-      const [from, property = '', value = '', percent = ''] = declaration;
-      declarations.push({
-        index: styleIndex + declaration.index,
-        from,
-        property,
-        value: Number.parseFloat(value) / (percent ? 100 : 1),
-        percent: percent !== '',
-      });
+  for (const tag of markupOnly(source).matchAll(
+    /<[a-zA-Z][^\s/>]*(?:\s+[^\s"'<>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>/g
+  )) {
+    const attributes = [...attributesOf(tag[0], tag.index)];
+    // An ignored element is not among the zoomed elements the rule analyzed.
+    if (attributes.some((a) => a.name === 'data-slidev-check-ignore')) continue;
+    for (const style of attributes.filter((a) => a.name.toLowerCase() === 'style')) {
+      let offset = 0;
+      for (const part of style.value.split(';')) {
+        const declaration = /^(\s*zoom\s*:\s*)(\d*\.?\d+)(%?)\s*$/i.exec(part);
+        if (declaration) {
+          const [, property = '', value = '', percent = ''] = declaration;
+          const leading = declaration[0].length - declaration[0].trimStart().length;
+          declarations.push({
+            index: style.index + offset + leading,
+            from: `${property.trimStart()}${value}${percent}`,
+            property: property.trimStart(),
+            value: Number.parseFloat(value) / (percent ? 100 : 1),
+            percent: percent !== '',
+          });
+        }
+        offset += part.length + 1;
+      }
     }
   }
   return declarations;
@@ -293,13 +322,13 @@ function toFinding(
 ): RuleFinding | undefined {
   const { kind, description, current, optimal, bottom } = analysis;
   const split = 'Consider splitting the content into multiple slides.';
-  const unfit = `does not fit within the slide width with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
+  const unfit = `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
   if (kind === 'slide') {
     if (optimal === undefined) return { message: `The slide content ${unfit}.`, help: split };
     const wrapper = `<div style="zoom: ${formatZoom(optimal)}">`;
     return {
       message: `The slide content ${describeExcess(analysis, marginLines, maxZoom)}; wrapping it in \`${wrapper}\` keeps the margin.`,
-      help: `Consider wrapping the content below the heading in \`${wrapper}\`.`,
+      help: `Consider wrapping the ${analysis.belowHeading ? 'content below the heading' : 'slide content'} in \`${wrapper}\`.`,
     };
   }
   const element = `Element \`${description}\` is zoomed to ${formatZoom(current)}`;

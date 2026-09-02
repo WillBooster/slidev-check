@@ -31,7 +31,10 @@ describe('cli', () => {
     const { exitCode, stdout } = await runCli(fixture('clean.md'));
     expect(stdout).toBe('');
     expect(exitCode).toBe(0);
-  }, 90_000);
+    const fix = await runCli(fixture('clean.md'), '--fix');
+    expect(fix.stdout).toBe('');
+    expect(fix.exitCode).toBe(0);
+  }, 180_000);
 
   test('reports elements that overflow the slide', async () => {
     const { exitCode, violations } = await runCliJson(fixture('overflow.md'));
@@ -100,7 +103,7 @@ describe('optimal-zoom', () => {
   test('warns on zoom wrappers that are too small, too large, or cannot fit, and on tight slides without one', async () => {
     const { violations } = await runCliJson(fixture('zoom.md'));
     // Slide 5 sits at its optimum on the reference machine; a one-step shift elsewhere is tolerated.
-    const zoom = zoomViolations(violations).filter((v) => !(v.slide.no === 5 && /zoom: 0\.5[57]\.$/.test(v.message)));
+    const zoom = zoomViolations(violations).filter((v) => !(v.slide.no === 5 && /zoom: 0\.5[57]\b/.test(v.message)));
     expect(zoom.map((v) => [v.severity, v.slide.no])).toEqual([
       ['warn', 2],
       ['warn', 3],
@@ -116,6 +119,8 @@ describe('optimal-zoom', () => {
       ['warn', 13],
       ['warn', 14],
       ['warn', 15],
+      ['warn', 16],
+      ['warn', 17],
     ]);
     const [
       tooSmall,
@@ -132,6 +137,8 @@ describe('optimal-zoom', () => {
       image,
       overhang,
       spaced,
+      quoted,
+      lookAlike,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -154,7 +161,7 @@ describe('optimal-zoom', () => {
     expect(percent?.message).toMatch(/^Element `<div>Outer wrapper[^`]*` is zoomed to 0\.6 but still keeps/);
     expect(percent?.fix).toEqual({ line: 47, column: 12, from: 'zoom: 60%', to: 'zoom: 100%' });
     expect(cannotFit?.message).toMatch(
-      /is zoomed to 0\.5 and does not fit within the slide width with a margin of 1 line above the slide bottom at any zoom down to 0\.1\.$/
+      /is zoomed to 0\.5 and does not fit on the slide with a margin of 1 line above the slide bottom at any zoom down to 0\.1\.$/
     );
     expect(cannotFit?.help).toBe('Consider splitting the content into multiple slides.');
     expect(cannotFit?.fix).toBeUndefined();
@@ -174,11 +181,15 @@ describe('optimal-zoom', () => {
     expect(image?.fix).toEqual({ line: 121, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content hanging off the left edge bounds the zoom too.
     expect(overhang?.message).toMatch(
-      /is zoomed to 0\.5 and is wider than the slide; zoom: 0\.\d+ keeps the margin\.$/
+      /is zoomed to 0\.5 and sticks out of the slide horizontally; zoom: 0\.\d+ keeps the margin\.$/
     );
     expect(Number.parseFloat(overhang?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.5);
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
     expect(spaced?.fix).toEqual({ line: 147, column: 12, from: 'zoom : 0.5', to: 'zoom : 1' });
+    // Quoted values and a `--zoom` custom property in the same attribute do not hide the declaration.
+    expect(quoted?.fix).toEqual({ line: 157, column: 47, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // Neither an ignored zoomed element nor a `data-style` attribute counts as a declaration.
+    expect(lookAlike?.fix).toEqual({ line: 169, column: 35, from: 'zoom: 0.5', to: 'zoom: 1' });
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -186,13 +197,15 @@ describe('optimal-zoom', () => {
     fs.copyFileSync(fixture('zoom.md'), copy);
     try {
       const { stdout } = await runCli(copy, '--fix');
-      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[23] problems\./);
+      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[45] problems\./);
       const lines = fs.readFileSync(copy, 'utf8').split('\n');
       expect(lines[12]).toBe('<div style="zoom: 1">');
       expect(lines[24]).toMatch(/^<div style="zoom: 0\.(?:79|8|81)">$/);
       expect(lines[46]).toBe('<div style="zoom: 100%">');
       expect(lines[88]).toBe('<div style="zoom: 1">left</div><div style="zoom: 1">right</div>');
       expect(lines[146]).toBe('<div style="zoom : 1; color: gray">');
+      expect(lines[156]).toBe('<div style="font-family: \'Arial\'; --zoom: 0.5; zoom: 1">');
+      expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7]);
       // The rewritten wrappers keep their content on the slide.
@@ -210,7 +223,7 @@ describe('--fix --json', () => {
     try {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
-      expect(result.fixed).toBeGreaterThanOrEqual(12);
+      expect(result.fixed).toBeGreaterThanOrEqual(14);
       expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7]);
     } finally {
       fs.rmSync(copy, { force: true });
@@ -234,6 +247,7 @@ describe('applyFixes', () => {
       });
       const applied = applyFixes([
         violation({ line: 2, column: 12, from: 'zoom: 0.5', to: 'zoom: 0.55' }),
+        violation({ line: 2, column: 12, from: 'zoom: 0.5', to: 'zoom: 0.55' }), // the same slide imported twice
         violation({ line: 2, column: 42, from: 'zoom: 0.5', to: 'zoom: 0.9' }),
         violation({ line: 3, column: 3, from: 'zoom: 0.5', to: 'zoom: 1' }), // stale: the text moved
       ]);

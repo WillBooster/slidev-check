@@ -149,3 +149,25 @@ Current zoom: 0.5 is mentioned in prose.
 - the declaration has spaces around the colon
 
 </div>
+
+---
+
+# Quotes and a custom property in the style
+
+<div style="font-family: 'Arial'; --zoom: 0.5; zoom: 0.5">
+
+- the declaration follows quoted and look-alike ones
+
+</div>
+
+---
+
+# Ignored sibling and a look-alike attribute
+
+<div data-slidev-check-ignore style="zoom: 0.5">excluded</div>
+
+<div data-style="zoom: 0.5" style="zoom: 0.5">
+
+- only this wrapper is analyzed
+
+</div>
