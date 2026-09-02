@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
@@ -124,6 +125,8 @@ describe('optimal-zoom', () => {
       ['warn', 16],
       ['warn', 17],
       ['warn', 18],
+      ['warn', 19],
+      ['warn', 20],
     ]);
     const [
       tooSmall,
@@ -143,6 +146,8 @@ describe('optimal-zoom', () => {
       quoted,
       lookAlike,
       blocked,
+      column,
+      upward,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -185,7 +190,7 @@ describe('optimal-zoom', () => {
     expect(image?.fix).toEqual({ line: 121, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content hanging off the left edge bounds the zoom too.
     expect(overhang?.message).toMatch(
-      /is zoomed to 0\.5 and sticks out of the slide horizontally; zoom: 0\.\d+ keeps the margin above the slide bottom\.$/
+      /is zoomed to 0\.5 and sticks out of the slide; zoom: 0\.\d+ keeps the margin above the slide bottom\.$/
     );
     expect(Number.parseFloat(overhang?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.5);
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
@@ -199,14 +204,19 @@ describe('optimal-zoom', () => {
       /^Element `<div>a tiny wrapper[^`]*` is zoomed to 0\.5 and cannot keep a margin of 1 line above the slide bottom at any zoom down to 0\.1, because `<p>Unwrapped line[^`]*` outside it already reaches that far\.$/
     );
     expect(blocked?.fix).toBeUndefined();
+    // A taller sibling column does not take the space below the wrapper.
+    expect(column?.fix).toEqual({ line: 193, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // Content hanging off the top edge bounds the zoom too.
+    expect(upward?.fix).toMatchObject({ line: 211, column: 12, from: 'zoom: 0.4' });
+    expect(Number.parseFloat(upward?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.6);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
-    const copy = fixture('zoom-fixed.md');
+    const copy = fixture(`zoom-fixed-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);
     try {
       const { stdout } = await runCli(copy, '--fix');
-      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[45] problems\./);
+      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[67] problems\./);
       const lines = fs.readFileSync(copy, 'utf8').split('\n');
       expect(lines[12]).toBe('<div style="zoom: 1">');
       expect(lines[24]).toMatch(/^<div style="zoom: 0\.(?:79|8|81)">$/);
@@ -227,12 +237,12 @@ describe('optimal-zoom', () => {
 
 describe('--fix --json', () => {
   test('reports the number of fixes together with the remaining violations', async () => {
-    const copy = fixture('zoom-fixed-json.md');
+    const copy = fixture(`zoom-fixed-json-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);
     try {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
-      expect(result.fixed).toBeGreaterThanOrEqual(14);
+      expect(result.fixed).toBeGreaterThanOrEqual(16);
       expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18]);
     } finally {
       fs.rmSync(copy, { force: true });
@@ -242,7 +252,7 @@ describe('--fix --json', () => {
 
 describe('applyFixes', () => {
   test('applies fixes by position, so several on one line do not disturb each other', () => {
-    const file = fixture('fixes.tmp.md');
+    const file = fixture(`fixes-${randomUUID()}.tmp.md`);
     fs.writeFileSync(file, 'a\n<div style="zoom: 0.5">x</div><div style="zoom: 0.5">y</div>\nzoom: 0.5\n');
     try {
       const slide = { no: 1, filepath: file, line: 1, title: undefined };

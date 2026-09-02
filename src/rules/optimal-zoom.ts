@@ -117,21 +117,36 @@ function analyzeZoom({
       target.style.zoom = String(zoom);
       // The target scales with the zoom, and the rest of the flow moves with it; positioned
       // elements outside the target stay where they are and bound the space instead.
-      let bottom = Number.NEGATIVE_INFINITY;
-      let lowest: Element | undefined;
-      const scaled = { top: Number.POSITIVE_INFINITY, left: Number.POSITIVE_INFINITY, right: Number.NEGATIVE_INFINITY };
-      for (const element of layout.querySelectorAll('*')) {
-        const inside = target.contains(element);
-        if (!inside && isPositioned(element)) continue;
+      const scaled = {
+        top: Number.POSITIVE_INFINITY,
+        left: Number.POSITIVE_INFINITY,
+        right: Number.NEGATIVE_INFINITY,
+        bottom: Number.NEGATIVE_INFINITY,
+      };
+      for (const element of [target, ...target.querySelectorAll('*')]) {
         for (const rect of paintedRects(element, target)) {
-          if (rect.bottom > bottom) {
-            bottom = rect.bottom;
-            lowest = element;
-          }
-          if (!inside) continue;
           scaled.top = Math.min(scaled.top, rect.top);
           scaled.left = Math.min(scaled.left, rect.left);
           scaled.right = Math.max(scaled.right, rect.right);
+          scaled.bottom = Math.max(scaled.bottom, rect.bottom);
+        }
+      }
+      const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
+      // Only content in the target's own column can take the space below it.
+      let bottom = scaled.bottom;
+      let lowest: Element | undefined;
+      for (const element of layout.querySelectorAll('*')) {
+        if (target.contains(element) || isPositioned(element)) continue;
+        for (const rect of paintedRects(element)) {
+          if (beside(rect) || rect.bottom <= bottom) continue;
+          bottom = rect.bottom;
+          lowest = element;
+        }
+      }
+      if (lowest === undefined) {
+        // The target itself is the lowest: find which of its elements ends the content.
+        for (const element of [target, ...target.querySelectorAll('*')]) {
+          if (paintedRects(element, target).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
       let limit = bounds.bottom;
@@ -139,7 +154,7 @@ function analyzeZoom({
       for (const element of container.querySelectorAll('*')) {
         if (target.contains(element) || (layout.contains(element) && !isPositioned(element))) continue;
         for (const rect of paintedRects(element)) {
-          if (rect.top < scaled.top || rect.right <= scaled.left || rect.left >= scaled.right) continue;
+          if (rect.top < scaled.top || beside(rect)) continue;
           if (rect.top < limit) {
             limit = rect.top;
             limitedBy = element;
@@ -152,7 +167,7 @@ function analyzeZoom({
       return {
         measurable: line > 0 && scaled.right > scaled.left,
         lines: (limit - bottom) / line,
-        fitsWidth: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1,
+        fitsWidth: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1 && scaled.top >= bounds.top - 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
         outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };
@@ -172,24 +187,26 @@ function analyzeZoom({
       const hi = Math.floor(maxZoom / step + 1e-9);
       const lo = Math.round(minZoom / step);
       const atHigh = measure(hi * step);
-      const atLow = fits(atHigh) ? atHigh : measure(lo * step);
       if (fits(atHigh)) {
         optimal = hi * step;
         best = atHigh;
-      } else if (fits(atLow)) {
-        let good = lo;
-        let bad = hi;
-        best = atLow;
-        while (bad - good > 1) {
-          const mid = Math.floor((good + bad) / 2);
-          const measurement = measure(mid * step);
-          if (fits(measurement)) {
-            good = mid;
-            best = measurement;
-          } else bad = mid;
-        }
-        optimal = good * step;
-      } else blockedBy = atLow.outside;
+      } else {
+        const atLow = measure(lo * step);
+        if (fits(atLow)) {
+          let good = lo;
+          let bad = hi;
+          best = atLow;
+          while (bad - good > 1) {
+            const mid = Math.floor((good + bad) / 2);
+            const measurement = measure(mid * step);
+            if (fits(measurement)) {
+              good = mid;
+              best = measurement;
+            } else bad = mid;
+          }
+          optimal = good * step;
+        } else blockedBy = atLow.outside;
+      }
     }
     target.style.zoom = original;
     if (!at.measurable) return undefined;
@@ -254,7 +271,7 @@ const lines = (n: number): string => `${n} line${n === 1 ? '' : 's'}`;
 function describeExcess(analysis: ZoomAnalysis, marginLines: number, maxZoom: number): string {
   const { current, currentMargin, currentFitsWidth, bottom } = analysis;
   if (current > maxZoom) return `exceeds the maximum zoom of ${formatZoom(maxZoom)}`;
-  if (!currentFitsWidth) return 'sticks out of the slide horizontally';
+  if (!currentFitsWidth) return 'sticks out of the slide';
   if (currentMargin < 0) return bottom === 'the slide bottom' ? 'overflows the slide bottom' : `overlaps ${bottom}`;
   return `leaves only ${currentMargin.toFixed(1)} lines of margin above ${bottom} (minimum ${marginLines})`;
 }
@@ -324,6 +341,9 @@ function zoomDeclarations(source: string): Declaration[] {
 /** Locates the `zoom` declaration of the wrapper in the slide's markdown so that it can be rewritten. */
 function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix | undefined {
   if (analysis.kind !== 'wrapper' || analysis.optimal === undefined) return undefined;
+  // Slot layouts (`::right::` blocks) render slots in template order, not source order, so the
+  // declarations cannot be mapped to elements by position.
+  if (/^::[\w-]+::\s*$/m.test(source)) return undefined;
   const declarations = zoomDeclarations(source);
   // The rewrite is only safe when the zoomed elements and the declarations line up one to one
   // with the same values; a bound style or a hidden element breaks that and gets no fix.

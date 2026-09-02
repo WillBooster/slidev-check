@@ -183,3 +183,35 @@ Current zoom: 0.5 is mentioned in prose.
 </div>
 
 <p v-for="i in 11" :key="i">Unwrapped line {{ i }} that fills the slide</p>
+
+---
+
+# Side by side
+
+<div class="grid grid-cols-2 gap-4">
+
+<div style="zoom: 0.5">
+
+- left one
+- left two
+- left three
+
+</div>
+
+<div>
+<p v-for="i in 11" :key="i">Right line {{ i }}</p>
+</div>
+
+</div>
+
+---
+
+# Upward overhang
+
+<div style="zoom: 0.4">
+
+<div style="position: relative; top: -200px; width: 400px; background: #cde">Pushed up</div>
+
+Normal body text below.
+
+</div>

@@ -91,7 +91,7 @@ function defineHelpers(): void {
     !element.closest('[data-slidev-check-ignore]') &&
     element.checkVisibility({ opacityProperty: true, visibilityProperty: true, contentVisibilityAuto: true });
 
-  const REPLACED = new Set(['IMG', 'SVG', 'VIDEO', 'CANVAS', 'IFRAME', 'OBJECT', 'EMBED', 'svg']);
+  const REPLACED = new Set(['IMG', 'SVG', 'VIDEO', 'AUDIO', 'CANVAS', 'IFRAME', 'OBJECT', 'EMBED', 'svg']);
   const paints = (element: Element): boolean => {
     if (REPLACED.has(element.tagName)) return true;
     const style = getComputedStyle(element);
