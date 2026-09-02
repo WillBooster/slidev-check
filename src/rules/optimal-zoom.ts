@@ -20,6 +20,8 @@ interface ZoomAnalysis {
   currentMargin: number;
   /** Whether the zoomed content stays within the slide width at the current zoom. */
   currentFitsWidth: boolean;
+  /** What bounds the content from below at the current zoom: the slide bottom or a fixed element above it. */
+  bottom: string;
   /** Largest zoom keeping the required margin, or `undefined` if none does. */
   optimal: number | undefined;
 }
@@ -67,16 +69,19 @@ function analyzeZoom({
   };
   /** Height of one text line at the element, measured with a probe so that it follows the zoom. */
   const lineHeightAt = (element: Element): number => {
-    let host: Element | null = element;
-    while (host && !(host instanceof HTMLElement && !isSvgInternal(host))) host = host.parentElement;
-    if (!host) return Number.NaN;
     const probe = document.createElement('div');
     probe.textContent = 'X';
     probe.style.cssText = 'position: absolute; visibility: hidden; white-space: nowrap;';
-    host.append(probe);
-    const height = probe.getBoundingClientRect().height;
-    probe.remove();
-    return height;
+    // Replaced elements (images, videos, ...) render no children, so the probe climbs to the
+    // nearest ancestor where it gets a height.
+    for (let host: Element | null = element; host; host = host.parentElement) {
+      if (!(host instanceof HTMLElement) || isSvgInternal(host)) continue;
+      host.append(probe);
+      const height = probe.getBoundingClientRect().height;
+      probe.remove();
+      if (height > 0) return height;
+    }
+    return Number.NaN;
   };
 
   const zoomed = [...layout.querySelectorAll('*')].filter(
@@ -86,7 +91,7 @@ function analyzeZoom({
 
   const analyze = (targets: HTMLElement[], kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
     const inTargets = (element: Element): boolean => targets.some((target) => target.contains(element));
-    const measure = (zoom: number): { measurable: boolean; lines: number; fitsWidth: boolean } => {
+    const measure = (zoom: number): { measurable: boolean; lines: number; fitsWidth: boolean; bottom: string } => {
       for (const target of targets) target.style.zoom = String(zoom);
       // The targets scale with the zoom, and the rest of the flow moves with them; positioned
       // elements outside the targets stay where they are and bound the space instead.
@@ -108,6 +113,7 @@ function analyzeZoom({
         }
       }
       let limit = bounds.bottom;
+      let limitedBy: Element | undefined;
       for (const element of container.querySelectorAll('*')) {
         if (inTargets(element) || (layout.contains(element) && !isPositioned(element))) continue;
         for (const rect of paintedRects(element)) {
@@ -118,7 +124,10 @@ function analyzeZoom({
             rect.left >= scaled.right
           )
             continue;
-          limit = Math.min(limit, rect.top);
+          if (rect.top < limit) {
+            limit = rect.top;
+            limitedBy = element;
+          }
         }
       }
       // The margin is counted in lines of the text right above it, whichever element that is,
@@ -127,7 +136,8 @@ function analyzeZoom({
       return {
         measurable: line > 0,
         lines: (limit - bottom) / line,
-        fitsWidth: scaled.right <= bounds.right + 1,
+        fitsWidth: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1,
+        bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
       };
     };
     const fits = (hundredths: number): boolean => {
@@ -158,7 +168,6 @@ function analyzeZoom({
     }
     for (const [i, target] of targets.entries()) target.style.zoom = originals[i] ?? '';
     if (!at.measurable) return undefined;
-    if (optimal !== undefined) optimal = Math.round(optimal / step) * step;
     return {
       kind,
       description: describe(targets[0] ?? layout),
@@ -167,6 +176,7 @@ function analyzeZoom({
       current,
       currentMargin: at.lines,
       currentFitsWidth: at.fitsWidth,
+      bottom: at.bottom,
       optimal,
     };
   };
@@ -214,34 +224,65 @@ const lines = (n: number): string => `${n} line${n === 1 ? '' : 's'}`;
 
 /** Why the current zoom is too large, from the actual measurement. */
 function describeExcess(analysis: ZoomAnalysis, marginLines: number, maxZoom: number): string {
-  const { current, currentMargin, currentFitsWidth } = analysis;
+  const { current, currentMargin, currentFitsWidth, bottom } = analysis;
   if (current > maxZoom) return `exceeds the maximum zoom of ${formatZoom(maxZoom)}`;
   if (!currentFitsWidth) return 'is wider than the slide';
-  if (currentMargin < 0) return 'overflows the slide bottom';
-  return `leaves only ${currentMargin.toFixed(1)} lines of margin above the slide bottom (minimum ${marginLines})`;
+  if (currentMargin < 0) return bottom === 'the slide bottom' ? 'overflows the slide bottom' : `overlaps ${bottom}`;
+  return `leaves only ${currentMargin.toFixed(1)} lines of margin above ${bottom} (minimum ${marginLines})`;
 }
 
-/** Blanks out code and comments (keeping offsets) so that only real `zoom:` declarations are matched. */
-const withoutCode = (source: string): string =>
-  source.replaceAll(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|<!--[\s\S]*?-->/g, (match) =>
-    match.replaceAll(/[^\n]/g, ' ')
-  );
+/** Blanks out (keeping offsets) everything that is not markup: frontmatter, code, comments, and style sheets. */
+const blank = (match: string): string => match.replaceAll(/[^\n]/g, ' ');
+const markupOnly = (source: string): string =>
+  source
+    .replace(/^---\n[\s\S]*?\n---(?=\n|$)/, blank)
+    .replaceAll(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|<!--[\s\S]*?-->|<style[\s\S]*?<\/style>/g, blank);
 
-/** Locates the `zoom:` declaration of the wrapper in the slide's markdown so that it can be rewritten. */
+interface Declaration {
+  /** Offset of `from` in the source. */
+  index: number;
+  from: string;
+  property: string;
+  value: number;
+  percent: boolean;
+}
+
+/** The `zoom` declarations in the `style` attributes of the slide's markup, in source order. */
+function zoomDeclarations(source: string): Declaration[] {
+  const declarations: Declaration[] = [];
+  for (const attribute of markupOnly(source).matchAll(/\bstyle\s*=\s*(["'])([^"']*)\1/g)) {
+    const style = attribute[2] ?? '';
+    const styleIndex = attribute.index + attribute[0].indexOf(style, attribute[0].indexOf('=') + 1);
+    for (const declaration of style.matchAll(/(zoom\s*:[ \t]*)(\d*\.?\d+)(%?)(?=\s*(?:;|$))/gi)) {
+      const [from, property = '', value = '', percent = ''] = declaration;
+      declarations.push({
+        index: styleIndex + declaration.index,
+        from,
+        property,
+        value: Number.parseFloat(value) / (percent ? 100 : 1),
+        percent: percent !== '',
+      });
+    }
+  }
+  return declarations;
+}
+
+/** Locates the `zoom` declaration of the wrapper in the slide's markdown so that it can be rewritten. */
 function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix | undefined {
   if (analysis.kind !== 'wrapper' || analysis.optimal === undefined) return undefined;
-  const declarations = [...withoutCode(source).matchAll(/zoom:([ \t]*)(\d*\.?\d+)(%?)/g)];
+  const declarations = zoomDeclarations(source);
   // The rewrite is only safe when every zoomed element comes from the markdown, in the same order.
   if (declarations.length !== analysis.count) return undefined;
   const declaration = declarations[analysis.index];
-  if (!declaration) return undefined;
-  const [from, spacing = '', value = '', percent = ''] = declaration;
-  const declared = Number.parseFloat(value) / (percent ? 100 : 1);
-  if (Math.abs(declared - analysis.current) > 1e-6) return undefined;
-  const to = `zoom:${spacing}${percent ? `${Math.round(analysis.optimal * 100)}%` : formatZoom(analysis.optimal)}`;
+  if (!declaration || Math.abs(declaration.value - analysis.current) > 1e-6) return undefined;
+  const value = declaration.percent ? `${Math.round(analysis.optimal * 100)}%` : formatZoom(analysis.optimal);
   const before = source.slice(0, declaration.index);
-  const lineStart = before.lastIndexOf('\n') + 1;
-  return { line: firstLine + before.split('\n').length - 1, column: declaration.index - lineStart, from, to };
+  return {
+    line: firstLine + before.split('\n').length - 1,
+    column: declaration.index - (before.lastIndexOf('\n') + 1),
+    from: declaration.from,
+    to: `${declaration.property}${value}`,
+  };
 }
 
 function toFinding(
@@ -250,9 +291,9 @@ function toFinding(
   source: string,
   firstLine: number
 ): RuleFinding | undefined {
-  const { kind, description, current, optimal } = analysis;
+  const { kind, description, current, optimal, bottom } = analysis;
   const split = 'Consider splitting the content into multiple slides.';
-  const unfit = `does not fit within the slide width with a margin of ${lines(marginLines)} above the slide bottom at any zoom down to ${MIN_ZOOM}`;
+  const unfit = `does not fit within the slide width with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
   if (kind === 'slide') {
     if (optimal === undefined) return { message: `The slide content ${unfit}.`, help: split };
     const wrapper = `<div style="zoom: ${formatZoom(optimal)}">`;
@@ -268,7 +309,7 @@ function toFinding(
   return {
     message:
       current < optimal
-        ? `${element} but still keeps a margin of ${lines(marginLines)} above the slide bottom at ${suggestion}.`
+        ? `${element} but still keeps a margin of ${lines(marginLines)} above ${bottom} at ${suggestion}.`
         : `${element} and ${describeExcess(analysis, marginLines, maxZoom)}; ${suggestion} keeps the margin.`,
     help: `Consider setting \`${suggestion}\`.`,
     fix: fixFor(analysis, source, firstLine),

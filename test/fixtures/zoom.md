@@ -113,3 +113,39 @@ Some text.
 <div style="position: absolute; top: 300px; left: 100px; width: 200px; height: 300px; background: #cde">Tall box</div>
 
 </div>
+
+---
+
+# Image at the bottom
+
+<div style="zoom: 0.5">
+
+Some text above the image.
+
+<div style="width: 300px; height: 160px; background: #cde"></div>
+
+</div>
+
+---
+
+# Left overhang
+
+<div style="zoom: 0.5">
+
+<div style="position: relative; left: -200px; width: 500px; background: #cde">Pushed left</div>
+
+</div>
+
+---
+zoom: 0.8
+---
+
+# Frontmatter zoom and spaced declaration
+
+Current zoom: 0.5 is mentioned in prose.
+
+<div style="zoom : 0.5; color: gray">
+
+- the declaration has spaces around the colon
+
+</div>

@@ -15,7 +15,7 @@ Options:
   --wait <ms>            Extra time to wait before checking (default: 0)
   --timeout <ms>         Timeout for rendering (default: 30000)
   --fix                  Rewrite the slides with the fixes suggested by rules (e.g. the zoom of optimal-zoom)
-  --json                 Print violations as JSON
+  --json                 Print violations as JSON (with --fix: { fixed, violations })
   -h, --help             Show this help
 
 Rules:
@@ -66,10 +66,12 @@ try {
       }
     }
   }
+  // With --fix, the JSON also says how many problems were rewritten, so that a run that fixed
+  // everything can be told apart from one that found nothing.
   const report = values.json
-    ? JSON.stringify(violations, undefined, 2)
+    ? JSON.stringify(values.fix ? { fixed, violations } : violations, undefined, 2)
     : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length, fixed });
-  if (violations.length > 0 || (fixed > 0 && !values.json)) process.stdout.write(`${report}\n`);
+  if (violations.length > 0 || fixed > 0 || values.fix) process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);
