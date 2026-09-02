@@ -65,16 +65,23 @@ function analyzeZoom({
   };
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
-   * border, or image. A painted box covering the slide is a decoration, not content, unless it is
-   * in the flow of the zoomed target (a large image scales with it).
+   * border, or image. A positioned box covering the slide is a decoration, not content; a box in
+   * the flow (a large image) is content whatever its size.
    */
-  const paintedRects = (element: Element, target?: Element): DOMRect[] => {
+  const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     if (!paints(element)) return textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0);
-    const content = target?.contains(element) && !isPositioned(element);
+    const decoration = isPositioned(element);
     return fragments(element).filter(
-      (rect) => rect.width > 0 && rect.height > 0 && (content || !isBackground(rect, bounds))
+      (rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds))
     );
+  };
+  /** Whether the element sits in another column (flex or grid item) than the target. */
+  const inOtherColumn = (element: Element, target: Element): boolean => {
+    let ancestor: Element | null = element.parentElement;
+    while (ancestor && !ancestor.contains(target)) ancestor = ancestor.parentElement;
+    if (!ancestor || ancestor === target || !layout.contains(ancestor)) return false;
+    return /flex|grid/.test(getComputedStyle(ancestor).display);
   };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);
@@ -124,7 +131,7 @@ function analyzeZoom({
         bottom: Number.NEGATIVE_INFINITY,
       };
       for (const element of [target, ...target.querySelectorAll('*')]) {
-        for (const rect of paintedRects(element, target)) {
+        for (const rect of paintedRects(element)) {
           scaled.top = Math.min(scaled.top, rect.top);
           scaled.left = Math.min(scaled.left, rect.left);
           scaled.right = Math.max(scaled.right, rect.right);
@@ -132,13 +139,14 @@ function analyzeZoom({
         }
       }
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
-      // Only content in the target's own column can take the space below it.
+      // Flow content moves with the target unless it sits in another column beside it.
       let bottom = scaled.bottom;
       let lowest: Element | undefined;
       for (const element of layout.querySelectorAll('*')) {
         if (target.contains(element) || isPositioned(element)) continue;
+        if (inOtherColumn(element, target)) continue;
         for (const rect of paintedRects(element)) {
-          if (beside(rect) || rect.bottom <= bottom) continue;
+          if (rect.bottom <= bottom) continue;
           bottom = rect.bottom;
           lowest = element;
         }
@@ -146,7 +154,7 @@ function analyzeZoom({
       if (lowest === undefined) {
         // The target itself is the lowest: find which of its elements ends the content.
         for (const element of [target, ...target.querySelectorAll('*')]) {
-          if (paintedRects(element, target).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
+          if (paintedRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
       let limit = bounds.bottom;
@@ -282,7 +290,7 @@ const markupOnly = (source: string): string =>
   source
     .replace(/^---\n[\s\S]*?\n---(?=\n|$)/, blank)
     // Fenced code (closed by a fence at least as long), indented code, code spans, comments, and sheets.
-    .replaceAll(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\1[^\n]*$/gm, blank)
+    .replaceAll(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\1[`~]*[ \t]*$/gm, blank)
     .replaceAll(/(?<=\n\n)(?:(?: {4}|\t)[^\n]*\n?)+/g, blank)
     .replaceAll(/(`+)(?:(?!\1)[^\n])+\1/g, blank)
     .replaceAll(/<!--[\s\S]*?-->|<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g, blank);
@@ -308,9 +316,9 @@ function* attributesOf(tag: string, tagIndex: number): Generator<{ name: string;
 }
 
 /** The `zoom` declarations in the `style` attributes of the slide's markup, in source order. */
-function zoomDeclarations(source: string): Declaration[] {
+function zoomDeclarations(markup: string): Declaration[] {
   const declarations: Declaration[] = [];
-  for (const tag of markupOnly(source).matchAll(
+  for (const tag of markup.matchAll(
     /<[a-zA-Z][^\s/>]*(?:\s+[^\s"'<>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>/g
   )) {
     const attributes = [...attributesOf(tag[0], tag.index)];
@@ -343,8 +351,9 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
   if (analysis.kind !== 'wrapper' || analysis.optimal === undefined) return undefined;
   // Slot layouts (`::right::` blocks) render slots in template order, not source order, so the
   // declarations cannot be mapped to elements by position.
-  if (/^::[\w-]+::\s*$/m.test(source)) return undefined;
-  const declarations = zoomDeclarations(source);
+  const markup = markupOnly(source);
+  if (/^::[\w-]+::\s*$/m.test(markup)) return undefined;
+  const declarations = zoomDeclarations(markup);
   // The rewrite is only safe when the zoomed elements and the declarations line up one to one
   // with the same values; a bound style or a hidden element breaks that and gets no fix.
   if (

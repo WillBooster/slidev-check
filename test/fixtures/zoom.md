@@ -96,7 +96,7 @@ Outer wrapper in percent.
 
 ```html
 <div style="zoom: 0.8">example</div>
-```
+````
 
 Use `zoom: 0.7` for a smaller body.
 
@@ -214,4 +214,30 @@ Current zoom: 0.5 is mentioned in prose.
 
 Normal body text below.
 
+</div>
+
+---
+
+# Large image below the wrapper
+
+<div style="zoom: 0.5">
+
+Some text above the image.
+
+</div>
+
+<canvas width="960" height="560" style="background: #cde"></canvas>
+
+---
+
+# Narrow block below the wrapper
+
+<div style="zoom: 0.5">
+
+- a tiny wrapper that fits easily
+
+</div>
+
+<div style="margin-left: 60%; width: 35%">
+<p v-for="i in 11" :key="i">Narrow {{ i }}</p>
 </div>

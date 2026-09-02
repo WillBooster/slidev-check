@@ -127,6 +127,8 @@ describe('optimal-zoom', () => {
       ['warn', 18],
       ['warn', 19],
       ['warn', 20],
+      ['warn', 21],
+      ['warn', 22],
     ]);
     const [
       tooSmall,
@@ -140,7 +142,7 @@ describe('optimal-zoom', () => {
       right,
       code,
       positioned,
-      image,
+      bottomBox,
       overhang,
       spaced,
       quoted,
@@ -148,6 +150,8 @@ describe('optimal-zoom', () => {
       blocked,
       column,
       upward,
+      image,
+      narrow,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -187,7 +191,7 @@ describe('optimal-zoom', () => {
     expect(positioned?.fix).toMatchObject({ line: 109, column: 12, from: 'zoom: 0.5' });
     expect(Number.parseFloat(positioned?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(1);
     // A box at the bottom hosts no text, so the line height is taken from its ancestor.
-    expect(image?.fix).toEqual({ line: 121, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(bottomBox?.fix).toEqual({ line: 121, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content hanging off the left edge bounds the zoom too.
     expect(overhang?.message).toMatch(
       /is zoomed to 0\.5 and sticks out of the slide; zoom: 0\.\d+ keeps the margin above the slide bottom\.$/
@@ -209,6 +213,9 @@ describe('optimal-zoom', () => {
     // Content hanging off the top edge bounds the zoom too.
     expect(upward?.fix).toMatchObject({ line: 211, column: 12, from: 'zoom: 0.4' });
     expect(Number.parseFloat(upward?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.6);
+    // Flow content below the wrapper counts whatever its size or horizontal position.
+    expect(image?.message).toMatch(/because `<canvas>` outside it already reaches that far\.$/);
+    expect(narrow?.message).toMatch(/because `<p>Narrow 11` outside it already reaches that far\.$/);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -226,9 +233,9 @@ describe('optimal-zoom', () => {
       expect(lines[156]).toBe('<div style="font-family: \'Arial\'; --zoom: 0.5; zoom: 1">');
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
-      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18]);
+      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22]);
       // The rewritten wrappers keep their content on the slide.
-      expect(violations.filter((v) => v.ruleId === 'no-overflow' && v.slide.no !== 7)).toEqual([]);
+      expect(violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 21, 22].includes(v.slide.no))).toEqual([]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
@@ -243,7 +250,7 @@ describe('--fix --json', () => {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
       expect(result.fixed).toBeGreaterThanOrEqual(16);
-      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18]);
+      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
