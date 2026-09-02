@@ -6,12 +6,15 @@ import type { Fix, Violation } from './types.ts';
  * the file (it changed since it was rendered) are skipped; the count of the applied ones is returned.
  */
 export function applyFixes(violations: Violation[]): number {
-  const fixesByFile = new Map<string, Map<string, Fix>>();
+  const fixesByFile = new Map<string, Map<string, Fix | undefined>>();
   for (const { fix, slide } of violations) {
     if (!fix) continue;
-    const fixes = fixesByFile.get(slide.filepath) ?? new Map<string, Fix>();
-    // A slide imported twice yields the same fix twice; it must be applied once.
-    fixes.set(`${fix.line}:${fix.column}`, fix);
+    const fixes = fixesByFile.get(slide.filepath) ?? new Map<string, Fix | undefined>();
+    const key = `${fix.line}:${fix.column}`;
+    // A slide imported twice yields the same fix twice; it must be applied once. When the copies
+    // disagree (their surroundings differ), neither can be right for both, so the spot is left alone.
+    if (!fixes.has(key)) fixes.set(key, fix);
+    else if (JSON.stringify(fixes.get(key)) !== JSON.stringify(fix)) fixes.set(key, undefined);
     fixesByFile.set(slide.filepath, fixes);
   }
   let applied = 0;
@@ -23,7 +26,8 @@ export function applyFixes(violations: Violation[]): number {
     // and each is checked against the original text.
     let end = Number.POSITIVE_INFINITY;
     let endLine = 0;
-    for (const fix of [...fixes.values()].toSorted((a, b) => b.line - a.line || b.column - a.column)) {
+    const candidates = [...fixes.values()].filter((fix) => fix !== undefined);
+    for (const fix of candidates.toSorted((a, b) => b.line - a.line || b.column - a.column)) {
       const line = lines[fix.line - 1];
       if (fix.line !== endLine) end = Number.POSITIVE_INFINITY;
       if (line === undefined || !line.startsWith(fix.from, fix.column) || fix.column + fix.from.length > end) continue;

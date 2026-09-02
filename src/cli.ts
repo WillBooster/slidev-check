@@ -72,7 +72,9 @@ try {
   const report = values.json
     ? JSON.stringify(values.fix ? { fixed, violations } : violations, undefined, 2)
     : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length, fixed });
-  if (report) process.stdout.write(`${report}\n`);
+  // A clean run prints nothing, except that `--fix --json` always reports the number of fixes.
+  if (report && (violations.length > 0 || fixed > 0 || (values.fix && values.json)))
+    process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);

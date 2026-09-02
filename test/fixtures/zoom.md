@@ -122,7 +122,7 @@ Some text.
 
 Some text above the image.
 
-<div style="width: 300px; height: 160px; background: #cde"></div>
+<canvas width="300" height="160" style="background: #cde"></canvas>
 
 </div>
 
@@ -171,3 +171,15 @@ Current zoom: 0.5 is mentioned in prose.
 - only this wrapper is analyzed
 
 </div>
+
+---
+
+# Wrapper is fine, other content takes the space
+
+<div style="zoom: 0.5">
+
+- a tiny wrapper that fits easily
+
+</div>
+
+<p v-for="i in 11" :key="i">Unwrapped line {{ i }} that fills the slide</p>

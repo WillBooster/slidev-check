@@ -34,6 +34,8 @@ describe('cli', () => {
     const fix = await runCli(fixture('clean.md'), '--fix');
     expect(fix.stdout).toBe('');
     expect(fix.exitCode).toBe(0);
+    const json = await runCli(fixture('clean.md'), '--json');
+    expect(json.stdout).toBe('');
   }, 180_000);
 
   test('reports elements that overflow the slide', async () => {
@@ -121,6 +123,7 @@ describe('optimal-zoom', () => {
       ['warn', 15],
       ['warn', 16],
       ['warn', 17],
+      ['warn', 18],
     ]);
     const [
       tooSmall,
@@ -139,6 +142,7 @@ describe('optimal-zoom', () => {
       spaced,
       quoted,
       lookAlike,
+      blocked,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -147,7 +151,7 @@ describe('optimal-zoom', () => {
     expect(tooSmall?.fix).toEqual({ line: 13, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Values bound by the geometry may shift by a step with the font metrics of the machine.
     expect(tooLarge?.message).toMatch(
-      /is zoomed to 1 and overflows the slide bottom; zoom: 0\.(?:79|8|81) keeps the margin\.$/
+      /is zoomed to 1 and overflows the slide bottom; zoom: 0\.(?:79|8|81) keeps the margin above the slide bottom\.$/
     );
     expect(tooLarge?.fix).toMatchObject({ line: 25, column: 12, from: 'zoom: 1' });
     expect(noWrapper?.message).toMatch(
@@ -181,7 +185,7 @@ describe('optimal-zoom', () => {
     expect(image?.fix).toEqual({ line: 121, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content hanging off the left edge bounds the zoom too.
     expect(overhang?.message).toMatch(
-      /is zoomed to 0\.5 and sticks out of the slide horizontally; zoom: 0\.\d+ keeps the margin\.$/
+      /is zoomed to 0\.5 and sticks out of the slide horizontally; zoom: 0\.\d+ keeps the margin above the slide bottom\.$/
     );
     expect(Number.parseFloat(overhang?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.5);
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
@@ -190,6 +194,11 @@ describe('optimal-zoom', () => {
     expect(quoted?.fix).toEqual({ line: 157, column: 47, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Neither an ignored zoomed element nor a `data-style` attribute counts as a declaration.
     expect(lookAlike?.fix).toEqual({ line: 169, column: 35, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // Content outside the wrapper that takes the space is named instead of blaming the wrapper.
+    expect(blocked?.message).toMatch(
+      /^Element `<div>a tiny wrapper[^`]*` is zoomed to 0\.5 and cannot keep a margin of 1 line above the slide bottom at any zoom down to 0\.1, because `<p>Unwrapped line[^`]*` outside it already reaches that far\.$/
+    );
+    expect(blocked?.fix).toBeUndefined();
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -207,7 +216,7 @@ describe('optimal-zoom', () => {
       expect(lines[156]).toBe('<div style="font-family: \'Arial\'; --zoom: 0.5; zoom: 1">');
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
-      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7]);
+      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18]);
       // The rewritten wrappers keep their content on the slide.
       expect(violations.filter((v) => v.ruleId === 'no-overflow' && v.slide.no !== 7)).toEqual([]);
     } finally {
@@ -224,7 +233,7 @@ describe('--fix --json', () => {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
       expect(result.fixed).toBeGreaterThanOrEqual(14);
-      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7]);
+      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18]);
     } finally {
       fs.rmSync(copy, { force: true });
     }

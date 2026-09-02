@@ -13,8 +13,8 @@ interface ZoomAnalysis {
   description: string;
   /** Position of the wrapper among all elements with an inline `zoom` style on the slide, in DOM order. */
   index: number;
-  /** Number of elements with an inline `zoom` style on the slide. */
-  count: number;
+  /** Resolved zooms of all elements with an inline `zoom` style on the slide, in DOM order. */
+  zooms: number[];
   current: number;
   /** Lines of margin left above the bottom limit at the current zoom. */
   currentMargin: number;
@@ -24,6 +24,10 @@ interface ZoomAnalysis {
   bottom: string;
   /** Largest zoom keeping the required margin, or `undefined` if none does. */
   optimal: number | undefined;
+  /** What bounds the content from below at the optimal zoom. */
+  optimalBottom: string;
+  /** Content outside the target that already takes the margin at the smallest zoom, when nothing fits. */
+  blockedBy: string | undefined;
   /** For the `slide` kind: whether a heading precedes the body that would be wrapped. */
   belowHeading?: boolean;
 }
@@ -52,18 +56,25 @@ function analyzeZoom({
   const bounds = container.getBoundingClientRect();
 
   const isSvgInternal = (element: Element): boolean => element.tagName !== 'svg' && element.closest('svg') !== null;
-  /** Painted pieces of one element: its text lines, and its boxes when it paints a background, border, or image. */
-  const paintedRects = (element: Element): DOMRect[] => {
-    if (!isChecked(element) || isSvgInternal(element)) return [];
-    const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects.filter((rect) => rect.width > 0 && rect.height > 0);
-  };
   const isPositioned = (element: Element): boolean => {
     for (let current: Element | null = element; current && current !== layout; current = current.parentElement) {
       const position = getComputedStyle(current).position;
       if (position === 'absolute' || position === 'fixed') return true;
     }
     return false;
+  };
+  /**
+   * Painted pieces of one element: its text lines, and its boxes when it paints a background,
+   * border, or image. A painted box covering the slide is a decoration, not content, unless it is
+   * in the flow of the zoomed target (a large image scales with it).
+   */
+  const paintedRects = (element: Element, target?: Element): DOMRect[] => {
+    if (!isChecked(element) || isSvgInternal(element)) return [];
+    if (!paints(element)) return textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0);
+    const content = target?.contains(element) && !isPositioned(element);
+    return fragments(element).filter(
+      (rect) => rect.width > 0 && rect.height > 0 && (content || !isBackground(rect, bounds))
+    );
   };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);
@@ -90,21 +101,29 @@ function analyzeZoom({
     (element): element is HTMLElement =>
       element instanceof HTMLElement && element.style.zoom !== '' && isChecked(element)
   );
+  const zooms = zoomed.map(resolvedZoom);
 
-  const analyze = (targets: HTMLElement[], kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
-    const inTargets = (element: Element): boolean => targets.some((target) => target.contains(element));
-    const measure = (zoom: number): { measurable: boolean; lines: number; fitsWidth: boolean; bottom: string } => {
-      for (const target of targets) target.style.zoom = String(zoom);
-      // The targets scale with the zoom, and the rest of the flow moves with them; positioned
-      // elements outside the targets stay where they are and bound the space instead.
+  interface Measurement {
+    measurable: boolean;
+    lines: number;
+    fitsWidth: boolean;
+    bottom: string;
+    /** The lowest content, when it lies outside the target. */
+    outside: string | undefined;
+  }
+
+  const analyze = (target: HTMLElement, kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
+    const measure = (zoom: number): Measurement => {
+      target.style.zoom = String(zoom);
+      // The target scales with the zoom, and the rest of the flow moves with it; positioned
+      // elements outside the target stay where they are and bound the space instead.
       let bottom = Number.NEGATIVE_INFINITY;
       let lowest: Element | undefined;
       const scaled = { top: Number.POSITIVE_INFINITY, left: Number.POSITIVE_INFINITY, right: Number.NEGATIVE_INFINITY };
       for (const element of layout.querySelectorAll('*')) {
-        const inside = inTargets(element);
+        const inside = target.contains(element);
         if (!inside && isPositioned(element)) continue;
-        for (const rect of paintedRects(element)) {
-          if (isBackground(rect, bounds)) continue;
+        for (const rect of paintedRects(element, target)) {
           if (rect.bottom > bottom) {
             bottom = rect.bottom;
             lowest = element;
@@ -118,15 +137,9 @@ function analyzeZoom({
       let limit = bounds.bottom;
       let limitedBy: Element | undefined;
       for (const element of container.querySelectorAll('*')) {
-        if (inTargets(element) || (layout.contains(element) && !isPositioned(element))) continue;
+        if (target.contains(element) || (layout.contains(element) && !isPositioned(element))) continue;
         for (const rect of paintedRects(element)) {
-          if (
-            isBackground(rect, bounds) ||
-            rect.top < scaled.top ||
-            rect.right <= scaled.left ||
-            rect.left >= scaled.right
-          )
-            continue;
+          if (rect.top < scaled.top || rect.right <= scaled.left || rect.left >= scaled.right) continue;
           if (rect.top < limit) {
             limit = rect.top;
             limitedBy = element;
@@ -137,50 +150,61 @@ function analyzeZoom({
       // so that wrappers with different text sizes agree on how much space is left.
       const line = lowest ? lineHeightAt(lowest) : Number.NaN;
       return {
-        measurable: line > 0,
+        measurable: line > 0 && scaled.right > scaled.left,
         lines: (limit - bottom) / line,
         fitsWidth: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
+        outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };
     };
-    const fits = (hundredths: number): boolean => {
-      const { measurable, lines, fitsWidth } = measure(hundredths * step);
-      return measurable && fitsWidth && lines >= marginLines - 1e-6;
-    };
+    const fits = (measurement: Measurement): boolean =>
+      measurement.measurable && measurement.fitsWidth && measurement.lines >= marginLines - 1e-6;
 
-    const originals = targets.map((target) => target.style.zoom);
-    const current = resolvedZoom(targets[0] ?? layout);
+    const original = target.style.zoom;
+    const current = resolvedZoom(target);
     const at = measure(current);
     let optimal: number | undefined;
+    let best = at;
+    let blockedBy: string | undefined;
     if (at.measurable) {
       // Content height grows with the zoom (both the scale and the wrapping increase), so the
       // largest fitting zoom can be found by bisection over hundredths.
       const hi = Math.floor(maxZoom / step + 1e-9);
       const lo = Math.round(minZoom / step);
-      if (fits(hi)) optimal = hi * step;
-      else if (fits(lo)) {
+      const atHigh = measure(hi * step);
+      const atLow = fits(atHigh) ? atHigh : measure(lo * step);
+      if (fits(atHigh)) {
+        optimal = hi * step;
+        best = atHigh;
+      } else if (fits(atLow)) {
         let good = lo;
         let bad = hi;
+        best = atLow;
         while (bad - good > 1) {
           const mid = Math.floor((good + bad) / 2);
-          if (fits(mid)) good = mid;
-          else bad = mid;
+          const measurement = measure(mid * step);
+          if (fits(measurement)) {
+            good = mid;
+            best = measurement;
+          } else bad = mid;
         }
         optimal = good * step;
-      }
+      } else blockedBy = atLow.outside;
     }
-    for (const [i, target] of targets.entries()) target.style.zoom = originals[i] ?? '';
+    target.style.zoom = original;
     if (!at.measurable) return undefined;
     return {
       kind,
-      description: describe(targets[0] ?? layout),
+      description: describe(target),
       index,
-      count: zoomed.length,
+      zooms,
       current,
       currentMargin: at.lines,
       currentFitsWidth: at.fitsWidth,
       bottom: at.bottom,
       optimal,
+      optimalBottom: best.bottom,
+      blockedBy,
     };
   };
 
@@ -191,7 +215,7 @@ function analyzeZoom({
     const originals = wrappers.map((wrapper) => wrapper.style.zoom);
     const analyses: ZoomAnalysis[] = [];
     for (const wrapper of wrappers) {
-      const analysis = analyze([wrapper], 'wrapper', zoomed.indexOf(wrapper));
+      const analysis = analyze(wrapper, 'wrapper', zoomed.indexOf(wrapper));
       if (!analysis) continue;
       analyses.push(analysis);
       if (analysis.optimal !== undefined) wrapper.style.zoom = String(analysis.optimal);
@@ -214,7 +238,7 @@ function analyzeZoom({
   body[0]?.before(wrapper);
   wrapper.append(...body);
   wrapper.style.zoom = '1';
-  const analysis = analyze([wrapper], 'slide', -1);
+  const analysis = analyze(wrapper, 'slide', -1);
   wrapper.replaceWith(...wrapper.childNodes);
   if (!analysis || (analysis.optimal !== undefined && analysis.optimal > analysis.current - step / 2)) return [];
   return [{ ...analysis, belowHeading: heading !== null }];
@@ -240,10 +264,11 @@ const blank = (match: string): string => match.replaceAll(/[^\n]/g, ' ');
 const markupOnly = (source: string): string =>
   source
     .replace(/^---\n[\s\S]*?\n---(?=\n|$)/, blank)
-    .replaceAll(
-      /```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|<!--[\s\S]*?-->|<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g,
-      blank
-    );
+    // Fenced code (closed by a fence at least as long), indented code, code spans, comments, and sheets.
+    .replaceAll(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\1[^\n]*$/gm, blank)
+    .replaceAll(/(?<=\n\n)(?:(?: {4}|\t)[^\n]*\n?)+/g, blank)
+    .replaceAll(/(`+)(?:(?!\1)[^\n])+\1/g, blank)
+    .replaceAll(/<!--[\s\S]*?-->|<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g, blank);
 
 interface Declaration {
   /** Offset of `from` in the source. */
@@ -300,10 +325,15 @@ function zoomDeclarations(source: string): Declaration[] {
 function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix | undefined {
   if (analysis.kind !== 'wrapper' || analysis.optimal === undefined) return undefined;
   const declarations = zoomDeclarations(source);
-  // The rewrite is only safe when every zoomed element comes from the markdown, in the same order.
-  if (declarations.length !== analysis.count) return undefined;
+  // The rewrite is only safe when the zoomed elements and the declarations line up one to one
+  // with the same values; a bound style or a hidden element breaks that and gets no fix.
+  if (
+    declarations.length !== analysis.zooms.length ||
+    declarations.some((declaration, i) => Math.abs(declaration.value - (analysis.zooms[i] ?? Number.NaN)) > 1e-6)
+  )
+    return undefined;
   const declaration = declarations[analysis.index];
-  if (!declaration || Math.abs(declaration.value - analysis.current) > 1e-6) return undefined;
+  if (!declaration) return undefined;
   const value = declaration.percent ? `${Math.round(analysis.optimal * 100)}%` : formatZoom(analysis.optimal);
   const before = source.slice(0, declaration.index);
   return {
@@ -320,9 +350,11 @@ function toFinding(
   source: string,
   firstLine: number
 ): RuleFinding | undefined {
-  const { kind, description, current, optimal, bottom } = analysis;
+  const { kind, description, current, optimal, bottom, optimalBottom, blockedBy } = analysis;
   const split = 'Consider splitting the content into multiple slides.';
-  const unfit = `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
+  const unfit = blockedBy
+    ? `cannot keep a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}, because \`${blockedBy}\` outside it already reaches that far`
+    : `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
   if (kind === 'slide') {
     if (optimal === undefined) return { message: `The slide content ${unfit}.`, help: split };
     const wrapper = `<div style="zoom: ${formatZoom(optimal)}">`;
@@ -338,8 +370,8 @@ function toFinding(
   return {
     message:
       current < optimal
-        ? `${element} but still keeps a margin of ${lines(marginLines)} above ${bottom} at ${suggestion}.`
-        : `${element} and ${describeExcess(analysis, marginLines, maxZoom)}; ${suggestion} keeps the margin.`,
+        ? `${element} but still keeps a margin of ${lines(marginLines)} above ${optimalBottom} at ${suggestion}.`
+        : `${element} and ${describeExcess(analysis, marginLines, maxZoom)}; ${suggestion} keeps the margin above ${optimalBottom}.`,
     help: `Consider setting \`${suggestion}\`.`,
     fix: fixFor(analysis, source, firstLine),
   };
