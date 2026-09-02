@@ -18,8 +18,8 @@ interface ZoomAnalysis {
   current: number;
   /** Lines of margin left above the bottom limit at the current zoom. */
   currentMargin: number;
-  /** Whether the zoomed content stays within the slide width at the current zoom. */
-  currentFitsWidth: boolean;
+  /** Whether the zoomed content stays within the left, right, and top edges of the slide at the current zoom. */
+  currentFitsBounds: boolean;
   /** What bounds the content from below at the current zoom: the slide bottom or a fixed element above it. */
   bottom: string;
   /** Largest zoom keeping the required margin, or `undefined` if none does. */
@@ -89,7 +89,9 @@ function analyzeZoom({
     if (!/flex|grid/.test(getComputedStyle(container).display)) return false;
     const a = itemOf(element, container)?.getBoundingClientRect();
     const b = itemOf(target, container)?.getBoundingClientRect();
-    return a !== undefined && b !== undefined && (a.right <= b.left + 1 || a.left >= b.right - 1);
+    if (!a || !b) return false;
+    // Beside means on the same row: apart horizontally while overlapping vertically.
+    return (a.right <= b.left + 1 || a.left >= b.right - 1) && a.bottom > b.top && a.top < b.bottom;
   };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);
@@ -121,7 +123,7 @@ function analyzeZoom({
   interface Measurement {
     measurable: boolean;
     lines: number;
-    fitsWidth: boolean;
+    fitsBounds: boolean;
     bottom: string;
     /** The lowest content, when it lies outside the target. */
     outside: string | undefined;
@@ -185,13 +187,13 @@ function analyzeZoom({
       return {
         measurable: line > 0 && scaled.right > scaled.left,
         lines: (limit - bottom) / line,
-        fitsWidth: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1 && scaled.top >= bounds.top - 1,
+        fitsBounds: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1 && scaled.top >= bounds.top - 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
         outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };
     };
     const fits = (measurement: Measurement): boolean =>
-      measurement.measurable && measurement.fitsWidth && measurement.lines >= marginLines - 1e-6;
+      measurement.measurable && measurement.fitsBounds && measurement.lines >= marginLines - 1e-6;
 
     const original = target.style.zoom;
     const current = resolvedZoom(target);
@@ -223,7 +225,7 @@ function analyzeZoom({
             } else bad = mid;
           }
           optimal = good * step;
-        } else if (atLow.measurable && atLow.fitsWidth) blockedBy = atLow.outside;
+        } else if (atLow.measurable && atLow.fitsBounds) blockedBy = atLow.outside;
       }
     }
     target.style.zoom = original;
@@ -235,7 +237,7 @@ function analyzeZoom({
       zooms,
       current,
       currentMargin: at.lines,
-      currentFitsWidth: at.fitsWidth,
+      currentFitsBounds: at.fitsBounds,
       bottom: at.bottom,
       optimal,
       optimalBottom: best.bottom,
@@ -287,9 +289,9 @@ const lines = (n: number): string => `${n} line${n === 1 ? '' : 's'}`;
 
 /** Why the current zoom is too large, from the actual measurement. */
 function describeExcess(analysis: ZoomAnalysis, marginLines: number, maxZoom: number): string {
-  const { current, currentMargin, currentFitsWidth, bottom } = analysis;
+  const { current, currentMargin, currentFitsBounds, bottom } = analysis;
   if (current > maxZoom) return `exceeds the maximum zoom of ${formatZoom(maxZoom)}`;
-  if (!currentFitsWidth) return 'sticks out of the slide';
+  if (!currentFitsBounds) return 'sticks out of the slide';
   if (currentMargin < 0) return bottom === 'the slide bottom' ? 'overflows the slide bottom' : `overlaps ${bottom}`;
   return `leaves only ${currentMargin.toFixed(1)} lines of margin above ${bottom} (minimum ${marginLines})`;
 }
@@ -300,7 +302,7 @@ const markupOnly = (source: string): string =>
   source
     .replace(/^---\n[\s\S]*?\n---(?=\n|$)/, blank)
     // Fenced code (closed by a fence at least as long), indented code, code spans, comments, and sheets.
-    .replaceAll(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\1[`~]*[ \t]*$/gm, blank)
+    .replaceAll(/^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n {0,3}\1[`~]*[ \t]*$/gm, blank)
     .replaceAll(/(?<=\n\n)(?:(?: {4}|\t)[^\n]*\n?)+/g, blank)
     .replaceAll(/(`+)(?:(?!\1)[^\n])+\1/g, blank)
     .replaceAll(/<!--[\s\S]*?-->|<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g, blank);
@@ -362,7 +364,7 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
   // Slot layouts (`::right::` blocks) render slots in template order, not source order, so the
   // declarations cannot be mapped to elements by position.
   const markup = markupOnly(source);
-  if (/^::[\w-]+::\s*$/m.test(markup)) return undefined;
+  if (/^::\s*[\w.\-:]+\s*::\s*$/m.test(markup)) return undefined;
   const declarations = zoomDeclarations(markup);
   // The rewrite is only safe when the zoomed elements and the declarations line up one to one
   // with the same values; a bound style or a hidden element breaks that and gets no fix.
