@@ -24,7 +24,7 @@ export async function check(options: CheckOptions): Promise<Violation[]> {
   const deck = await renderDeck(options);
   try {
     const violations: Violation[] = [];
-    for (const slide of deck.slides) {
+    for (const { source, ...slide } of deck.slides) {
       const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
       if ((await deck.page.locator(containerSelector).count()) === 0) continue; // hidden slide
       for (const rule of rules) {
@@ -32,6 +32,7 @@ export async function check(options: CheckOptions): Promise<Violation[]> {
         const findings = await rule.check({
           page: deck.page,
           slide,
+          source,
           containerSelector,
           width: deck.width,
           height: deck.height,

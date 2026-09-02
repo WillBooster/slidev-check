@@ -15,6 +15,7 @@ export const defaultRules = {
   'no-overlap': 'error',
   'max-heading-lines': ['warn', { max: 1 }],
   'min-font-size': ['warn', { min: 14 }],
+  'optimal-zoom': ['warn', { marginLines: 1, maxZoom: 1 }],
 } as const satisfies Record<string, RuleSetting>;
 
 export type RuleId = keyof typeof defaultRules;

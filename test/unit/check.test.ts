@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import fs from 'node:fs';
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 import { check } from '../../src/check.ts';
@@ -36,9 +37,13 @@ describe('cli', () => {
     expect(exitCode).toBe(1);
     expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
       ['no-overflow', 'error', 2],
+      ['optimal-zoom', 'warn', 2],
       ['no-overflow', 'error', 3],
     ]);
-    const [text, box] = violations;
+    const [text, zoom, box] = violations;
+    expect(zoom?.message).toMatch(
+      /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.\d+">` keeps the margin\.$/
+    );
     expect(text?.message).toMatch(/overflows the slide by \d+px at the bottom/);
     expect(text?.message).toContain('Line 12');
     expect(box?.message).toMatch(/overflows the slide by 220px at the right/);
@@ -86,6 +91,60 @@ describe('cli', () => {
     expect(violations[0]?.message).toMatch(/has a font size of 12px, smaller than the minimum of 14px/);
     expect(violations[0]?.help).toBe('Consider increasing the font size.');
   }, 90_000);
+});
+
+const zoomViolations = (violations: Violation[]): Violation[] => violations.filter((v) => v.ruleId === 'optimal-zoom');
+
+describe('optimal-zoom', () => {
+  test('warns on zoom wrappers that are too small, too large, or cannot fit, and on tight slides without one', async () => {
+    const { violations } = await runCliJson(fixture('zoom.md'));
+    const zoom = zoomViolations(violations);
+    expect(zoom.map((v) => [v.severity, v.slide.no])).toEqual([
+      ['warn', 2],
+      ['warn', 3],
+      ['warn', 4],
+      ['warn', 6],
+      ['warn', 7],
+    ]);
+    const [tooSmall, tooLarge, noWrapper, percent, cannotFit] = zoom;
+    expect(tooSmall?.message).toMatch(
+      /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
+    );
+    expect(tooSmall?.help).toBe('Consider setting `zoom: 1`.');
+    expect(tooSmall?.fix).toEqual({ line: 13, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(tooLarge?.message).toMatch(/is zoomed to 1 and overflows the slide bottom; zoom: 0\.8 keeps the margin\.$/);
+    expect(tooLarge?.fix).toEqual({ line: 25, from: 'zoom: 1', to: 'zoom: 0.8' });
+    expect(noWrapper?.message).toMatch(
+      /^The slide content leaves only 0\.0 lines of margin above the slide bottom \(minimum 1\); wrapping it in `<div style="zoom: 0\.95">` keeps the margin\.$/
+    );
+    expect(noWrapper?.help).toBe('Consider wrapping the content below the heading in `<div style="zoom: 0.95">`.');
+    expect(noWrapper?.fix).toBeUndefined();
+    // Only the outermost wrapper is checked, and a percent value is rewritten as a percent.
+    expect(percent?.message).toMatch(/^Element `<div>Outer wrapper[^`]*` is zoomed to 0\.6 but still keeps/);
+    expect(percent?.fix).toEqual({ line: 47, from: 'zoom: 60%', to: 'zoom: 100%' });
+    expect(cannotFit?.message).toMatch(
+      /is zoomed to 0\.5 and does not fit with a margin of 1 line above the slide bottom at any zoom down to 0\.1\.$/
+    );
+    expect(cannotFit?.help).toBe('Consider splitting the content into multiple slides.');
+    expect(cannotFit?.fix).toBeUndefined();
+  }, 90_000);
+
+  test('--fix rewrites the zoom declarations to the optimal values', async () => {
+    const copy = fixture('zoom-fixed.md');
+    fs.copyFileSync(fixture('zoom.md'), copy);
+    try {
+      const { stdout } = await runCli(copy, '--fix');
+      expect(stripVTControlCharacters(stdout)).toContain('Fixed 3 problems.');
+      const lines = fs.readFileSync(copy, 'utf8').split('\n');
+      expect(lines[12]).toBe('<div style="zoom: 1">');
+      expect(lines[24]).toBe('<div style="zoom: 0.8">');
+      expect(lines[46]).toBe('<div style="zoom: 100%">');
+      const { violations } = await runCliJson(copy);
+      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7]);
+    } finally {
+      fs.rmSync(copy, { force: true });
+    }
+  }, 180_000);
 });
 
 describe('check API', () => {

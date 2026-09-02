@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { check } from './check.ts';
+import { applyFixes } from './fix.ts';
 import { formatViolations } from './report.ts';
 import { allRules } from './rules/index.ts';
 
@@ -13,6 +14,7 @@ Options:
   -t, --theme <name>     Override the theme
   --wait <ms>            Extra time to wait before checking (default: 0)
   --timeout <ms>         Timeout for rendering (default: 30000)
+  --fix                  Rewrite the slides with the fixes suggested by rules (e.g. the zoom of optimal-zoom)
   --json                 Print violations as JSON
   -h, --help             Show this help
 
@@ -27,6 +29,7 @@ const { values, positionals } = parseArgs({
     theme: { type: 'string', short: 't' },
     wait: { type: 'string', default: '0' },
     timeout: { type: 'string', default: '30000' },
+    fix: { type: 'boolean', default: false },
     json: { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
@@ -40,16 +43,23 @@ if (values.help || !entry) {
 
 try {
   const startedAt = performance.now();
-  const violations = await check({
+  const options = {
     entry: path.resolve(entry),
     theme: values.theme,
     wait: Number(values.wait),
     timeout: Number(values.timeout),
-  });
+  };
+  let violations = await check(options);
+  let fixed = 0;
+  if (values.fix) {
+    fixed = applyFixes(violations);
+    // A fix changes the rendered deck, so the remaining violations are collected from a fresh render.
+    if (fixed > 0) violations = await check(options);
+  }
   const report = values.json
     ? JSON.stringify(violations, undefined, 2)
-    : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length });
-  if (violations.length > 0) process.stdout.write(`${report}\n`);
+    : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length, fixed });
+  if (violations.length > 0 || (fixed > 0 && !values.json)) process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);
