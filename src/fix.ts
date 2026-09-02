@@ -13,11 +13,12 @@ export function applyFixes(violations: Violation[]): number {
   let applied = 0;
   for (const [filepath, fixes] of fixesByFile) {
     const lines = fs.readFileSync(filepath, 'utf8').split('\n');
-    for (const fix of fixes) {
+    // Fixes on one line are applied from right to left so that earlier offsets stay valid,
+    // and each is checked against the original text: the file may have changed since it was rendered.
+    for (const fix of fixes.toSorted((a, b) => b.line - a.line || b.column - a.column)) {
       const line = lines[fix.line - 1];
-      // The file may have changed since it was rendered; only rewrite what still matches.
-      if (line === undefined || !line.includes(fix.from)) continue;
-      lines[fix.line - 1] = line.replace(fix.from, fix.to);
+      if (line === undefined || !line.startsWith(fix.from, fix.column)) continue;
+      lines[fix.line - 1] = line.slice(0, fix.column) + fix.to + line.slice(fix.column + fix.from.length);
       applied++;
     }
     fs.writeFileSync(filepath, lines.join('\n'));

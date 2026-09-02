@@ -17,7 +17,9 @@ export type Severity = 'error' | 'warn' | 'off';
 export interface Fix {
   /** 1-based line number in the file. */
   line: number;
-  /** Text on that line to replace (its first occurrence). */
+  /** 0-based character offset of `from` within the line. */
+  column: number;
+  /** Text at that position to replace. */
   from: string;
   to: string;
 }

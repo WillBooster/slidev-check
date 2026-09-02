@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 import { check } from '../../src/check.ts';
+import { applyFixes } from '../../src/fix.ts';
 import { allRules } from '../../src/rules/index.ts';
-import type { Violation } from '../../src/types.ts';
+import type { Fix, Violation } from '../../src/types.ts';
 
 const fixture = (name: string): string => path.join(import.meta.dirname, '../fixtures', name);
 const options = { wait: 0, timeout: 60_000 };
@@ -105,46 +106,101 @@ describe('optimal-zoom', () => {
       ['warn', 4],
       ['warn', 6],
       ['warn', 7],
+      ['warn', 9],
+      ['warn', 9],
+      ['warn', 10],
+      ['warn', 10],
+      ['warn', 11],
+      ['warn', 12],
     ]);
-    const [tooSmall, tooLarge, noWrapper, percent, cannotFit] = zoom;
+    const [tooSmall, tooLarge, noWrapper, percent, cannotFit, top, bottom, left, right, code, positioned] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
     );
     expect(tooSmall?.help).toBe('Consider setting `zoom: 1`.');
-    expect(tooSmall?.fix).toEqual({ line: 13, from: 'zoom: 0.5', to: 'zoom: 1' });
-    expect(tooLarge?.message).toMatch(/is zoomed to 1 and overflows the slide bottom; zoom: 0\.8 keeps the margin\.$/);
-    expect(tooLarge?.fix).toEqual({ line: 25, from: 'zoom: 1', to: 'zoom: 0.8' });
-    expect(noWrapper?.message).toMatch(
-      /^The slide content leaves only 0\.0 lines of margin above the slide bottom \(minimum 1\); wrapping it in `<div style="zoom: 0\.95">` keeps the margin\.$/
+    expect(tooSmall?.fix).toEqual({ line: 13, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // Values bound by the geometry may shift by a step with the font metrics of the machine.
+    expect(tooLarge?.message).toMatch(
+      /is zoomed to 1 and overflows the slide bottom; zoom: 0\.(?:79|8|81) keeps the margin\.$/
     );
-    expect(noWrapper?.help).toBe('Consider wrapping the content below the heading in `<div style="zoom: 0.95">`.');
+    expect(tooLarge?.fix).toMatchObject({ line: 25, column: 12, from: 'zoom: 1' });
+    expect(noWrapper?.message).toMatch(
+      /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.9[2-4]">` keeps the margin\.$/
+    );
+    expect(noWrapper?.help).toMatch(
+      /^Consider wrapping the content below the heading in `<div style="zoom: 0\.9[2-4]">`\.$/
+    );
     expect(noWrapper?.fix).toBeUndefined();
     // Only the outermost wrapper is checked, and a percent value is rewritten as a percent.
     expect(percent?.message).toMatch(/^Element `<div>Outer wrapper[^`]*` is zoomed to 0\.6 but still keeps/);
-    expect(percent?.fix).toEqual({ line: 47, from: 'zoom: 60%', to: 'zoom: 100%' });
+    expect(percent?.fix).toEqual({ line: 47, column: 12, from: 'zoom: 60%', to: 'zoom: 100%' });
     expect(cannotFit?.message).toMatch(
-      /is zoomed to 0\.5 and does not fit with a margin of 1 line above the slide bottom at any zoom down to 0\.1\.$/
+      /is zoomed to 0\.5 and does not fit within the slide width with a margin of 1 line above the slide bottom at any zoom down to 0\.1\.$/
     );
     expect(cannotFit?.help).toBe('Consider splitting the content into multiple slides.');
     expect(cannotFit?.fix).toBeUndefined();
+    // Sibling wrappers are optimized in document order: the second one gets the space left by the first.
+    expect(top?.fix).toEqual({ line: 77, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(bottom?.fix).toMatchObject({ line: 81, column: 12, from: 'zoom: 0.5' });
+    expect(Number.parseFloat(bottom?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(1);
+    // Two declarations on one line are told apart by their column.
+    expect(left?.fix).toEqual({ line: 89, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(right?.fix).toEqual({ line: 89, column: 45, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // `zoom:` inside code does not disturb the mapping to the wrapper's declaration.
+    expect(code?.fix).toEqual({ line: 95, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
+    // Positioned content inside the wrapper scales with it and bounds the zoom.
+    expect(positioned?.fix).toMatchObject({ line: 109, column: 12, from: 'zoom: 0.5' });
+    expect(Number.parseFloat(positioned?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(1);
   }, 90_000);
 
-  test('--fix rewrites the zoom declarations to the optimal values', async () => {
+  test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
     const copy = fixture('zoom-fixed.md');
     fs.copyFileSync(fixture('zoom.md'), copy);
     try {
       const { stdout } = await runCli(copy, '--fix');
-      expect(stripVTControlCharacters(stdout)).toContain('Fixed 3 problems.');
+      expect(stripVTControlCharacters(stdout)).toContain('Fixed 9 problems.');
       const lines = fs.readFileSync(copy, 'utf8').split('\n');
       expect(lines[12]).toBe('<div style="zoom: 1">');
-      expect(lines[24]).toBe('<div style="zoom: 0.8">');
+      expect(lines[24]).toMatch(/^<div style="zoom: 0\.(?:79|8|81)">$/);
       expect(lines[46]).toBe('<div style="zoom: 100%">');
+      expect(lines[88]).toBe('<div style="zoom: 1">left</div><div style="zoom: 1">right</div>');
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7]);
+      // The rewritten wrappers keep their content on the slide.
+      expect(violations.filter((v) => v.ruleId === 'no-overflow' && v.slide.no !== 7)).toEqual([]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
   }, 180_000);
+});
+
+describe('applyFixes', () => {
+  test('applies fixes by position, so several on one line do not disturb each other', () => {
+    const file = fixture('fixes.tmp.md');
+    fs.writeFileSync(file, 'a\n<div style="zoom: 0.5">x</div><div style="zoom: 0.5">y</div>\nzoom: 0.5\n');
+    try {
+      const slide = { no: 1, filepath: file, line: 1, title: undefined };
+      const violation = (fix: Fix): Violation => ({
+        ruleId: 'optimal-zoom',
+        severity: 'warn',
+        slide,
+        message: '',
+        help: '',
+        fix,
+      });
+      const applied = applyFixes([
+        violation({ line: 2, column: 12, from: 'zoom: 0.5', to: 'zoom: 0.55' }),
+        violation({ line: 2, column: 42, from: 'zoom: 0.5', to: 'zoom: 0.9' }),
+        violation({ line: 3, column: 3, from: 'zoom: 0.5', to: 'zoom: 1' }), // stale: the text moved
+      ]);
+      expect(applied).toBe(2);
+      expect(fs.readFileSync(file, 'utf8')).toBe(
+        'a\n<div style="zoom: 0.55">x</div><div style="zoom: 0.9">y</div>\nzoom: 0.5\n'
+      );
+    } finally {
+      fs.rmSync(file, { force: true });
+    }
+  });
 });
 
 describe('check API', () => {

@@ -2,19 +2,15 @@ import type { Rule, RuleFinding } from '../types.ts';
 
 /** Overlaps narrower than this in either direction are treated as touching, not overlapping. */
 const TOLERANCE_PX = 2;
-/** Painted boxes covering at least this share of the slide are treated as backgrounds and ignored. */
-const BACKGROUND_AREA_RATIO = 0.8;
 
 function findOverlappingElements({
   containerSelector,
   tolerance,
-  backgroundRatio,
 }: {
   containerSelector: string;
   tolerance: number;
-  backgroundRatio: number;
 }): RuleFinding[] {
-  const { describe, fragments, textFragments, isChecked, union } = globalThis.__slidevCheck;
+  const { describe, fragments, textFragments, isChecked, paints, isBackground, union } = globalThis.__slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -24,17 +20,6 @@ function findOverlappingElements({
   // Only elements that paint something themselves can visually collide:
   // text (measured by its own text nodes, so nested inline elements are not double-counted),
   // replaced content, and boxes with a visible background or border.
-  const REPLACED = new Set(['IMG', 'SVG', 'VIDEO', 'CANVAS', 'IFRAME', 'svg']);
-  const paints = (element: Element, style: CSSStyleDeclaration): boolean =>
-    REPLACED.has(element.tagName) ||
-    (style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent') ||
-    style.backgroundImage !== 'none' ||
-    ['Top', 'Right', 'Bottom', 'Left'].some(
-      (side) =>
-        Number.parseFloat(style.getPropertyValue(`border-${side.toLowerCase()}-width`)) > 0 &&
-        style.getPropertyValue(`border-${side.toLowerCase()}-style`) !== 'none'
-    );
-
   // An element wrapped over several lines paints only its line fragments, so collisions are
   // checked fragment by fragment; the bounding box only serves as a cheap pre-filter.
   interface Painted {
@@ -52,13 +37,10 @@ function findOverlappingElements({
     if (!isChecked(element) || (element.tagName === 'svg' && element.parentElement?.closest('svg'))) continue;
     if (element.closest('svg') && element.tagName !== 'svg') continue; // SVG internals are one picture
     add(element, 'text', textFragments(element));
-    const style = getComputedStyle(element);
-    if (!paints(element, style)) continue;
+    if (!paints(element)) continue;
     const rects = fragments(element);
     const rect = union(rects);
-    if (!rect) continue;
-    const coverage = (rect.width * rect.height) / (bounds.width * bounds.height);
-    if (coverage >= backgroundRatio) continue;
+    if (!rect || isBackground(rect, bounds)) continue;
     add(element, 'box', rects);
   }
 
@@ -127,6 +109,5 @@ export const noOverlap: Rule = {
     page.evaluate(findOverlappingElements, {
       containerSelector,
       tolerance: TOLERANCE_PX,
-      backgroundRatio: BACKGROUND_AREA_RATIO,
     }),
 };

@@ -54,7 +54,17 @@ try {
   if (values.fix) {
     fixed = applyFixes(violations);
     // A fix changes the rendered deck, so the remaining violations are collected from a fresh render.
-    if (fixed > 0) violations = await check(options);
+    if (fixed > 0) {
+      try {
+        violations = await check(options);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(
+          `slidev-check: rewrote ${fixed} problem(s) in the slides, but re-checking failed: ${message}\n`
+        );
+        process.exit(2);
+      }
+    }
   }
   const report = values.json
     ? JSON.stringify(violations, undefined, 2)
