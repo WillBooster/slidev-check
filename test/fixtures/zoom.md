@@ -241,3 +241,21 @@ Some text above the image.
 <div style="margin-left: 60%; width: 35%">
 <p v-for="i in 11" :key="i">Narrow {{ i }}</p>
 </div>
+
+---
+
+# Stacked in a flex column
+
+<div class="flex flex-col">
+
+<div style="zoom: 0.5">
+
+- a tiny wrapper that fits easily
+
+</div>
+
+<div>
+<p v-for="i in 11" :key="i">Below line {{ i }} that fills the slide</p>
+</div>
+
+</div>

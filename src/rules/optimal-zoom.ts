@@ -76,12 +76,20 @@ function analyzeZoom({
       (rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds))
     );
   };
-  /** Whether the element sits in another column (flex or grid item) than the target. */
+  /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
-    let ancestor: Element | null = element.parentElement;
-    while (ancestor && !ancestor.contains(target)) ancestor = ancestor.parentElement;
-    if (!ancestor || ancestor === target || !layout.contains(ancestor)) return false;
-    return /flex|grid/.test(getComputedStyle(ancestor).display);
+    const itemOf = (descendant: Element, container: Element): Element | undefined => {
+      let item: Element = descendant;
+      while (item.parentElement && item.parentElement !== container) item = item.parentElement;
+      return item.parentElement === container ? item : undefined;
+    };
+    let container: Element | null = element.parentElement;
+    while (container && !container.contains(target)) container = container.parentElement;
+    if (!container || container === target || !layout.contains(container)) return false;
+    if (!/flex|grid/.test(getComputedStyle(container).display)) return false;
+    const a = itemOf(element, container)?.getBoundingClientRect();
+    const b = itemOf(target, container)?.getBoundingClientRect();
+    return a !== undefined && b !== undefined && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);
@@ -145,8 +153,10 @@ function analyzeZoom({
       for (const element of layout.querySelectorAll('*')) {
         if (target.contains(element) || isPositioned(element)) continue;
         if (inOtherColumn(element, target)) continue;
-        for (const rect of paintedRects(element)) {
-          if (rect.bottom <= bottom) continue;
+        // An ancestor's box spans the target itself; only its own text is content of its own.
+        const rects = element.contains(target) ? textFragments(element) : paintedRects(element);
+        for (const rect of rects) {
+          if (rect.width === 0 || rect.height === 0 || rect.bottom <= bottom) continue;
           bottom = rect.bottom;
           lowest = element;
         }
@@ -213,7 +223,7 @@ function analyzeZoom({
             } else bad = mid;
           }
           optimal = good * step;
-        } else blockedBy = atLow.outside;
+        } else if (atLow.measurable && atLow.fitsWidth) blockedBy = atLow.outside;
       }
     }
     target.style.zoom = original;

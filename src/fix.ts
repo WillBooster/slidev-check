@@ -14,7 +14,10 @@ export function applyFixes(violations: Violation[]): number {
     // A slide imported twice yields the same fix twice; it must be applied once. When the copies
     // disagree (their surroundings differ), neither can be right for both, so the spot is left alone.
     if (!fixes.has(key)) fixes.set(key, fix);
-    else if (JSON.stringify(fixes.get(key)) !== JSON.stringify(fix)) fixes.set(key, undefined);
+    else {
+      const other = fixes.get(key);
+      if (other && (other.from !== fix.from || other.to !== fix.to)) fixes.set(key, undefined);
+    }
     fixesByFile.set(slide.filepath, fixes);
   }
   let applied = 0;

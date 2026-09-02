@@ -129,6 +129,7 @@ describe('optimal-zoom', () => {
       ['warn', 20],
       ['warn', 21],
       ['warn', 22],
+      ['warn', 23],
     ]);
     const [
       tooSmall,
@@ -152,6 +153,7 @@ describe('optimal-zoom', () => {
       upward,
       image,
       narrow,
+      stacked,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -216,6 +218,8 @@ describe('optimal-zoom', () => {
     // Flow content below the wrapper counts whatever its size or horizontal position.
     expect(image?.message).toMatch(/because `<canvas>` outside it already reaches that far\.$/);
     expect(narrow?.message).toMatch(/because `<p>Narrow 11` outside it already reaches that far\.$/);
+    // Items stacked in a flex column are below the wrapper, not beside it.
+    expect(stacked?.message).toMatch(/because `<p>Below line 11[^`]*` outside it already reaches that far\.$/);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -233,9 +237,9 @@ describe('optimal-zoom', () => {
       expect(lines[156]).toBe('<div style="font-family: \'Arial\'; --zoom: 0.5; zoom: 1">');
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
-      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22]);
+      expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23]);
       // The rewritten wrappers keep their content on the slide.
-      expect(violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 21, 22].includes(v.slide.no))).toEqual([]);
+      expect(violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 21, 22, 23].includes(v.slide.no))).toEqual([]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
@@ -250,7 +254,7 @@ describe('--fix --json', () => {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
       expect(result.fixed).toBeGreaterThanOrEqual(16);
-      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22]);
+      expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
