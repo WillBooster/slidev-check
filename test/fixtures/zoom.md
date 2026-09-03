@@ -154,7 +154,7 @@ Current zoom: 0.5 is mentioned in prose.
 
 # Quotes and a custom property in the style
 
-<div style="font-family: 'a\'b;c'; --zoom: 0.5; zoom: 0.5">
+<div style="font-family: 'a\'b;c'; /* ' ; */ --zoom: 0.5; zoom: 0.5">
 
 - the declaration follows quoted and look-alike ones
 

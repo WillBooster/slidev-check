@@ -320,7 +320,7 @@ interface Declaration {
   percent: boolean;
 }
 
-/** Splits a style value on `;` outside quoted strings, keeping every character so offsets add up. */
+/** Splits a style value on `;` outside quoted strings and comments, keeping every character so offsets add up. */
 function splitDeclarations(style: string): string[] {
   const parts: string[] = [];
   let quote: string | undefined;
@@ -330,6 +330,9 @@ function splitDeclarations(style: string): string[] {
     if (quote) {
       if (char === '\\') i++;
       else if (char === quote) quote = undefined;
+    } else if (style.startsWith('/*', i)) {
+      const end = style.indexOf('*/', i + 2);
+      i = end === -1 ? style.length : end + 1;
     } else if (char === '"' || char === "'") quote = char;
     else if (char === ';') {
       parts.push(style.slice(start, i));
@@ -444,7 +447,8 @@ function toFinding(
 
 export const optimalZoom: Rule = {
   id: 'optimal-zoom',
-  description: 'A zoomed slide must not be zoomed below the largest zoom that keeps a margin above the slide bottom.',
+  description:
+    'A zoomed slide must use the largest zoom up to the maximum that keeps a margin above the slide bottom, unless a larger zoom still keeps it.',
   check: async ({ page, containerSelector, options, source, slide }) => {
     const settings = {
       marginLines: Number(options?.['marginLines'] ?? DEFAULT_MARGIN_LINES),

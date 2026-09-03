@@ -203,9 +203,9 @@ describe('optimal-zoom', () => {
     expect(Number.parseFloat(overhang?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.5);
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
     expect(spaced?.fix).toEqual({ line: 147, column: 12, from: 'zoom : 0.5', to: 'zoom : 1' });
-    // An escaped quote, a quoted `;`, and a `--zoom` custom property in the same attribute do not hide the declaration.
+    // An escaped quote, a quoted `;`, a comment, and a `--zoom` custom property in the same attribute do not hide the declaration.
     // Slide 25's zoom above the maximum fits with room to spare and is left alone.
-    expect(quoted?.fix).toEqual({ line: 157, column: 48, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(quoted?.fix).toEqual({ line: 157, column: 58, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Neither an ignored zoomed element nor a `data-style` attribute counts as a declaration.
     expect(lookAlike?.fix).toEqual({ line: 169, column: 35, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content outside the wrapper that takes the space is named instead of blaming the wrapper.
@@ -239,7 +239,7 @@ describe('optimal-zoom', () => {
       expect(lines[46]).toBe('<div style="zoom: 100%">');
       expect(lines[88]).toBe('<div style="zoom: 1">left</div><div style="zoom: 1">right</div>');
       expect(lines[146]).toBe('<div style="zoom : 1; color: gray">');
-      expect(lines[156]).toBe(String.raw`<div style="font-family: 'a\'b;c'; --zoom: 0.5; zoom: 1">`);
+      expect(lines[156]).toBe(String.raw`<div style="font-family: 'a\'b;c'; /* ' ; */ --zoom: 0.5; zoom: 1">`);
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23, 24]);
