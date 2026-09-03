@@ -28,7 +28,7 @@ Nothing is printed when no rule is violated. Otherwise each violation is reporte
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 4 rules.
+Finished in 3521ms with 5 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
