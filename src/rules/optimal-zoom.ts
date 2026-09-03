@@ -320,7 +320,7 @@ interface Declaration {
   percent: boolean;
 }
 
-/** Splits a style value on `;` outside quoted strings and comments, keeping every character so offsets add up. */
+/** Splits a style value on `;` outside quoted strings, keeping every character so offsets add up. */
 function splitDeclarations(style: string): string[] {
   const parts: string[] = [];
   let quote: string | undefined;
@@ -330,9 +330,6 @@ function splitDeclarations(style: string): string[] {
     if (quote) {
       if (char === '\\') i++;
       else if (char === quote) quote = undefined;
-    } else if (style.startsWith('/*', i)) {
-      const end = style.indexOf('*/', i + 2);
-      i = end === -1 ? style.length : end + 1;
     } else if (char === '"' || char === "'") quote = char;
     else if (char === ';') {
       parts.push(style.slice(start, i));
@@ -354,18 +351,20 @@ function* attributesOf(tag: string, tagIndex: number): Generator<{ name: string;
   }
 }
 
+/** An HTML start tag with its attributes (quoted values may contain `>`). */
+const TAG = /<[a-zA-Z][^\s/>]*(?:\s+[^\s"'<>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>/g;
+
 /** The `zoom` declarations in the `style` attributes of the slide's markup, in source order. */
 function zoomDeclarations(markup: string): Declaration[] {
   const declarations: Declaration[] = [];
-  for (const tag of markup.matchAll(
-    /<[a-zA-Z][^\s/>]*(?:\s+[^\s"'<>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>/g
-  )) {
+  for (const tag of markup.matchAll(TAG)) {
     const attributes = [...attributesOf(tag[0], tag.index)];
     // An ignored element is not among the zoomed elements the rule analyzed.
     if (attributes.some((a) => a.name === 'data-slidev-check-ignore')) continue;
     for (const style of attributes.filter((a) => a.name.toLowerCase() === 'style')) {
       let offset = 0;
-      for (const part of splitDeclarations(style.value)) {
+      // Comments are blanked (keeping offsets) so that they neither split nor hide a declaration.
+      for (const part of splitDeclarations(style.value.replaceAll(/\/\*[\s\S]*?\*\//g, blank))) {
         const declaration = /^(\s*zoom\s*:\s*)(\d*\.?\d+)(%?)\s*$/i.exec(part);
         if (declaration) {
           const [, property = '', value = '', percent = ''] = declaration;
@@ -391,7 +390,9 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
   // Slots (`::right::` blocks or `<template #right>`) render in the layout's template order, not
   // source order, so the declarations cannot be mapped to elements by position.
   const markup = markupOnly(source);
-  if (/^::\s*[\w.\-:]+\s*::\s*$/m.test(markup) || /<template\b[^>]*\s(?:#|v-slot)/i.test(markup)) return undefined;
+  const isSlotTemplate = (tag: RegExpExecArray): boolean =>
+    [...attributesOf(tag[0], tag.index)].some(({ name }) => name.startsWith('#') || /^v-slot\b/i.test(name));
+  if (/^::\s*[\w.\-:]+\s*::\s*$/m.test(markup) || [...markup.matchAll(TAG)].some(isSlotTemplate)) return undefined;
   const declarations = zoomDeclarations(markup);
   // The rewrite is only safe when the zoomed elements and the declarations line up one to one
   // with the same values; a bound style or a hidden element breaks that and gets no fix.

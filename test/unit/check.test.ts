@@ -239,7 +239,7 @@ describe('optimal-zoom', () => {
       expect(lines[46]).toBe('<div style="zoom: 100%">');
       expect(lines[88]).toBe('<div style="zoom: 1">left</div><div style="zoom: 1">right</div>');
       expect(lines[146]).toBe('<div style="zoom : 1; color: gray">');
-      expect(lines[156]).toBe(String.raw`<div style="font-family: 'a\'b;c'; /* ' ; */ --zoom: 0.5; zoom: 1">`);
+      expect(lines[156]).toBe(String.raw`<div style="font-family: 'a\'b;c'; --zoom: 0.5; /* ' ; */ zoom: 1">`);
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23, 24]);
