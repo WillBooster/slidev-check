@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="slidev-check">
+  <title>slidev-check</title>
+  <defs>
+    <!-- Colors taken from the Slidev logo: blue for "slidev-", yellow-orange for "check". -->
+    <linearGradient id="blue" gradientUnits="userSpaceOnUse" x1="296" y1="614" x2="716" y2="194">
+      <stop offset="0" stop-color="#2988B1"/>
+      <stop offset="1" stop-color="#3ACBD4"/>
+    </linearGradient>
+    <linearGradient id="yellow" gradientUnits="userSpaceOnUse" x1="995" y1="614" x2="1387" y2="222">
+      <stop offset="0" stop-color="#FFA800"/>
+      <stop offset="1" stop-color="#FFC21A"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .item { font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace; font-size: 36px; fill: #9ca3af; }
+    .slide { fill: #ffffff; }
+    .bar { fill: #e5e7eb; }
+    .box { fill: none; stroke: #d1d5db; stroke-width: 4px; }
+    .check { fill: none; stroke: #d1d5db; stroke-width: 4px; stroke-linecap: round; stroke-linejoin: round; }
+    .dummy .box, .dummy .check { stroke: #e5e7eb; }
+  </style>
+
+  <rect width="1920" height="1080" rx="16" fill="#f3f4f6"/>
+
+  <!-- Placeholder checklists around the real one, one column per slide -->
+  <g class="dummy">
+    <g transform="translate(88 33)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="220" height="18" rx="9"/>
+    </g>
+    <g transform="translate(728 33)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="300" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 33)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="180" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 125)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="260" height="18" rx="9"/>
+    </g>
+    <g transform="translate(728 125)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="330" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 125)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="200" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 217)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="280" height="18" rx="9"/>
+    </g>
+    <g transform="translate(728 217)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="240" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 217)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="310" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 309)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="190" height="18" rx="9"/>
+    </g>
+    <g transform="translate(728 309)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="250" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 309)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="210" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 800)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="220" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 800)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="300" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 892)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="180" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 892)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="260" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 984)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="330" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 984)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="200" height="18" rx="9"/>
+    </g>
+    <g transform="translate(88 1076)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="280" height="18" rx="9"/>
+    </g>
+    <g transform="translate(1368 1076)">
+      <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+      <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+      <rect class="bar" x="64" y="-19" width="240" height="18" rx="9"/>
+    </g>
+  </g>
+
+  <!-- Slides behind the title -->
+  <g>
+    <rect class="slide" x="40" y="382" width="560" height="315" rx="18"/>
+    <rect class="bar" x="88" y="430" width="236" height="24" rx="9"/>
+    <rect class="bar" x="88" y="494" width="425" height="13" rx="6"/>
+    <rect class="bar" x="88" y="532" width="378" height="13" rx="6"/>
+    <rect class="bar" x="88" y="570" width="402" height="13" rx="6"/>
+    <rect class="bar" x="88" y="608" width="262" height="13" rx="6"/>
+    <rect class="bar" x="88" y="646" width="562" height="13" rx="6"/>
+    <rect class="slide" x="680" y="382" width="560" height="315" rx="18"/>
+    <rect class="bar" x="728" y="430" width="280" height="24" rx="9"/>
+    <rect class="bar" x="728" y="494" width="438" height="13" rx="6"/>
+    <rect class="bar" x="728" y="532" width="394" height="13" rx="6"/>
+    <rect class="bar" x="728" y="570" width="420" height="13" rx="6"/>
+    <rect class="bar" x="728" y="608" width="315" height="13" rx="6"/>
+    <rect class="slide" x="1320" y="382" width="560" height="315" rx="18"/>
+    <rect class="bar" x="1368" y="430" width="262" height="24" rx="9"/>
+    <rect class="bar" x="1368" y="494" width="190" height="140" rx="9"/>
+    <rect class="bar" x="1588" y="494" width="236" height="13" rx="6"/>
+    <rect class="bar" x="1588" y="532" width="218" height="13" rx="6"/>
+    <rect class="bar" x="1588" y="570" width="210" height="13" rx="6"/>
+  </g>
+
+  <!--
+    Wordmark set in Montserrat Bold (SIL Open Font License 1.1), converted to outlines so that it
+    renders identically everywhere (an SVG shown as <img> cannot load web fonts).
+
+    To regenerate (e.g. after changing the text, size, or letter-spacing):
+    1. Download Montserrat-Bold.ttf from https://github.com/JulietaUla/Montserrat (fonts/ttf/).
+    2. Run the Python script below with the packages fontTools and uharfbuzz available
+       (for example via "uv run" with those two packages added as dependencies).
+    3. Replace the two <path d="..."> values below with its output, and the x1/y1/x2/y2 of the
+       #blue and #yellow gradients in <defs> with the printed values.
+
+    import re, uharfbuzz as hb
+    from fontTools.ttLib import TTFont
+    from fontTools.pens.svgPathPen import SVGPathPen
+    from fontTools.pens.transformPen import TransformPen
+    from fontTools.pens.boundsPen import BoundsPen
+    FONT = 'Montserrat-Bold.ttf'
+    SIZE, BASELINE, CENTER_X = 200, 612, 960     # font size (px), baseline y, horizontal center
+    TRACKING = 0.01 * SIZE                       # letter-spacing: 0.01em
+    WORDS = [('slidev-', 'blue'), ('check', 'yellow')]
+    font = TTFont(FONT); scale = SIZE / font['head'].unitsPerEm
+    glyphs, names = font.getGlyphSet(), font.getGlyphOrder()
+    hbfont = hb.Font(hb.Face(hb.Blob.from_file_path(FONT)))
+    def shape(text):                             # HarfBuzz shaping, with kerning
+        buf = hb.Buffer(); buf.add_str(text); buf.guess_segment_properties()
+        hb.shape(hbfont, buf, {'kern': True, 'liga': True})
+        return [(names[i.codepoint], p.x_advance, p.x_offset, p.y_offset)
+                for i, p in zip(buf.glyph_infos, buf.glyph_positions)]
+    shaped = [shape(w) for w, _ in WORDS]
+    total = sum(adv * scale + TRACKING for g in shaped for _, adv, _, _ in g) - TRACKING
+    x = CENTER_X - total / 2                     # center the whole wordmark
+    for (word, gid), run in zip(WORDS, shaped):
+        pen, bounds = SVGPathPen(glyphs), BoundsPen(glyphs)
+        for name, adv, dx, dy in run:
+            t = (scale, 0, 0, -scale, x + dx * scale, BASELINE - dy * scale)  # flip y, place glyph
+            glyphs[name].draw(TransformPen(pen, t)); glyphs[name].draw(TransformPen(bounds, t))
+            x += adv * scale + TRACKING
+        d = re.sub(r'-?\d+\.\d+', lambda m: f'{float(m.group()):.1f}'.rstrip('0').rstrip('.'), pen.getCommands())
+        x0, y0, x1, y1 = bounds.bounds
+        # 45-degree gradient from the word's bottom-left corner towards its top-right corner
+        length = ((x1 - x0) + (y1 - y0)) / 2
+        print(gid, f'x1="{x0:.0f}" y1="{y1:.0f}" x2="{x0 + length:.0f}" y2="{y1 - length:.0f}"')
+        print(f'<path fill="url(#{gid})" d="{d}"/>')
+  -->
+  <g aria-label="slidev-check">
+    <path fill="url(#blue)" d="M342.7 613.6Q328.9 613.6 316.2 610.3Q303.5 607 296.1 602L306.5 579.6Q313.7 584.4 323.9 587.2Q334.1 590 343.9 590Q354.7 590 359.2 587.4Q363.7 584.8 363.7 580.2Q363.7 575 357.3 573.2Q350.9 571.4 341.9 570Q334.7 569 327.2 567.4Q319.7 565.8 313.2 562.6Q306.7 559.4 302.7 553.4Q298.7 547.4 298.7 537.6Q298.7 522.4 311.8 512.6Q324.9 502.8 348.5 502.8Q359.5 502.8 370.8 505.3Q382.1 507.8 389.9 512.2L379.5 534.4Q371.5 529.8 363.7 528.1Q355.9 526.4 348.5 526.4Q337.9 526.4 333.2 529.3Q328.5 532.2 328.5 536.4Q328.5 541 333.2 543.1Q337.9 545.2 345.3 546.3Q352.7 547.4 361 548.9Q369.3 550.4 376.7 553.5Q384.1 556.6 388.8 562.7Q393.5 568.8 393.5 579.4Q393.5 594.4 380.2 604Q366.9 613.6 342.7 613.6ZM414.7 612V463.6H445.9V612ZM476.9 612V504.4H508.1V612ZM492.5 489.4Q483.9 489.4 478.5 484.4Q473.1 479.4 473.1 472Q473.1 464.8 478.5 459.7Q483.9 454.6 492.5 454.6Q501.1 454.6 506.5 459.4Q511.9 464.2 511.9 471.4Q511.9 479.2 506.6 484.3Q501.3 489.4 492.5 489.4ZM585.3 613.6Q570.1 613.6 557.9 606.8Q545.7 600 538.6 587.5Q531.5 575 531.5 558.2Q531.5 541.2 538.6 528.8Q545.7 516.4 557.9 509.6Q570.1 502.8 585.3 502.8Q595.1 502.8 603.3 506Q611.5 509.2 617.5 515.8V463.6H648.7V612H618.9V599.6Q607.5 613.6 585.3 613.6ZM590.7 588Q602.3 588 610.2 580Q618.1 572 618.1 558.2Q618.1 544.2 610.2 536.3Q602.3 528.4 590.7 528.4Q578.9 528.4 571 536.3Q563.1 544.2 563.1 558.2Q563.1 572 571 580Q578.9 588 590.7 588ZM732.9 613.6Q714.3 613.6 700.5 606.4Q686.7 599.2 679.1 586.7Q671.5 574.2 671.5 558.2Q671.5 542 679 529.5Q686.5 517 699.5 509.9Q712.5 502.8 728.9 502.8Q744.7 502.8 757.4 509.6Q770.1 516.4 777.5 528.9Q784.9 541.4 784.9 558.6Q784.9 560.4 784.7 562.7Q784.5 565 784.3 567H702.9Q705.3 577 713.4 582.8Q721.5 588.6 733.7 588.6Q742.3 588.6 748.8 586Q755.3 583.4 760.7 578.2L777.3 596.2Q762.1 613.6 732.9 613.6ZM702.7 548.8H755.5Q753.9 538.6 746.8 532.5Q739.7 526.4 729.1 526.4Q718.5 526.4 711.4 532.5Q704.3 538.6 702.7 548.8ZM834.9 612 789.7 504.4H821.9L851.7 577.6L882.5 504.4H912.5L867.1 612ZM920.1 568.2V543.2H976.7V568.2Z"/>
+    <path fill="url(#yellow)" d="M1055.3 613.6Q1037.9 613.6 1024.3 606.5Q1010.7 599.4 1003 586.9Q995.3 574.4 995.3 558.2Q995.3 542 1003 529.5Q1010.7 517 1024.3 509.9Q1037.9 502.8 1055.3 502.8Q1072.3 502.8 1084.9 509.9Q1097.5 517 1103.5 530.2L1079.3 543.2Q1075.1 535.6 1068.8 532Q1062.5 528.4 1055.1 528.4Q1043.1 528.4 1035 536.3Q1026.9 544.2 1026.9 558.2Q1026.9 572.4 1035 580.2Q1043.1 588 1055.1 588Q1062.5 588 1068.8 584.5Q1075.1 581 1079.3 573.2L1103.5 586.4Q1097.5 599.2 1084.9 606.4Q1072.3 613.6 1055.3 613.6ZM1122.7 612V463.6H1153.9V515.6Q1160.3 509.4 1169 506.1Q1177.7 502.8 1188.1 502.8Q1200.9 502.8 1211 507.9Q1221.1 513 1226.9 523.5Q1232.7 534 1232.7 550.4V612H1201.5V555.2Q1201.5 542.2 1195.7 536Q1189.9 529.8 1179.7 529.8Q1168.5 529.8 1161.2 536.9Q1153.9 544 1153.9 558.8V612ZM1317.1 613.6Q1298.5 613.6 1284.7 606.4Q1270.9 599.2 1263.3 586.7Q1255.7 574.2 1255.7 558.2Q1255.7 542 1263.2 529.5Q1270.7 517 1283.7 509.9Q1296.7 502.8 1313.1 502.8Q1328.9 502.8 1341.6 509.6Q1354.3 516.4 1361.7 528.9Q1369.1 541.4 1369.1 558.6Q1369.1 560.4 1368.9 562.7Q1368.7 565 1368.5 567H1287.1Q1289.5 577 1297.6 582.8Q1305.7 588.6 1317.9 588.6Q1326.5 588.6 1333 586Q1339.5 583.4 1344.9 578.2L1361.5 596.2Q1346.3 613.6 1317.1 613.6ZM1286.9 548.8H1339.7Q1338.1 538.6 1331 532.5Q1323.9 526.4 1313.3 526.4Q1302.7 526.4 1295.6 532.5Q1288.5 538.6 1286.9 548.8ZM1443.9 613.6Q1426.5 613.6 1412.9 606.5Q1399.3 599.4 1391.6 586.9Q1383.9 574.4 1383.9 558.2Q1383.9 542 1391.6 529.5Q1399.3 517 1412.9 509.9Q1426.5 502.8 1443.9 502.8Q1460.9 502.8 1473.5 509.9Q1486.1 517 1492.1 530.2L1467.9 543.2Q1463.7 535.6 1457.4 532Q1451.1 528.4 1443.7 528.4Q1431.7 528.4 1423.6 536.3Q1415.5 544.2 1415.5 558.2Q1415.5 572.4 1423.6 580.2Q1431.7 588 1443.7 588Q1451.1 588 1457.4 584.5Q1463.7 581 1467.9 573.2L1492.1 586.4Q1486.1 599.2 1473.5 606.4Q1460.9 613.6 1443.9 613.6ZM1511.3 612V463.6H1542.5V547.4L1588.1 504.4H1625.3L1580.5 550L1629.3 612H1591.5L1557.7 570L1542.5 584.6V612Z"/>
+  </g>
+
+  <!-- Rule checklist, running off the bottom edge to suggest more rules to come -->
+  <g transform="translate(728 800)">
+    <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+    <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+    <text class="item" x="64" y="0">no-overflow</text>
+  </g>
+  <g transform="translate(728 892)">
+    <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+    <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+    <text class="item" x="64" y="0">no-overlap</text>
+  </g>
+  <g transform="translate(728 984)">
+    <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+    <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+    <text class="item" x="64" y="0">max-heading-lines</text>
+  </g>
+  <g transform="translate(728 1076)">
+    <rect class="box" x="0" y="-30" width="40" height="40" rx="8"/>
+    <path class="check" d="M11 -10 L18 -3 L30 -19"/>
+    <text class="item" x="64" y="0">min-font-size</text>
+  </g>
+</svg>

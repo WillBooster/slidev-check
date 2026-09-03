@@ -4,11 +4,15 @@
 [![Test](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml)
 [![wbfy](https://img.shields.io/badge/wbfy-20.1.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 
+![slidev-check](docs/hero.svg)
+
 Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports layout problems, linter-style.
 
 It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM geometry.
 
 ## Usage
+
+![Example output of slidev-check](docs/usage.svg)
 
 ```sh
 bun add -d slidev-check                      # @slidev/cli and playwright-chromium are peer dependencies
@@ -24,7 +28,7 @@ Nothing is printed when no rule is violated. Otherwise each violation is reporte
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 2 rules.
+Finished in 3521ms with 4 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
@@ -39,3 +43,7 @@ Add `data-slidev-check-ignore` to an element to exclude it (and its descendants)
 bun run check   # type check
 bun test
 ```
+
+## License
+
+Apache License &copy; WillBooster Inc.

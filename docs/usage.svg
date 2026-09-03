@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="Example output of slidev-check">
+  <title>Example output of slidev-check</title>
+  <style>
+    text { font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace; font-size: 31px; fill: #e5e7eb; white-space: pre; }
+    .prompt { fill: #4ade80; }
+    .muted { fill: #9ca3af; }
+    .error { fill: #f87171; }
+    .warning { fill: #fcd34d; }
+    .value { fill: #60a5fa; }
+  </style>
+
+  <rect width="1920" height="1080" rx="16" fill="#f3f4f6"/>
+
+  <!-- Window -->
+  <rect x="120" y="228" width="1680" height="640" rx="16" fill="#111827" opacity="0.08"/>
+  <rect x="120" y="220" width="1680" height="640" rx="16" fill="#111827"/>
+  <path d="M120 287 V236 a16 16 0 0 1 16 -16 H1784 a16 16 0 0 1 16 16 V287 Z" fill="#1f2937"/>
+  <circle cx="161" cy="254" r="10" fill="#4b5563"/>
+  <circle cx="192" cy="254" r="10" fill="#4b5563"/>
+  <circle cx="223" cy="254" r="10" fill="#4b5563"/>
+
+  <!-- Session -->
+  <g transform="translate(173 371)">
+    <text><tspan class="prompt">$</tspan> bunx slidev-check slides.md</text>
+    <text y="50"><tspan class="muted">3:</tspan> <tspan class="error">error</tspan> no-overflow: Element <tspan class="value">`&lt;img&gt;`</tspan> overflows the slide by <tspan class="value">64px</tspan> at the <tspan class="value">bottom</tspan>.</text>
+    <text y="100">help: Consider splitting the content into multiple slides.</text>
+    <text y="150"><tspan class="muted">7:</tspan> <tspan class="warning">warning</tspan> max-heading-lines: Heading <tspan class="value">`&lt;h2&gt;Deploying to pro…`</tspan> spans <tspan class="value">2</tspan> lines,</text>
+    <text y="200">exceeding the maximum of <tspan class="value">1</tspan>. help: Consider shortening the heading.</text>
+    <text y="300" class="error">Found 1 warning and 1 error.</text>
+    <text y="350">Finished in 3521ms with 4 rules.</text>
+    <text y="400"><tspan class="prompt">$</tspan> </text>
+    <rect x="36" y="371" width="18" height="38" fill="#e5e7eb"/>
+  </g>
+</svg>
