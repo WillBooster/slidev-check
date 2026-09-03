@@ -182,7 +182,7 @@ Current zoom: 0.5 is mentioned in prose.
 
 </div>
 
-<p v-for="i in 11" :key="i">Unwrapped line {{ i }} that fills the slide</p>
+<p v-for="i in 13" :key="i">Unwrapped line {{ i }} that fills the slide</p>
 
 ---
 
@@ -239,7 +239,7 @@ Some text above the image.
 </div>
 
 <div style="margin-left: 60%; width: 35%">
-<p v-for="i in 11" :key="i">Narrow {{ i }}</p>
+<p v-for="i in 13" :key="i">Narrow {{ i }}</p>
 </div>
 
 ---
@@ -255,7 +255,7 @@ Some text above the image.
 </div>
 
 <div>
-<p v-for="i in 11" :key="i">Below line {{ i }} that fills the slide</p>
+<p v-for="i in 13" :key="i">Below line {{ i }} that fills the slide</p>
 </div>
 
 </div>
@@ -273,7 +273,7 @@ Some text above the image.
 </div>
 
 <div style="flex-basis: 50%; margin-left: 50%">
-<p v-for="i in 11" :key="i">Wrapped line {{ i }}</p>
+<p v-for="i in 13" :key="i">Wrapped line {{ i }}</p>
 </div>
 
 </div>

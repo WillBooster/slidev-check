@@ -90,8 +90,11 @@ function analyzeZoom({
     const a = itemOf(element, container)?.getBoundingClientRect();
     const b = itemOf(target, container)?.getBoundingClientRect();
     if (!a || !b) return false;
-    // Beside means on the same row: apart horizontally while overlapping vertically.
-    return (a.right <= b.left + 1 || a.left >= b.right - 1) && a.bottom > b.top && a.top < b.bottom;
+    // Beside means on the same row: apart horizontally while sharing some height (an item whose
+    // content is all positioned has no height of its own and counts where its top lies).
+    const shared = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    const sameRow = shared > 0 || (shared === 0 && (a.height === 0 || b.height === 0));
+    return sameRow && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);

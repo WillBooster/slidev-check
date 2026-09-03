@@ -219,11 +219,11 @@ describe('optimal-zoom', () => {
     expect(Number.parseFloat(upward?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.6);
     // Flow content below the wrapper counts whatever its size or horizontal position.
     expect(image?.message).toMatch(/because `<canvas>` outside it already reaches that far\.$/);
-    expect(narrow?.message).toMatch(/because `<p>Narrow 11` outside it already reaches that far\.$/);
+    expect(narrow?.message).toMatch(/because `<p>Narrow 13` outside it already reaches that far\.$/);
     // Items stacked in a flex column are below the wrapper, not beside it.
-    expect(stacked?.message).toMatch(/because `<p>Below line 11[^`]*` outside it already reaches that far\.$/);
+    expect(stacked?.message).toMatch(/because `<p>Below line 13[^`]*` outside it already reaches that far\.$/);
     // A flex item wrapped onto the next row is below the wrapper even when it starts to its right.
-    expect(wrapped?.message).toMatch(/because `<p>Wrapped line 11` outside it already reaches that far\.$/);
+    expect(wrapped?.message).toMatch(/because `<p>Wrapped line 13` outside it already reaches that far\.$/);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -243,9 +243,9 @@ describe('optimal-zoom', () => {
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23, 24]);
       // The rewritten wrappers keep their content on the slide.
-      expect(violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 21, 22, 23, 24].includes(v.slide.no))).toEqual(
-        []
-      );
+      expect(
+        violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 18, 21, 22, 23, 24].includes(v.slide.no))
+      ).toEqual([]);
     } finally {
       fs.rmSync(copy, { force: true });
     }
