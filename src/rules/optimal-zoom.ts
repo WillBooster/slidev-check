@@ -68,31 +68,11 @@ function analyzeZoom({
    * border, or image. A positioned box covering the slide is a decoration, not content; a box in
    * the flow (a large image) is content whatever its size.
    */
-  /** Clips a painted piece to every ancestor that hides its overflow; `undefined` when nothing is left. */
-  const clipped = (rect: DOMRect, element: Element): DOMRect | undefined => {
-    let { top, left, right, bottom } = rect;
-    for (let ancestor = element.parentElement; ancestor && ancestor !== container; ancestor = ancestor.parentElement) {
-      const { overflowX, overflowY } = getComputedStyle(ancestor);
-      const box = ancestor.getBoundingClientRect();
-      if (overflowX !== 'visible') {
-        left = Math.max(left, box.left);
-        right = Math.min(right, box.right);
-      }
-      if (overflowY !== 'visible') {
-        top = Math.max(top, box.top);
-        bottom = Math.min(bottom, box.bottom);
-      }
-    }
-    return right > left && bottom > top ? new DOMRect(left, top, right - left, bottom - top) : undefined;
-  };
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     const decoration = paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects
-      .filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)))
-      .map((rect) => clipped(rect, element))
-      .filter((rect) => rect !== undefined);
+    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)));
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
@@ -217,6 +197,12 @@ function analyzeZoom({
     const original = target.style.zoom;
     const current = resolvedZoom(target);
     const at = measure(current);
+    // The maximum only bounds suggestions: a deliberately larger zoom that still fits is left as it
+    // is, so later wrappers are measured against it.
+    if (current > maxZoom && fits(at)) {
+      target.style.zoom = original;
+      return undefined;
+    }
     let optimal: number | undefined;
     let best = at;
     let blockedBy: string | undefined;
@@ -342,7 +328,8 @@ function splitDeclarations(style: string): string[] {
   for (let i = 0; i < style.length; i++) {
     const char = style[i];
     if (quote) {
-      if (char === quote) quote = undefined;
+      if (char === '\\') i++;
+      else if (char === quote) quote = undefined;
     } else if (char === '"' || char === "'") quote = char;
     else if (char === ';') {
       parts.push(style.slice(start, i));
@@ -424,7 +411,7 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
 
 function toFinding(
   analysis: ZoomAnalysis,
-  { marginLines, maxZoom }: { marginLines: number; maxZoom: number },
+  marginLines: number,
   source: string,
   firstLine: number
 ): RuleFinding | undefined {
@@ -444,8 +431,6 @@ function toFinding(
   const element = `Element \`${description}\` is zoomed to ${formatZoom(current)}`;
   if (optimal === undefined) return { message: `${element} and ${unfit}.`, help: split };
   if (Math.abs(optimal - current) < ZOOM_STEP / 2) return undefined;
-  // The maximum only bounds suggestions: a deliberately larger zoom that still fits is fine.
-  if (current > maxZoom && analysis.currentFitsBounds && analysis.currentMargin >= marginLines - 1e-6) return undefined;
   const suggestion = `zoom: ${formatZoom(optimal)}`;
   return {
     message:
@@ -459,7 +444,7 @@ function toFinding(
 
 export const optimalZoom: Rule = {
   id: 'optimal-zoom',
-  description: 'A zoomed slide must use the largest zoom that keeps a margin above the slide bottom.',
+  description: 'A zoomed slide must not be zoomed below the largest zoom that keeps a margin above the slide bottom.',
   check: async ({ page, containerSelector, options, source, slide }) => {
     const settings = {
       marginLines: Number(options?.['marginLines'] ?? DEFAULT_MARGIN_LINES),
@@ -472,7 +457,7 @@ export const optimalZoom: Rule = {
       step: ZOOM_STEP,
     });
     return analyses
-      .map((analysis) => toFinding(analysis, settings, source, slide.line))
+      .map((analysis) => toFinding(analysis, settings.marginLines, source, slide.line))
       .filter((finding) => finding !== undefined);
   },
 };

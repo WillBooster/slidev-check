@@ -131,7 +131,6 @@ describe('optimal-zoom', () => {
       ['warn', 22],
       ['warn', 23],
       ['warn', 24],
-      ['warn', 26],
     ]);
     const [
       tooSmall,
@@ -157,7 +156,6 @@ describe('optimal-zoom', () => {
       narrow,
       stacked,
       wrapped,
-      clippedOverflow,
     ] = zoom;
     expect(tooSmall?.message).toMatch(
       /^Element `<div>A short list[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
@@ -205,9 +203,9 @@ describe('optimal-zoom', () => {
     expect(Number.parseFloat(overhang?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(0.5);
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
     expect(spaced?.fix).toEqual({ line: 147, column: 12, from: 'zoom : 0.5', to: 'zoom : 1' });
-    // A quoted `;`, quoted values, and a `--zoom` custom property in the same attribute do not hide the declaration.
+    // An escaped quote, a quoted `;`, and a `--zoom` custom property in the same attribute do not hide the declaration.
     // Slide 25's zoom above the maximum fits with room to spare and is left alone.
-    expect(quoted?.fix).toEqual({ line: 157, column: 45, from: 'zoom: 0.5', to: 'zoom: 1' });
+    expect(quoted?.fix).toEqual({ line: 157, column: 48, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Neither an ignored zoomed element nor a `data-style` attribute counts as a declaration.
     expect(lookAlike?.fix).toEqual({ line: 169, column: 35, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Content outside the wrapper that takes the space is named instead of blaming the wrapper.
@@ -227,8 +225,6 @@ describe('optimal-zoom', () => {
     expect(stacked?.message).toMatch(/because `<p>Below line 13[^`]*` outside it already reaches that far\.$/);
     // A flex item wrapped onto the next row is below the wrapper even when it starts to its right.
     expect(wrapped?.message).toMatch(/because `<p>Wrapped line 13` outside it already reaches that far\.$/);
-    // Content hidden by an overflow-clipping box does not count; slide 25's zoom above the maximum fits and is left alone.
-    expect(clippedOverflow?.fix).toEqual({ line: 295, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
@@ -236,20 +232,20 @@ describe('optimal-zoom', () => {
     fs.copyFileSync(fixture('zoom.md'), copy);
     try {
       const { stdout } = await runCli(copy, '--fix');
-      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[78] problems\./);
+      expect(stripVTControlCharacters(stdout)).toMatch(/Fixed 1[67] problems\./);
       const lines = fs.readFileSync(copy, 'utf8').split('\n');
       expect(lines[12]).toBe('<div style="zoom: 1">');
       expect(lines[24]).toMatch(/^<div style="zoom: 0\.(?:79|8|81)">$/);
       expect(lines[46]).toBe('<div style="zoom: 100%">');
       expect(lines[88]).toBe('<div style="zoom: 1">left</div><div style="zoom: 1">right</div>');
       expect(lines[146]).toBe('<div style="zoom : 1; color: gray">');
-      expect(lines[156]).toBe('<div style="font-family: \'a;b\'; --zoom: 0.5; zoom: 1">');
+      expect(lines[156]).toBe(String.raw`<div style="font-family: 'a\'b;c'; --zoom: 0.5; zoom: 1">`);
       expect(lines[168]).toBe('<div data-style="zoom: 0.5" style="zoom: 1">');
       const { violations } = await runCliJson(copy);
       expect(zoomViolations(violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23, 24]);
       // The rewritten wrappers keep their content on the slide.
       expect(
-        violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 18, 21, 22, 23, 24, 26].includes(v.slide.no))
+        violations.filter((v) => v.ruleId === 'no-overflow' && ![7, 18, 21, 22, 23, 24].includes(v.slide.no))
       ).toEqual([]);
     } finally {
       fs.rmSync(copy, { force: true });
@@ -264,7 +260,7 @@ describe('--fix --json', () => {
     try {
       const { stdout } = await runCli(copy, '--fix', '--json');
       const result = JSON.parse(stdout) as { fixed: number; violations: Violation[] };
-      expect(result.fixed).toBeGreaterThanOrEqual(17);
+      expect(result.fixed).toBeGreaterThanOrEqual(16);
       expect(zoomViolations(result.violations).map((v) => v.slide.no)).toEqual([4, 7, 18, 21, 22, 23, 24]);
     } finally {
       fs.rmSync(copy, { force: true });
