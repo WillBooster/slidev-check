@@ -106,6 +106,7 @@ describe('optimal-zoom', () => {
   test('warns on zoom wrappers that are too small, too large, or cannot fit, and on tight slides without one', async () => {
     const { violations } = await runCliJson(fixture('zoom.md'));
     // Slide 5 sits at its optimum on the reference machine; a one-step shift elsewhere is tolerated.
+    // Slide 25's zoom above the maximum fits with room to spare and is left alone (absent below).
     const zoom = zoomViolations(violations).filter((v) => !(v.slide.no === 5 && /zoom: 0\.5[57]\b/.test(v.message)));
     expect(zoom.map((v) => [v.severity, v.slide.no])).toEqual([
       ['warn', 2],
@@ -204,7 +205,6 @@ describe('optimal-zoom', () => {
     // The frontmatter `zoom:` and the prose are not declarations; spaces around the colon are kept.
     expect(spaced?.fix).toEqual({ line: 147, column: 12, from: 'zoom : 0.5', to: 'zoom : 1' });
     // An escaped quote, a quoted `;`, a comment, and a `--zoom` custom property in the same attribute do not hide the declaration.
-    // Slide 25's zoom above the maximum fits with room to spare and is left alone.
     expect(quoted?.fix).toEqual({ line: 157, column: 58, from: 'zoom: 0.5', to: 'zoom: 1' });
     // Neither an ignored zoomed element nor a `data-style` attribute counts as a declaration.
     expect(lookAlike?.fix).toEqual({ line: 169, column: 35, from: 'zoom: 0.5', to: 'zoom: 1' });

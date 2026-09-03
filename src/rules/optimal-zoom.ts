@@ -366,7 +366,7 @@ function zoomDeclarations(markup: string): Declaration[] {
     for (const style of attributes.filter((a) => a.name.toLowerCase() === 'style')) {
       let offset = 0;
       for (const part of splitDeclarations(style.value)) {
-        const declaration = /^([ \t]*zoom[ \t]*:[ \t]*)(\d*\.?\d+)(%?)[ \t]*$/i.exec(part);
+        const declaration = /^(\s*zoom\s*:\s*)(\d*\.?\d+)(%?)\s*$/i.exec(part);
         if (declaration) {
           const [, property = '', value = '', percent = ''] = declaration;
           const leading = declaration[0].length - declaration[0].trimStart().length;
@@ -401,7 +401,8 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
   )
     return undefined;
   const declaration = declarations[analysis.index];
-  if (!declaration) return undefined;
+  // A fix replaces text on one line; a declaration wrapped across lines is left to the author.
+  if (!declaration || declaration.from.includes('\n')) return undefined;
   const value = declaration.percent ? `${Math.round(analysis.optimal * 100)}%` : formatZoom(analysis.optimal);
   const before = source.slice(0, declaration.index);
   return {
