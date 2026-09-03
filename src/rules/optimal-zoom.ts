@@ -322,23 +322,36 @@ interface Declaration {
   percent: boolean;
 }
 
-/** Splits a style value on `;` outside quoted strings, keeping every character so offsets add up. */
+/**
+ * Splits a style value on `;` outside quoted strings, with comments blanked to spaces, keeping
+ * every character so that offsets add up.
+ */
 function splitDeclarations(style: string): string[] {
   const parts: string[] = [];
   let quote: string | undefined;
   let start = 0;
+  let text = '';
   for (let i = 0; i < style.length; i++) {
-    const char = style[i];
+    const char = style[i] ?? '';
     if (quote) {
-      if (char === '\\') i++;
+      text += char;
+      if (char === '\\') text += style[++i] ?? '';
       else if (char === quote) quote = undefined;
-    } else if (char === '"' || char === "'") quote = char;
-    else if (char === ';') {
-      parts.push(style.slice(start, i));
+    } else if (style.startsWith('/*', i)) {
+      const end = style.indexOf('*/', i + 2);
+      const stop = end === -1 ? style.length : end + 2;
+      text += ' '.repeat(stop - i);
+      i = stop - 1;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+      text += char;
+    } else if (char === ';') {
+      parts.push(text.slice(start, i));
       start = i + 1;
-    }
+      text += char;
+    } else text += char;
   }
-  parts.push(style.slice(start));
+  parts.push(text.slice(start));
   return parts;
 }
 
@@ -353,6 +366,10 @@ function* attributesOf(tag: string, tagIndex: number): Generator<{ name: string;
   }
 }
 
+/** Whether the tag declares a Vue slot (`<template #name>` or `v-slot`). */
+const isSlotTemplate = (tag: RegExpExecArray): boolean =>
+  [...attributesOf(tag[0], tag.index)].some(({ name }) => name.startsWith('#') || /^v-slot\b/i.test(name));
+
 /** An HTML start tag with its attributes (quoted values may contain `>`). */
 const TAG = /<[a-zA-Z][^\s/>]*(?:\s+[^\s"'<>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?>/g;
 
@@ -365,8 +382,7 @@ function zoomDeclarations(markup: string): Declaration[] {
     if (attributes.some((a) => a.name === 'data-slidev-check-ignore')) continue;
     for (const style of attributes.filter((a) => a.name.toLowerCase() === 'style')) {
       let offset = 0;
-      // Comments are blanked (keeping offsets) so that they neither split nor hide a declaration.
-      for (const part of splitDeclarations(style.value.replaceAll(/\/\*[\s\S]*?\*\//g, blank))) {
+      for (const part of splitDeclarations(style.value)) {
         const declaration = /^(\s*zoom\s*:\s*)(\d*\.?\d+)(%?)\s*$/i.exec(part);
         if (declaration) {
           const [, property = '', value = '', percent = ''] = declaration;
@@ -396,8 +412,6 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
   // Slots (`::right::` blocks or `<template #right>`) render in the layout's template order, not
   // source order, so the declarations cannot be mapped to elements by position.
   const markup = markupOnly(source);
-  const isSlotTemplate = (tag: RegExpExecArray): boolean =>
-    [...attributesOf(tag[0], tag.index)].some(({ name }) => name.startsWith('#') || /^v-slot\b/i.test(name));
   if (/^::\s*[\w.\-:]+\s*::\s*$/m.test(markup) || [...markup.matchAll(TAG)].some(isSlotTemplate)) return undefined;
   const declarations = zoomDeclarations(markup);
   // The rewrite is only safe when the zoomed elements and the declarations line up one to one
