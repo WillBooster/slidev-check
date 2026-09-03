@@ -90,14 +90,8 @@ function analyzeZoom({
     const a = itemOf(element, container)?.getBoundingClientRect();
     const b = itemOf(target, container)?.getBoundingClientRect();
     if (!a || !b) return false;
-    // Beside means on the same row: apart horizontally while sharing some height (an item whose
-    // content is all positioned has no height of its own and counts where its top lies, unless
-    // that is the start of the row below).
-    const inside = (point: number, rect: DOMRect): boolean => point >= rect.top && point < rect.bottom;
-    const sameRow =
-      Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0 ||
-      (a.height === 0 && (b.height === 0 ? a.top === b.top : inside(a.top, b))) ||
-      (b.height === 0 && inside(b.top, a));
+    // Beside means on the same row: apart horizontally while sharing some height.
+    const sameRow = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
     return sameRow && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
   const resolvedZoom = (element: Element): number => {
