@@ -259,3 +259,21 @@ Some text above the image.
 </div>
 
 </div>
+
+---
+
+# Wrapped onto the next row
+
+<div class="flex flex-wrap">
+
+<div style="zoom: 0.5; flex-basis: 30%">
+
+- a tiny wrapper that fits easily
+
+</div>
+
+<div style="flex-basis: 50%; margin-left: 50%">
+<p v-for="i in 11" :key="i">Wrapped line {{ i }}</p>
+</div>
+
+</div>
