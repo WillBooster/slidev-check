@@ -12,9 +12,14 @@ export interface RenderOptions {
   timeout: number;
 }
 
+export interface RenderedSlide extends SlideLocation {
+  /** Markdown source of the slide, starting at `line`. */
+  source: string;
+}
+
 export interface RenderedDeck {
   page: Page;
-  slides: SlideLocation[];
+  slides: RenderedSlide[];
   width: number;
   height: number;
   close: () => Promise<void>;
@@ -44,11 +49,12 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
 
   const width = resolved.data.config.canvasWidth;
   const height = Math.round(width / resolved.data.config.aspectRatio);
-  const slides: SlideLocation[] = resolved.data.slides.map((slide, index) => ({
+  const slides: RenderedSlide[] = resolved.data.slides.map((slide, index) => ({
     no: index + 1,
     filepath: slide.source.filepath,
     line: slide.source.start + 1,
     title: slide.title,
+    source: slide.source.raw,
   }));
 
   let browser: Browser | undefined;

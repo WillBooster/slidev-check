@@ -22,6 +22,10 @@ export interface BrowserHelpers {
   textFragments: (element: Element) => DOMRect[];
   /** Whether the element is rendered and neither hidden nor excluded with `data-slidev-check-ignore`. */
   isChecked: (element: Element) => element is HTMLElement | SVGElement;
+  /** Whether the element paints something itself: replaced content, or a visible background or border. */
+  paints: (element: Element) => boolean;
+  /** Whether a painted box covers so much of the slide that it is a background rather than content. */
+  isBackground: (rect: DOMRect, slide: DOMRect) => boolean;
   /** Bounding box union of a list of rects; `undefined` when every rect is empty. */
   union: (rects: Iterable<DOMRect>) => DOMRect | undefined;
 }
@@ -87,6 +91,26 @@ function defineHelpers(): void {
     !element.closest('[data-slidev-check-ignore]') &&
     element.checkVisibility({ opacityProperty: true, visibilityProperty: true, contentVisibilityAuto: true });
 
+  const REPLACED = new Set(['IMG', 'SVG', 'VIDEO', 'AUDIO', 'CANVAS', 'IFRAME', 'OBJECT', 'EMBED', 'svg']);
+  const paints = (element: Element): boolean => {
+    if (REPLACED.has(element.tagName)) return true;
+    const style = getComputedStyle(element);
+    return (
+      (style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent') ||
+      style.backgroundImage !== 'none' ||
+      ['top', 'right', 'bottom', 'left'].some(
+        (side) =>
+          Number.parseFloat(style.getPropertyValue(`border-${side}-width`)) > 0 &&
+          style.getPropertyValue(`border-${side}-style`) !== 'none'
+      )
+    );
+  };
+
+  /** Painted boxes covering at least this share of the slide are treated as backgrounds. */
+  const BACKGROUND_AREA_RATIO = 0.8;
+  const isBackground = (rect: DOMRect, slide: DOMRect): boolean =>
+    (rect.width * rect.height) / (slide.width * slide.height) >= BACKGROUND_AREA_RATIO;
+
   const describe = (element: Element): string => {
     const tag = element.tagName.toLowerCase();
     const id = element.id ? `#${element.id}` : '';
@@ -100,7 +124,17 @@ function defineHelpers(): void {
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
-  globalThis.__slidevCheck = { describe, measure, measureText, fragments, textFragments, isChecked, union };
+  globalThis.__slidevCheck = {
+    describe,
+    measure,
+    measureText,
+    fragments,
+    textFragments,
+    isChecked,
+    paints,
+    isBackground,
+    union,
+  };
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 

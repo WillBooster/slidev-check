@@ -28,8 +28,12 @@ Nothing is printed when no rule is violated. Otherwise each violation is reporte
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 4 rules.
+Finished in 3521ms with 5 rules.
 ```
+
+Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
+
+`--fix` rewrites the slide files with the fixes that rules attach to their findings and reports what remains (with `--json`, as `{ "fixed": N, "violations": [...] }`). Currently `optimal-zoom` provides fixes: for an element with an inline `zoom` style (typically a `<div style="zoom: 0.8">` around the whole slide body), it finds the largest zoom at which the content still keeps a margin (one text line by default) above the slide bottom and within the slide width, warns when the declared zoom is smaller (the content could be larger) or larger (the content is too tight, sticks out, or overflows; a zoom above 1 that still keeps the margin is left alone), and `--fix` replaces the declared value with the optimal one. Several wrappers on one slide are optimized in document order, so their fixes are consistent with each other. A slide without a wrapper whose content is too tight at zoom 1 is reported with the wrapper to add.
 
 Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
 
