@@ -315,6 +315,8 @@ interface Declaration {
   /** Offset of `from` in the source. */
   index: number;
   from: string;
+  /** Whether `from` is the plain declaration (no comment inside) that a one-line fix can replace. */
+  fixable: boolean;
   property: string;
   value: number;
   percent: boolean;
@@ -369,9 +371,13 @@ function zoomDeclarations(markup: string): Declaration[] {
         if (declaration) {
           const [, property = '', value = '', percent = ''] = declaration;
           const leading = declaration[0].length - declaration[0].trimStart().length;
+          const from = `${property.trimStart()}${value}${percent}`;
           declarations.push({
             index: style.index + offset + leading,
-            from: `${property.trimStart()}${value}${percent}`,
+            // The text to replace is taken from the source; a comment inside the declaration
+            // makes it differ from the match, and such a declaration is left to the author.
+            from: style.value.slice(offset + leading, offset + leading + from.length),
+            fixable: style.value.startsWith(from, offset + leading),
             property: property.trimStart(),
             value: Number.parseFloat(value) / (percent ? 100 : 1),
             percent: percent !== '',
@@ -403,7 +409,7 @@ function fixFor(analysis: ZoomAnalysis, source: string, firstLine: number): Fix 
     return undefined;
   const declaration = declarations[analysis.index];
   // A fix replaces text on one line; a declaration wrapped across lines is left to the author.
-  if (!declaration || declaration.from.includes('\n')) return undefined;
+  if (!declaration || !declaration.fixable || declaration.from.includes('\n')) return undefined;
   const value = declaration.percent ? `${Math.round(analysis.optimal * 100)}%` : formatZoom(analysis.optimal);
   const before = source.slice(0, declaration.index);
   return {
