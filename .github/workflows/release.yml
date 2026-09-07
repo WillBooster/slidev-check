@@ -8,7 +8,6 @@ concurrency:
   cancel-in-progress: false
   queue: max
 permissions:
-  id-token: write
   contents: write
 jobs:
   release:
