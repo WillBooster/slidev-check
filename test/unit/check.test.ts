@@ -39,15 +39,73 @@ describe('cli', () => {
     expect(json.stdout).toBe('');
   }, 180_000);
 
+  test('warns on rendered content limits without counting hidden text or inline markup twice', async () => {
+    const { exitCode, violations } = await runCliJson(fixture('contentLimits.md'));
+    expect(exitCode).toBe(0);
+    const content = violations.filter((v) =>
+      ['max-body-characters', 'max-list-depth', 'max-table-rows'].includes(v.ruleId)
+    );
+    expect(content.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
+      ['max-body-characters', 'warn', 2],
+      ['max-list-depth', 'warn', 4],
+      ['max-table-rows', 'warn', 6],
+      ['max-body-characters', 'warn', 7],
+      ['max-table-rows', 'warn', 8],
+      ['max-table-rows', 'warn', 9],
+      ['max-body-characters', 'warn', 11],
+      ['max-list-depth', 'warn', 12],
+      ['max-body-characters', 'warn', 14],
+      ['max-list-depth', 'warn', 15],
+      ['max-table-rows', 'warn', 16],
+      ['max-table-rows', 'warn', 16],
+      ['max-body-characters', 'warn', 21],
+      ['max-body-characters', 'warn', 22],
+      ['max-body-characters', 'warn', 27],
+      ['max-list-depth', 'warn', 29],
+      ['max-body-characters', 'warn', 31],
+      ['max-body-characters', 'warn', 32],
+      ['max-table-rows', 'warn', 33],
+      ['max-table-rows', 'warn', 35],
+    ]);
+    expect(
+      content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('201 characters'))
+    ).toBe(true);
+    expect(content.filter((v) => v.ruleId === 'max-list-depth').every((v) => v.message.includes('3 levels'))).toBe(
+      true
+    );
+    expect(content.filter((v) => v.ruleId === 'max-table-rows').map((v) => v.message)).toEqual([
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('First'),
+      expect.stringContaining('Second'),
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 8 rows'),
+    ]);
+    expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 16).map((v) => v.message)).toEqual([
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 9 rows'),
+    ]);
+  }, 90_000);
+
+  test('counts direct SVG text while excluding SVG resource definitions', async () => {
+    const { violations } = await runCliJson(fixture('svgText.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.severity, v.slide.no])).toEqual([['warn', 3]]);
+    expect(content[0]?.message).toContain('201 characters');
+  }, 90_000);
+
   test('reports elements that overflow the slide', async () => {
     const { exitCode, violations } = await runCliJson(fixture('overflow.md'));
     expect(exitCode).toBe(1);
     expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
       ['no-overflow', 'error', 2],
       ['optimal-zoom', 'warn', 2],
+      ['max-body-characters', 'warn', 2],
       ['no-overflow', 'error', 3],
     ]);
-    const [text, zoom, box] = violations;
+    const [text, zoom] = violations;
+    const box = violations.at(-1);
     expect(zoom?.message).toMatch(
       /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.\d+">` keeps the margin\.$/
     );

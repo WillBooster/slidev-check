@@ -7,9 +7,9 @@
 
 ![slidev-check](docs/hero.svg)
 
-Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports layout problems, linter-style.
+Audits the _rendered_ output of a [Slidev](https://sli.dev) deck and reports layout and content guideline problems, linter-style.
 
-It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM geometry.
+It is not a static analyzer: the deck is rendered by Slidev's own dev server (the same code path as `slidev export`) inside headless Chromium, and rules inspect the resulting DOM and geometry.
 
 ## Usage
 
@@ -23,13 +23,13 @@ bunx slidev-check slides.md
 
 The deck is rendered with the `@slidev/cli` and theme installed in _your_ project, so the checked output matches what `slidev` itself shows.
 
-Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1`:
+Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1` if any errors are found. Warnings alone keep exit code `0`:
 
 ```
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 5 rules.
+Finished in 3521ms with 8 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
@@ -37,6 +37,24 @@ Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
 `--fix` rewrites the slide files with the fixes that rules attach to their findings and reports what remains (with `--json`, as `{ "fixed": N, "violations": [...] }`). Currently `optimal-zoom` provides fixes: for an element with an inline `zoom` style (typically a `<div style="zoom: 0.8">` around the whole slide body), it finds the largest zoom at which the content still keeps a margin (one text line by default) above the slide bottom and within the slide width, warns when the declared zoom is smaller (the content could be larger) or larger (the content is too tight, sticks out, or overflows; a zoom above 1 that still keeps the margin is left alone), and `--fix` replaces the declared value with the optimal one. Several wrappers on one slide are optimized in document order, so their fixes are consistent with each other. A slide without a wrapper whose content is too tight at zoom 1 is reported with the wrapper to add.
 
 Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
+
+## Content guidelines
+
+The following rules run by default as warnings, based on the [slide guidelines](https://github.com/WillBooster/agentic-workflows/pull/665):
+
+| Rule                  | Limit                                       |
+| --------------------- | ------------------------------------------- |
+| `max-body-characters` | 200 non-whitespace characters per slide     |
+| `max-list-depth`      | 2 nested list levels                        |
+| `max-table-rows`      | 7 visible rows per table, including headers |
+
+Character counts include prose, lists, code, and table text inside `.slidev-layout`, excluding headings, hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Laid-out ignored or hidden text preserves character boundaries without contributing to the count. Inline markup does not count text twice. Whitespace, formatting-only controls, and DOM separators do not add characters. Theme content outside the layout and speaker notes are not counted.
+
+Custom layouts must mark their content root with `class="slidev-layout"`. Visibility checks respect display, visibility, opacity, and content-visibility; visible text inside boxless `display: contents` wrappers is counted. Text skipped by `content-visibility: hidden` is excluded; the same declaration on elements where it has no effect does not hide visible text. Text clipped or clamped by CSS still counts. Use `data-slidev-check-ignore` for intentionally excluded content. Text metrics inspect HTML/SVG text nodes directly present in the document. SVG resource definitions and text instantiated through `<use>` are outside the count, as are shadow-root text and direct native MathML; these require manual review. Slidev's standard KaTeX HTML rendering is counted.
+
+`max-table-rows` identifies each over-limit table separately. Structure budgets count visible row and list-item boxes, including empty boxes and boxes whose contents are skipped by `content-visibility: hidden`. A hidden row or list item becomes countable only through measurable DOM text that passes the visibility checks; an empty visible descendant is insufficient. Graphic-only visibility overrides inside hidden structures require manual review.
+
+These warnings suggest shortening or splitting content and do not provide automatic fixes. The guideline's ten-line visual budget and semantic requirements need manual review. Existing layout rules still check geometry, and `min-font-size` retains its 14 CSS pixel default rather than the guideline's 18pt.
 
 ## Development
 

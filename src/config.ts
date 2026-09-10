@@ -15,6 +15,9 @@ export const defaultRules = {
   'no-overlap': 'error',
   'max-heading-lines': ['warn', { max: 1 }],
   'min-font-size': ['warn', { min: 14 }],
+  'max-body-characters': ['warn', { max: 200 }],
+  'max-list-depth': ['warn', { max: 2 }],
+  'max-table-rows': ['warn', { max: 7 }],
   'optimal-zoom': ['warn', { marginLines: 1, maxZoom: 1 }],
 } as const satisfies Record<string, RuleSetting>;
 
