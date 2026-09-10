@@ -73,3 +73,15 @@ layout: two-cols
 # CSS columns
 
 <div style="columns: 2; width: 8em; font-size: 18px; line-height: 24px">字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字</div>
+
+---
+
+# Mixed font sizes
+
+<div style="font-size: 24px; line-height: 30px"><div v-for="n in 10">字<small style="font-size: 8px">注</small></div></div>
+
+---
+
+# Separated Unicode characters
+
+<div style="font-size: 18px; line-height: 24px">{{ '🇺 '.repeat(201) }}</div>

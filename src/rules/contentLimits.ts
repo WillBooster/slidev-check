@@ -10,7 +10,7 @@ export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 7, 'Tabl
 function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
   return {
     id,
-    description: `${subject} should not exceed ${max} ${unit} per slide.`,
+    description: `${subject} should not exceed ${max} ${unit} ${metric === 'tableRows' ? 'per table' : 'per slide'}.`,
     check: ({ page, containerSelector, options }) =>
       page.evaluate(findContentLimit, {
         containerSelector,
@@ -57,23 +57,31 @@ function findContentLimit({
     }
   } else {
     const text: string[] = [];
+    let previousBlock: Element | undefined;
     const blocks = new Map<Element, { rect: DOMRect; column: string }[]>();
     const walker = document.createTreeWalker(layout, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const element = node.parentElement;
       if (!element || !isChecked(element) || element.closest('h1, h2, h3, h4, h5, h6, script, style')) continue;
       const content = node.textContent ?? '';
-      if (!content.trim()) continue;
+      if (!content.trim()) {
+        text.push(content);
+        continue;
+      }
       const range = document.createRange();
       range.selectNodeContents(node);
       const rects = [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
       if (rects.length === 0) continue;
-      text.push(content);
-      if (metric !== 'lines') continue;
       // Inline markup shares a line with its block; separate columns have separate blocks.
       let block = element;
       while (block !== layout && getComputedStyle(block).display.startsWith('inline') && block.parentElement) {
         block = block.parentElement;
+      }
+      if (metric === 'characters') {
+        if (previousBlock !== block) text.push('\n');
+        text.push(content);
+        previousBlock = block;
+        continue;
       }
       block = block.closest('tr') ?? block;
       const rows = blocks.get(block) ?? [];
@@ -82,7 +90,9 @@ function findContentLimit({
         if (
           !rows.some(
             (row) =>
-              row.column === column && Math.abs(row.rect.top - rect.top) < Math.min(row.rect.height, rect.height) / 2
+              row.column === column &&
+              Math.min(row.rect.bottom, rect.bottom) - Math.max(row.rect.top, rect.top) >
+                Math.min(row.rect.height, rect.height) / 2
           )
         )
           rows.push({ rect, column });
@@ -92,7 +102,7 @@ function findContentLimit({
     if (metric === 'characters') {
       // Count user-perceived characters, including emoji and combining sequences, without whitespace.
       const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-      count = [...segmenter.segment(text.join('').replaceAll(/\s+/gu, ''))].length;
+      count = [...segmenter.segment(text.join(''))].filter(({ segment }) => segment.trim()).length;
     } else {
       for (const rows of blocks.values()) count += rows.length;
     }
