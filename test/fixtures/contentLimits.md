@@ -127,3 +127,45 @@ layout: default
 # Hidden rows with empty SVG
 
 <table style="visibility: hidden"><tbody><tr v-for="n in 8"><td><svg style="visibility: visible" width="20" height="20"></svg></td></tr></tbody></table>
+
+---
+
+# Ignored inline separator
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<span data-slidev-check-ignore>x</span>🇸!</div>
+
+---
+
+# Word break separator
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<wbr>🇸!</div>
+
+---
+
+# Split combining character
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}e<span>&#x301;</span></div>
+
+---
+
+# Empty ignored inline span
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}🇺<span data-slidev-check-ignore></span>🇸</div>
+
+---
+
+# Unrendered inline content
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}🇺<span style="display: none">x</span>🇸</div>
+
+---
+
+# Formatting controls
+
+<div>{{ '\u200b'.repeat(201) }}</div>
+
+---
+
+# Transparent inline separator
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<span style="opacity: 0">x</span>🇸!</div>

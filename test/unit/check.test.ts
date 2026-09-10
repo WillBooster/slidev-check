@@ -58,6 +58,9 @@ describe('cli', () => {
       ['max-list-depth', 'warn', 15],
       ['max-table-rows', 'warn', 16],
       ['max-table-rows', 'warn', 16],
+      ['max-body-characters', 'warn', 21],
+      ['max-body-characters', 'warn', 22],
+      ['max-body-characters', 'warn', 27],
     ]);
     expect(
       content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('201 characters'))

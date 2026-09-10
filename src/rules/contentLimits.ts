@@ -66,6 +66,8 @@ function findContentLimit({
 
   function countCharacters(root: Element): number {
     const text: string[] = [];
+    const included: { start: number; end: number }[] = [];
+    let offset = 0;
     let previousBlock: Element | undefined;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
       acceptNode: (node) =>
@@ -76,40 +78,64 @@ function findContentLimit({
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (node instanceof Element) {
         if (
-          isChecked(node) &&
-          (node.matches('br, hr, img, svg, canvas, iframe, video, audio, object, embed, input, select, textarea') ||
+          node.checkVisibility({ contentVisibilityAuto: true }) &&
+          (node.matches(
+            'br, wbr, hr, img, svg, math, canvas, iframe, video, audio, object, embed, input, select, textarea'
+          ) ||
             node instanceof SVGUseElement ||
             !['inline', 'contents', 'ruby', 'ruby-text'].includes(getComputedStyle(node).display))
         )
-          text.push('\n');
+          append('\n', false);
         continue;
       }
       if (node.nodeType !== Node.TEXT_NODE) continue;
-      const element = node.parentElement;
-      if (!element || !isTextChecked(element) || element.closest('h1, h2, h3, h4, h5, h6, script, style')) continue;
-      const content = node.textContent ?? '';
-      if (!content.trim()) {
-        text.push(content);
-        continue;
-      }
+      const element = node.parentNode;
+      if (!(element instanceof HTMLElement || element instanceof SVGElement) || isSvgResource(element)) continue;
       const range = document.createRange();
       range.selectNodeContents(node);
-      if (![...range.getClientRects()].some((rect) => rect.width > 0 && rect.height > 0)) continue;
+      const rects = [...range.getClientRects()];
+      if (rects.length === 0) continue;
+      const content = node.textContent ?? '';
+      if (!content.trim()) {
+        append(content, false);
+        continue;
+      }
       let block = element.closest('.katex') ?? element.closest('ruby') ?? element;
       while (
         block !== root &&
         ['inline', 'ruby', 'contents'].includes(getComputedStyle(block).display) &&
         block.parentElement
-      ) {
+      )
         block = block.parentElement;
-      }
-      if (previousBlock !== block) text.push('\n');
-      text.push(content);
+      if (previousBlock !== block) append('\n', false);
+      // Excluded but laid-out text still separates surrounding grapheme clusters.
+      append(
+        content,
+        isTextChecked(element) &&
+          !element.closest('h1, h2, h3, h4, h5, h6, script, style') &&
+          rects.some((rect) => rect.width > 0 || rect.height > 0)
+      );
       previousBlock = block;
     }
-    // Segment before dropping whitespace so separated Unicode characters cannot combine.
     const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-    return [...segmenter.segment(text.join(''))].filter(({ segment }) => segment.trim()).length;
+    let count = 0;
+    let run = 0;
+    for (const { index, segment } of segmenter.segment(text.join(''))) {
+      while ((included[run]?.end ?? Infinity) <= index) run++;
+      const current = included[run];
+      if (current && current.start < index + segment.length) count++;
+    }
+    return count;
+
+    function append(value: string, countable: boolean): void {
+      text.push(value);
+      if (countable) {
+        for (const match of value.matchAll(/[^\s\p{Default_Ignorable_Code_Point}\p{Cc}]+/gu)) {
+          included.push({ start: offset + match.index, end: offset + match.index + match[0].length });
+        }
+      }
+      offset += value.length;
+    }
   }
 
   function countListDepth(root: Element): number {
