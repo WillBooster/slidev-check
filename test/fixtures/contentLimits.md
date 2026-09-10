@@ -120,3 +120,9 @@ $x^2 + y^2 = z^2$
 # Inline cards
 
 <div style="font-size: 18px; line-height: 24px"><div style="display: inline-block; width: 8em">字<br>字<br>字<br>字<br>字<br>字</div><div style="display: inline-block; width: 8em">字<br>字<br>字<br>字<br>字<br>字</div></div>
+
+---
+
+# Ruby annotations
+
+<div style="font-size: 18px; line-height: 36px"><div v-for="n in 6"><ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby></div></div>

@@ -71,11 +71,14 @@ function findContentLimit({
       }
       const range = document.createRange();
       range.selectNodeContents(node);
-      const rects = [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
+      const ruby = element.closest('ruby');
+      const rects = [...(metric === 'lines' && ruby ? ruby : range).getClientRects()].filter(
+        (rect) => rect.width > 0 && rect.height > 0
+      );
       if (rects.length === 0) continue;
       // KaTeX uses internal blocks to position scripts; those are not separate body lines.
-      let block = element.closest('.katex') ?? element;
-      while (block !== layout && getComputedStyle(block).display === 'inline' && block.parentElement) {
+      let block = element.closest('.katex') ?? ruby ?? element;
+      while (block !== layout && ['inline', 'ruby'].includes(getComputedStyle(block).display) && block.parentElement) {
         block = block.parentElement;
       }
       if (metric === 'characters') {
