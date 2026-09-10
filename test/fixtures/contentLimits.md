@@ -181,3 +181,62 @@ $x^2 + y^2 = z^2$
 # Vertical text left to right
 
 <div style="writing-mode: vertical-lr; height: 1em; font-size: 18px; line-height: 24px; word-break: break-all">{{ '字'.repeat(11) }}</div>
+
+---
+class: text-lg
+---
+
+# Stacked mathematics
+
+<div style="font-size: 12px">
+
+$$
+\frac{a}{b}
+$$
+
+$$
+\frac{a}{b}
+$$
+
+$$
+\frac{a}{b}
+$$
+
+$$
+\frac{a}{b}
+$$
+
+$$
+\frac{a}{b}
+$$
+
+$$
+\frac{a}{b}
+$$
+
+
+A<br>B<br>C<br>D<br>E
+
+</div>
+
+---
+class: text-lg
+---
+
+# Multiple equation rows
+
+$$
+\begin{aligned}
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b \\
+a &= b
+\end{aligned}
+$$

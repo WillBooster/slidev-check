@@ -89,12 +89,12 @@ function findContentLimit({
       const range = document.createRange();
       range.selectNodeContents(node);
       const ruby = element.closest('ruby');
-      const rects = [...(metric === 'lines' && ruby ? ruby : range).getClientRects()].filter(
-        (rect) => rect.width > 0 && rect.height > 0
-      );
+      const katex = element.closest('.katex');
+      const lineBox = metric === 'lines' ? (ruby ?? (katex ? stackedMathBox(element, katex) : undefined)) : undefined;
+      const rects = [...(lineBox ?? range).getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
       if (rects.length === 0) continue;
       // KaTeX uses internal blocks to position scripts; those are not separate body lines.
-      let block = element.closest('.katex') ?? ruby ?? element;
+      let block = katex ?? ruby ?? element;
       while (
         block !== layout &&
         ['inline', 'ruby', 'contents'].includes(getComputedStyle(block).display) &&
@@ -148,6 +148,20 @@ function findContentLimit({
         },
       ]
     : [];
+
+  function stackedMathBox(element: Element, katex: Element): Element | undefined {
+    let stack: Element | undefined;
+    for (let parent: Element | null = element; parent && parent !== katex; parent = parent.parentElement) {
+      // Matrix/aligned columns contain genuine equation rows; fractions and limits inside each row are atomic.
+      if (parent.matches('.mtable')) break;
+      if (
+        parent.matches('.vlist-t') &&
+        ![...(parent.parentElement?.classList ?? [])].some((name) => name.startsWith('col-align-'))
+      )
+        stack = parent;
+    }
+    return stack;
+  }
 
   function sameLine(a: TextLine, b: TextLine): boolean {
     const start = a.vertical ? 'left' : 'top';
