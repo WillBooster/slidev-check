@@ -27,7 +27,7 @@
     <text y="150"><tspan class="muted">7:</tspan> <tspan class="warning">warning</tspan> max-heading-lines: Heading <tspan class="value">`&lt;h2&gt;Deploying to pro…`</tspan> spans <tspan class="value">2</tspan> lines,</text>
     <text y="200">exceeding the maximum of <tspan class="value">1</tspan>. help: Consider shortening the heading.</text>
     <text y="300" class="error">Found 1 warning and 1 error.</text>
-    <text y="350">Finished in 3521ms with 9 rules.</text>
+    <text y="350">Finished in 3521ms with 8 rules.</text>
     <text y="400"><tspan class="prompt">$</tspan> </text>
     <rect x="36" y="371" width="18" height="38" fill="#e5e7eb"/>
   </g>

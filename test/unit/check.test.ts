@@ -43,59 +43,41 @@ describe('cli', () => {
     const { exitCode, violations } = await runCliJson(fixture('contentLimits.md'));
     expect(exitCode).toBe(0);
     const content = violations.filter((v) =>
-      ['max-body-characters', 'max-body-lines', 'max-list-depth', 'max-table-rows'].includes(v.ruleId)
+      ['max-body-characters', 'max-list-depth', 'max-table-rows'].includes(v.ruleId)
     );
     expect(content.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
       ['max-body-characters', 'warn', 2],
-      ['max-body-lines', 'warn', 4],
-      ['max-list-depth', 'warn', 6],
+      ['max-list-depth', 'warn', 4],
+      ['max-table-rows', 'warn', 6],
+      ['max-body-characters', 'warn', 7],
       ['max-table-rows', 'warn', 8],
-      ['max-body-lines', 'warn', 9],
-      ['max-body-lines', 'warn', 10],
-      ['max-body-characters', 'warn', 12],
-      ['max-table-rows', 'warn', 14],
-      ['max-table-rows', 'warn', 15],
-      ['max-body-lines', 'warn', 17],
-      ['max-body-characters', 'warn', 19],
-      ['max-list-depth', 'warn', 20],
-      ['max-body-characters', 'warn', 24],
-      ['max-list-depth', 'warn', 25],
-      ['max-body-lines', 'warn', 26],
-      ['max-body-lines', 'warn', 27],
-      ['max-body-lines', 'warn', 28],
-      ['max-body-lines', 'warn', 29],
-      ['max-body-lines', 'warn', 30],
-      ['max-body-lines', 'warn', 31],
-      ['max-table-rows', 'warn', 31],
-      ['max-table-rows', 'warn', 31],
+      ['max-table-rows', 'warn', 9],
+      ['max-body-characters', 'warn', 11],
+      ['max-list-depth', 'warn', 12],
+      ['max-body-characters', 'warn', 14],
+      ['max-list-depth', 'warn', 15],
+      ['max-table-rows', 'warn', 16],
+      ['max-table-rows', 'warn', 16],
+      ['max-list-depth', 'warn', 19],
+      ['max-table-rows', 'warn', 20],
     ]);
-    expect(content.map((v) => v.message)).toEqual([
-      'Body text has 201 characters, exceeding the maximum of 200.',
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'List has 3 levels, exceeding the maximum of 2.',
-      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'Body text has 12 lines, exceeding the maximum of 10.',
-      'Body text has 201 characters, exceeding the maximum of 200.',
-      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
-      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
-      'Body text has 12 lines, exceeding the maximum of 10.',
-      'Body text has 201 characters, exceeding the maximum of 200.',
-      'List has 3 levels, exceeding the maximum of 2.',
-      'Body text has 201 characters, exceeding the maximum of 200.',
-      'List has 3 levels, exceeding the maximum of 2.',
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'Body text has 11 lines, exceeding the maximum of 10.',
-      'Body line count cannot be determined reliably: text has effective line-height 10px below font size 18px.',
-      'Body text has 19 lines, exceeding the maximum of 10.',
-      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
-      expect.stringContaining('has 9 rows, exceeding the maximum of 7.'),
-    ]);
-    expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 31).map((v) => v.message)).toEqual([
+    expect(
+      content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('201 characters'))
+    ).toBe(true);
+    expect(content.filter((v) => v.ruleId === 'max-list-depth').every((v) => v.message.includes('3 levels'))).toBe(
+      true
+    );
+    expect(content.filter((v) => v.ruleId === 'max-table-rows').map((v) => v.message)).toEqual([
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 8 rows'),
       expect.stringContaining('First'),
       expect.stringContaining('Second'),
+      expect.stringContaining('has 8 rows'),
+    ]);
+    expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 16).map((v) => v.message)).toEqual([
+      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 9 rows'),
     ]);
   }, 90_000);
 
@@ -106,7 +88,6 @@ describe('cli', () => {
       ['no-overflow', 'error', 2],
       ['optimal-zoom', 'warn', 2],
       ['max-body-characters', 'warn', 2],
-      ['max-body-lines', 'warn', 2],
       ['no-overflow', 'error', 3],
     ]);
     const [text, zoom] = violations;

@@ -29,7 +29,7 @@ Nothing is printed when no rule is violated. Otherwise each violation is reporte
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 9 rules.
+Finished in 3521ms with 8 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
@@ -42,24 +42,19 @@ Add `data-slidev-check-ignore` to an element to exclude it (and its descendants)
 
 The following rules run by default as warnings, based on the [slide guidelines](https://github.com/WillBooster/agentic-workflows/pull/665):
 
-| Rule                  | Limit                                           |
-| --------------------- | ----------------------------------------------- |
-| `max-body-characters` | 200 non-whitespace characters per slide         |
-| `max-body-lines`      | 10 rendered body lines per slide                |
-| `max-list-depth`      | 2 nested list levels                            |
-| `max-table-rows`      | 7 visible rows per table, including header rows |
+| Rule                  | Limit                                       |
+| --------------------- | ------------------------------------------- |
+| `max-body-characters` | 200 non-whitespace characters per slide     |
+| `max-list-depth`      | 2 nested list levels                        |
+| `max-table-rows`      | 7 visible rows per table, including headers |
 
-Body counts include prose, lists, code, and table text inside `.slidev-layout`, but exclude headings, hidden content, and elements marked `data-slidev-check-ignore`. Characters are counted as Unicode grapheme clusters, so an emoji or a letter with combining marks counts as one character. Inline formatting does not count text twice. Wrapped lines count separately. Content in separate layout blocks (including flex/grid element items and inline-block cards) contributes its own lines, even on the same visual row. Table cells share row groups: text at the same vertical position within a row counts as one line. Rows without visible text add no body lines; `max-table-rows` still counts those rows. Theme content outside the layout and speaker notes are not counted.
+Character counts include prose, lists, code, and table text inside `.slidev-layout`, excluding headings, hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Inline markup does not count text twice, and whitespace and DOM separators preserve character boundaries. Theme content outside the layout and speaker notes are not counted.
 
-Custom layouts must mark their content root with `class="slidev-layout"`; slides without this class are not checked by these four rules. Visibility checks respect display, visibility, opacity, and content-visibility, as well as `data-slidev-check-ignore`. Visible text inside boxless `display: contents` wrappers is counted. Counts use laid-out text, so CSS clipping, line clamping, and overflowing text still count. Mark screen-reader-only text or intentionally excluded content with `data-slidev-check-ignore`.
+Custom layouts must mark their content root with `class="slidev-layout"`. Visibility checks respect display, visibility, opacity, and content-visibility; visible text inside boxless `display: contents` wrappers is counted. Text clipped or clamped by CSS still counts. Use `data-slidev-check-ignore` for intentionally excluded content. Text metrics inspect HTML and SVG text; direct native MathML is not counted, while Slidev's standard KaTeX HTML rendering is counted.
 
-`max-body-lines` requires adequate line spacing for ordinary text. When both the text and its enclosing block have numeric line-heights smaller than the text’s font size, it warns that the count is indeterminate; increase line-height and recheck. KaTeX and ruby use their composite geometry.
+`max-table-rows` identifies each over-limit table separately. Visible empty rows count, but an empty visible descendant alone does not make a hidden row or list item visible: it must expose text or painted content.
 
-Text metrics inspect HTML and SVG text. Direct native MathML is not counted; use Slidev’s standard KaTeX rendering, whose visible HTML text is counted.
-
-`max-table-rows` reports each over-limit table separately and includes a description identifying it.
-
-These rules suggest shortening or splitting content and do not provide automatic fixes. Semantic requirements such as one message per slide and audience-appropriate wording still require human review. The existing `min-font-size` rule uses its own default of 14 CSS pixels; it does not enforce the guideline's 18pt body font size.
+These warnings suggest shortening or splitting content and do not provide automatic fixes. The guideline's ten-line visual budget and semantic requirements need manual review. Existing layout rules still check geometry, and `min-font-size` retains its 14 CSS pixel default rather than the guideline's 18pt.
 
 ## Development
 

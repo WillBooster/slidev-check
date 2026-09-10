@@ -1,5 +1,5 @@
 import type { Rule } from '../types.ts';
-import { maxBodyCharacters, maxBodyLines, maxListDepth, maxTableRows } from './contentLimits.ts';
+import { maxBodyCharacters, maxListDepth, maxTableRows } from './contentLimits.ts';
 import { maxHeadingLines } from './max-heading-lines.ts';
 import { minFontSize } from './min-font-size.ts';
 import { noOverflow } from './no-overflow.ts';
@@ -13,7 +13,6 @@ export const allRules: readonly Rule[] = [
   minFontSize,
   optimalZoom,
   maxBodyCharacters,
-  maxBodyLines,
   maxListDepth,
   maxTableRows,
 ];
