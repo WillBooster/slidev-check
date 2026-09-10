@@ -96,3 +96,21 @@ $x^2 + y^2 = z^2$<br>
 $x^2 + y^2 = z^2$<br>
 $x^2 + y^2 = z^2$<br>
 $x^2 + y^2 = z^2$
+
+---
+
+# Visible rows in a hidden table
+
+<table style="visibility: hidden"><tbody><tr v-for="n in 8" style="visibility: visible"><td>{{ n }}</td></tr></tbody></table>
+
+---
+
+# Visible cells in hidden rows
+
+<table><tbody><tr v-for="n in 8" style="visibility: hidden"><td><span style="visibility: visible">{{ n }}</span></td></tr></tbody></table>
+
+---
+
+# Fully hidden table
+
+<table style="display: none"><tbody><tr v-for="n in 8" style="visibility: visible"><td>{{ n }}</td></tr></tbody></table>

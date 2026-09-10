@@ -51,8 +51,9 @@ function findContentLimit({
     }
   } else if (metric === 'tableRows') {
     for (const table of layout.querySelectorAll('table')) {
-      if (!isChecked(table)) continue;
-      const rows = [...table.querySelectorAll('tr')].filter((row) => row.closest('table') === table && isChecked(row));
+      const rows = [...table.querySelectorAll('tr')].filter(
+        (row) => row.closest('table') === table && ([...row.querySelectorAll('*')].some(isChecked) || isChecked(row))
+      );
       count = Math.max(count, rows.length);
     }
   } else {
