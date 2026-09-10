@@ -73,10 +73,10 @@ function findContentLimit({
       range.selectNodeContents(node);
       const rects = [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
       if (rects.length === 0) continue;
-      // Inline markup shares a line with its block; separate columns have separate blocks.
-      let block = element;
-      for (let parent: Element | null = element; parent && parent !== layout; parent = parent.parentElement) {
-        if (getComputedStyle(parent).display.startsWith('inline') && parent.parentElement) block = parent.parentElement;
+      // KaTeX uses internal blocks to position scripts; those are not separate body lines.
+      let block = element.closest('.katex') ?? element;
+      while (block !== layout && getComputedStyle(block).display === 'inline' && block.parentElement) {
+        block = block.parentElement;
       }
       if (metric === 'characters') {
         if (previousBlock !== block) text.push('\n');

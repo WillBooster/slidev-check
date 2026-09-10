@@ -55,6 +55,7 @@ describe('cli', () => {
       ['max-body-characters', 'warn', 12],
       ['max-table-rows', 'warn', 14],
       ['max-table-rows', 'warn', 15],
+      ['max-body-lines', 'warn', 17],
     ]);
     expect(content.map((v) => v.message)).toEqual([
       'Body text has 201 characters, exceeding the maximum of 200.',
@@ -66,6 +67,7 @@ describe('cli', () => {
       'Body text has 201 characters, exceeding the maximum of 200.',
       'Table has 8 rows, exceeding the maximum of 7.',
       'Table has 8 rows, exceeding the maximum of 7.',
+      'Body text has 12 lines, exceeding the maximum of 10.',
     ]);
   }, 90_000);
 

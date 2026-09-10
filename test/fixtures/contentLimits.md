@@ -114,3 +114,9 @@ $x^2 + y^2 = z^2$
 # Fully hidden table
 
 <table style="display: none"><tbody><tr v-for="n in 8" style="visibility: visible"><td>{{ n }}</td></tr></tbody></table>
+
+---
+
+# Inline cards
+
+<div style="font-size: 18px; line-height: 24px"><div style="display: inline-block; width: 8em">字<br>字<br>字<br>字<br>字<br>字</div><div style="display: inline-block; width: 8em">字<br>字<br>字<br>字<br>字<br>字</div></div>
