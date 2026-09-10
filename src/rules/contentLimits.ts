@@ -188,6 +188,12 @@ function findContentLimit({
     );
   }
 
+  function hasVisibleContent(element: Element): boolean {
+    return [element, ...element.querySelectorAll('*')].some(
+      (candidate) => isChecked(candidate) || (isTextChecked(candidate) && measureText(candidate) !== undefined)
+    );
+  }
+
   function isTextChecked(element: Element): boolean {
     const style = getComputedStyle(element);
     if (style.display !== 'contents') return isChecked(element);
@@ -201,12 +207,6 @@ function findContentLimit({
     while (box && getComputedStyle(box).display === 'contents') box = box.parentElement;
     // Boxless elements have no visibility-testable box, but their direct text can still render.
     return box?.checkVisibility({ opacityProperty: true, contentVisibilityAuto: true }) ?? false;
-  }
-
-  function hasVisibleContent(element: Element): boolean {
-    return [element, ...element.querySelectorAll('*')].some(
-      (candidate) => isChecked(candidate) || (isTextChecked(candidate) && measureText(candidate) !== undefined)
-    );
   }
 
   function columnOf(element: Element, rect: DOMRect): string {
