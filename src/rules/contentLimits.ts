@@ -34,7 +34,7 @@ function findContentLimit({
   subject: string;
   unit: string;
 }): RuleFinding[] {
-  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
+  const { describe, measureText } = globalThis.__slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
@@ -111,7 +111,7 @@ function findContentLimit({
       // Excluded but laid-out text still separates surrounding grapheme clusters.
       append(
         content,
-        isTextChecked(element) &&
+        isContentChecked(element) &&
           !element.closest('h1, h2, h3, h4, h5, h6, script, style') &&
           rects.some((rect) => rect.width > 0 || rect.height > 0)
       );
@@ -152,27 +152,30 @@ function findContentLimit({
   }
 
   function hasVisibleContent(element: Element): boolean {
-    if (isSvgResource(element)) return false;
-    if (isChecked(element)) return true;
+    if (isContentChecked(element) && getComputedStyle(element).display !== 'contents') return true;
     return [element, ...element.querySelectorAll('*')].some(
-      (candidate) => isTextChecked(candidate) && measureText(candidate) !== undefined
+      (candidate) => isContentChecked(candidate) && measureText(candidate) !== undefined
     );
   }
 
-  function isTextChecked(element: Element): boolean {
-    if (isSvgResource(element)) return false;
-    const style = getComputedStyle(element);
-    if (style.display !== 'contents') return isChecked(element);
+  function isContentChecked(element: Element): boolean {
     if (
       !(element instanceof HTMLElement || element instanceof SVGElement) ||
       element.closest('[data-slidev-check-ignore]') ||
-      style.visibility !== 'visible'
+      isSvgResource(element) ||
+      getComputedStyle(element).visibility !== 'visible'
     )
       return false;
-    let box = element.parentElement;
+    let box: Element | null = element;
     while (box && getComputedStyle(box).display === 'contents') box = box.parentElement;
-    // Boxless elements have no visibility-testable box, but their direct text can still render.
-    return box?.checkVisibility({ opacityProperty: true, contentVisibilityAuto: true }) ?? false;
+    if (!box?.checkVisibility({ opacityProperty: true, contentVisibilityAuto: true })) return false;
+    // The property is ineffective on some boxes; innerText distinguishes skipped contents.
+    return !(
+      box instanceof HTMLElement &&
+      getComputedStyle(box).contentVisibility === 'hidden' &&
+      // oxlint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText excludes skipped contents; textContent does not.
+      box.innerText === ''
+    );
   }
 
   function isSvgResource(element: Element): boolean {

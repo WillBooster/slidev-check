@@ -61,6 +61,9 @@ describe('cli', () => {
       ['max-body-characters', 'warn', 21],
       ['max-body-characters', 'warn', 22],
       ['max-body-characters', 'warn', 27],
+      ['max-body-characters', 'warn', 31],
+      ['max-body-characters', 'warn', 32],
+      ['max-table-rows', 'warn', 33],
     ]);
     expect(
       content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('201 characters'))
@@ -74,6 +77,7 @@ describe('cli', () => {
       expect.stringContaining('has 8 rows'),
       expect.stringContaining('First'),
       expect.stringContaining('Second'),
+      expect.stringContaining('has 8 rows'),
     ]);
     expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 16).map((v) => v.message)).toEqual([
       expect.stringContaining('has 8 rows'),

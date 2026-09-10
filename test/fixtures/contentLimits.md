@@ -169,3 +169,45 @@ layout: default
 # Transparent inline separator
 
 <div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<span style="opacity: 0">x</span>🇸!</div>
+
+---
+
+# Skipped direct text
+
+<div style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(201) }}</div>
+
+---
+
+# Skipped third list level
+
+<ul><li>A<ul><li>B<ul><li style="content-visibility: hidden">C</li></ul></li></ul></li></ul>
+
+---
+
+# Boxless text inside skipped content
+
+<div style="content-visibility: hidden; font-size: 18px; word-break: break-all"><span style="display: contents">{{ 'a'.repeat(201) }}</span></div>
+
+---
+
+# Visible boxless text with ineffective properties
+
+<div style="font-size: 18px; word-break: break-all"><span style="display: contents; opacity: 0; content-visibility: hidden">{{ 'a'.repeat(201) }}</span></div>
+
+---
+
+# Visible inline text with ineffective content visibility
+
+<div style="font-size: 18px; word-break: break-all"><span style="content-visibility: hidden">{{ 'a'.repeat(201) }}</span></div>
+
+---
+
+# Visible rows with ineffective content visibility
+
+<table><tbody><tr v-for="n in 8" style="content-visibility: hidden"><td>{{ n }}</td></tr></tbody></table>
+
+---
+
+# Skipped cell text
+
+<table><tbody><tr><td style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(201) }}</td></tr></tbody></table>
