@@ -1,0 +1,8 @@
+{
+  "facts": [
+    "Content rules in src/rules/contentLimits.ts intentionally inspect .slidev-layout roots; custom layouts must supply that class, as documented in README.md.",
+    "Content rules count laid-out text, including clipped, clamped, and overflowing text; data-slidev-check-ignore is the explicit exclusion mechanism for screen-reader-only or intentionally excluded content.",
+    "Text metrics inspect HTML and SVG text; direct native MathML is outside the documented scope, while Slidev's standard KaTeX HTML rendering is counted and its MathML accessibility copy is excluded.",
+    "The body-line metric counts text lines, so empty or image-only table rows add no body lines; max-table-rows independently counts visible rows including empty rows and headers.",
+  ],
+}
