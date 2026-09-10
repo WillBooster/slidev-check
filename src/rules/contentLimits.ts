@@ -57,7 +57,7 @@ function findContentLimit({
     }
   } else {
     const text: string[] = [];
-    const blocks = new Map<Element, DOMRect[]>();
+    const blocks = new Map<Element, { rect: DOMRect; column: string }[]>();
     const walker = document.createTreeWalker(layout, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const element = node.parentElement;
@@ -78,7 +78,14 @@ function findContentLimit({
       block = block.closest('tr') ?? block;
       const rows = blocks.get(block) ?? [];
       for (const rect of rects) {
-        if (!rows.some((row) => Math.abs(row.top - rect.top) < Math.min(row.height, rect.height) / 2)) rows.push(rect);
+        const column = columnOf(element, rect);
+        if (
+          !rows.some(
+            (row) =>
+              row.column === column && Math.abs(row.rect.top - rect.top) < Math.min(row.rect.height, rect.height) / 2
+          )
+        )
+          rows.push({ rect, column });
       }
       blocks.set(block, rows);
     }
@@ -98,4 +105,31 @@ function findContentLimit({
         },
       ]
     : [];
+
+  function columnOf(element: Element, rect: DOMRect): string {
+    const columns: number[] = [];
+    for (let parent: Element | null = element; parent && layout?.contains(parent); parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      if (style.columnSpan === 'all') break;
+      if (!(parent instanceof HTMLElement) || (style.columnCount === 'auto' && style.columnWidth === 'auto')) continue;
+      const bounds = parent.getBoundingClientRect();
+      const scale = bounds.width / parent.offsetWidth;
+      const padding = Number.parseFloat(style.paddingLeft);
+      const width = parent.clientWidth - padding - Number.parseFloat(style.paddingRight);
+      const gap =
+        style.columnGap === 'normal'
+          ? Number.parseFloat(style.fontSize)
+          : Number.parseFloat(style.columnGap) * (style.columnGap.endsWith('%') ? width / 100 : 1);
+      const requestedCount = Number.parseInt(style.columnCount, 10);
+      const columnWidth = Number.parseFloat(style.columnWidth);
+      const fittingCount = Number.isNaN(columnWidth)
+        ? Infinity
+        : Math.max(1, Math.floor((width + gap) / (columnWidth + gap)));
+      const count = Math.min(Number.isNaN(requestedCount) ? Infinity : requestedCount, fittingCount);
+      const stride = (width + gap) / count;
+      const offset = (rect.left - bounds.left) / scale - parent.clientLeft - padding;
+      columns.push(Math.floor((offset + 0.5) / stride));
+    }
+    return columns.join('/');
+  }
 }

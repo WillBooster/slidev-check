@@ -67,3 +67,9 @@ layout: two-cols
 ::right::
 
 <div style="font-size: 18px; line-height: 24px"><div v-for="n in 5">字<span>字</span></div></div>
+
+---
+
+# CSS columns
+
+<div style="columns: 2; width: 8em; font-size: 18px; line-height: 24px">字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字</div>

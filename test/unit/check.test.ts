@@ -51,6 +51,7 @@ describe('cli', () => {
       ['max-list-depth', 'warn', 6],
       ['max-table-rows', 'warn', 8],
       ['max-body-lines', 'warn', 9],
+      ['max-body-lines', 'warn', 10],
     ]);
     expect(content.map((v) => v.message)).toEqual([
       'Body text has 201 characters, exceeding the maximum of 200.',
@@ -58,6 +59,7 @@ describe('cli', () => {
       'List has 3 levels, exceeding the maximum of 2.',
       'Table has 8 rows, exceeding the maximum of 7.',
       'Body text has 11 lines, exceeding the maximum of 10.',
+      'Body text has 12 lines, exceeding the maximum of 10.',
     ]);
   }, 90_000);
 
