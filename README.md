@@ -51,6 +51,8 @@ The following rules run by default as warnings, based on the [slide guidelines](
 
 Body counts include prose, lists, code, and table text inside `.slidev-layout`, but exclude headings, hidden content, and elements marked `data-slidev-check-ignore`. Characters are counted as Unicode grapheme clusters, so an emoji or a letter with combining marks counts as one character. Inline formatting does not count text twice. Wrapped lines count separately; columns are counted separately, and table text at the same vertical position within a row counts as one line. Rows without visible text add no body lines; `max-table-rows` still counts those rows. Theme content outside the layout and speaker notes are not counted.
 
+Custom layouts must mark their content root with `class="slidev-layout"`; slides without this class are not checked by these four rules. Hidden content here means elements excluded by `checkVisibility` (display, visibility, opacity, and content-visibility) or `data-slidev-check-ignore`. Counts use laid-out text, so CSS clipping, line clamping, and overflowing text still count. Mark screen-reader-only text or intentionally excluded content with `data-slidev-check-ignore`.
+
 These rules suggest shortening or splitting content and do not provide automatic fixes. Semantic requirements such as one message per slide and audience-appropriate wording still require human review. The existing `min-font-size` rule uses its own default of 14 CSS pixels; it does not enforce the guideline's 18pt body font size.
 
 ## Development
