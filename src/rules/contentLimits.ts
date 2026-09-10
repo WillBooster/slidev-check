@@ -42,7 +42,7 @@ function findContentLimit({
   let count = 0;
   if (metric === 'listDepth') {
     for (const item of layout.querySelectorAll('li')) {
-      if (!isChecked(item)) continue;
+      if (!hasVisibleContent(item)) continue;
       let depth = 0;
       for (let parent = item.parentElement; parent && layout.contains(parent); parent = parent.parentElement) {
         if (parent.matches('ul, ol')) depth++;
@@ -52,7 +52,7 @@ function findContentLimit({
   } else if (metric === 'tableRows') {
     for (const table of layout.querySelectorAll('table')) {
       const rows = [...table.querySelectorAll('tr')].filter(
-        (row) => row.closest('table') === table && ([...row.querySelectorAll('*')].some(isChecked) || isChecked(row))
+        (row) => row.closest('table') === table && hasVisibleContent(row)
       );
       count = Math.max(count, rows.length);
     }
@@ -60,8 +60,19 @@ function findContentLimit({
     const text: string[] = [];
     let previousBlock: Element | undefined;
     const blocks = new Map<Element, { rect: DOMRect; column: string }[]>();
-    const walker = document.createTreeWalker(layout, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(layout, NodeFilter.SHOW_ALL);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node instanceof Element) {
+        if (
+          metric === 'characters' &&
+          isChecked(node) &&
+          (node.matches('br, hr, img, svg, canvas, iframe, video, audio, object, embed, input, select, textarea') ||
+            !['inline', 'contents', 'ruby', 'ruby-text'].includes(getComputedStyle(node).display))
+        )
+          text.push('\n');
+        continue;
+      }
+      if (node.nodeType !== Node.TEXT_NODE) continue;
       const element = node.parentElement;
       if (!element || !isChecked(element) || element.closest('h1, h2, h3, h4, h5, h6, script, style')) continue;
       const content = node.textContent ?? '';
@@ -119,6 +130,10 @@ function findContentLimit({
         },
       ]
     : [];
+
+  function hasVisibleContent(element: Element): boolean {
+    return isChecked(element) || [...element.querySelectorAll('*')].some(isChecked);
+  }
 
   function columnOf(element: Element, rect: DOMRect): string {
     const columns: number[] = [];

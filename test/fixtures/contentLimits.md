@@ -126,3 +126,21 @@ $x^2 + y^2 = z^2$
 # Ruby annotations
 
 <div style="font-size: 18px; line-height: 36px"><div v-for="n in 6"><ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby></div></div>
+
+---
+
+# Unicode across a line break
+
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<br>🇺!</div>
+
+---
+
+# Visible text in hidden list items
+
+<ul style="visibility: hidden"><li><span style="visibility: visible">A</span><ul><li><span style="visibility: visible">B</span><ul><li><span style="visibility: visible">C</span></li></ul></li></ul></li></ul>
+
+---
+
+# Ignored list descendants
+
+<ul data-slidev-check-ignore style="visibility: hidden"><li><span style="visibility: visible">A</span><ul><li><span style="visibility: visible">B</span><ul><li><span style="visibility: visible">C</span></li></ul></li></ul></li></ul>
