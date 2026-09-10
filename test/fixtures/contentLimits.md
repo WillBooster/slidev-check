@@ -246,3 +246,9 @@ $$
 # Tight leading
 
 <div style="font-size: 18px; line-height: 10px">字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字</div>
+
+---
+
+# Multiple long tables
+
+<div style="display: flex; gap: 24px; font-size: 14px; line-height: 20px"><table style="width: 300px"><caption>First</caption><tbody><tr v-for="n in 8"><td>{{ n }}</td></tr></tbody></table><table style="width: 300px"><caption>Second</caption><tbody><tr v-for="n in 9"><td>{{ n }}</td></tr></tbody></table></div>

@@ -65,17 +65,20 @@ describe('cli', () => {
       ['max-body-lines', 'warn', 28],
       ['max-body-lines', 'warn', 29],
       ['max-body-lines', 'warn', 30],
+      ['max-body-lines', 'warn', 31],
+      ['max-table-rows', 'warn', 31],
+      ['max-table-rows', 'warn', 31],
     ]);
     expect(content.map((v) => v.message)).toEqual([
       'Body text has 201 characters, exceeding the maximum of 200.',
       'Body text has 11 lines, exceeding the maximum of 10.',
       'List has 3 levels, exceeding the maximum of 2.',
-      'Table has 8 rows, exceeding the maximum of 7.',
+      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
       'Body text has 11 lines, exceeding the maximum of 10.',
       'Body text has 12 lines, exceeding the maximum of 10.',
       'Body text has 201 characters, exceeding the maximum of 200.',
-      'Table has 8 rows, exceeding the maximum of 7.',
-      'Table has 8 rows, exceeding the maximum of 7.',
+      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
+      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
       'Body text has 12 lines, exceeding the maximum of 10.',
       'Body text has 201 characters, exceeding the maximum of 200.',
       'List has 3 levels, exceeding the maximum of 2.',
@@ -86,6 +89,13 @@ describe('cli', () => {
       'Body text has 11 lines, exceeding the maximum of 10.',
       'Body text has 11 lines, exceeding the maximum of 10.',
       'Body line count cannot be determined reliably: text has effective line-height 10px below font size 18px.',
+      'Body text has 19 lines, exceeding the maximum of 10.',
+      expect.stringContaining('has 8 rows, exceeding the maximum of 7.'),
+      expect.stringContaining('has 9 rows, exceeding the maximum of 7.'),
+    ]);
+    expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 31).map((v) => v.message)).toEqual([
+      expect.stringContaining('First'),
+      expect.stringContaining('Second'),
     ]);
   }, 90_000);
 

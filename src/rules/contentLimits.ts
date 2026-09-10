@@ -41,7 +41,7 @@ function findContentLimit({
   subject: string;
   unit: string;
 }): RuleFinding[] {
-  const { isChecked, measureText } = globalThis.__slidevCheck;
+  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
 
@@ -56,12 +56,18 @@ function findContentLimit({
       count = Math.max(count, depth);
     }
   } else if (metric === 'tableRows') {
+    const findings: RuleFinding[] = [];
     for (const table of layout.querySelectorAll('table')) {
       const rows = [...table.querySelectorAll('tr')].filter(
         (row) => row.closest('table') === table && hasVisibleContent(row)
       );
-      count = Math.max(count, rows.length);
+      if (rows.length > max)
+        findings.push({
+          message: `Table \`${describe(table)}\` has ${rows.length} rows, exceeding the maximum of ${max}.`,
+          help: 'Consider shortening or splitting the table into multiple slides.',
+        });
     }
+    return findings;
   } else {
     const text: string[] = [];
     let previousBlock: Element | undefined;

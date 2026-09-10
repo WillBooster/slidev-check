@@ -57,6 +57,8 @@ Custom layouts must mark their content root with `class="slidev-layout"`; slides
 
 Text metrics inspect HTML and SVG text. Direct native MathML is not counted; use Slidev’s standard KaTeX rendering, whose visible HTML text is counted.
 
+`max-table-rows` reports each over-limit table separately and includes a description identifying it.
+
 These rules suggest shortening or splitting content and do not provide automatic fixes. Semantic requirements such as one message per slide and audience-appropriate wording still require human review. The existing `min-font-size` rule uses its own default of 14 CSS pixels; it does not enforce the guideline's 18pt body font size.
 
 ## Development
