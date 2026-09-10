@@ -34,7 +34,7 @@ function findContentLimit({
   subject: string;
   unit: string;
 }): RuleFinding[] {
-  const { describe, isChecked, measure, measureText, paints } = globalThis.__slidevCheck;
+  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
@@ -128,15 +128,9 @@ function findContentLimit({
   function hasVisibleContent(element: Element): boolean {
     if (isSvgResource(element)) return false;
     if (isChecked(element)) return true;
-    // A visibility override must expose content, not merely create an empty box.
-    for (const candidate of [element, ...element.querySelectorAll('*')]) {
-      if (isSvgResource(candidate)) continue;
-      if (isTextChecked(candidate) && measureText(candidate) !== undefined) return true;
-      if (!isChecked(candidate) || !paints(candidate)) continue;
-      const rect = measure(candidate);
-      if (rect && rect.width > 0 && rect.height > 0) return true;
-    }
-    return false;
+    return [element, ...element.querySelectorAll('*')].some(
+      (candidate) => isTextChecked(candidate) && measureText(candidate) !== undefined
+    );
   }
 
   function isTextChecked(element: Element): boolean {

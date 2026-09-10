@@ -52,7 +52,7 @@ Character counts include prose, lists, code, and table text inside `.slidev-layo
 
 Custom layouts must mark their content root with `class="slidev-layout"`. Visibility checks respect display, visibility, opacity, and content-visibility; visible text inside boxless `display: contents` wrappers is counted. Text clipped or clamped by CSS still counts. Use `data-slidev-check-ignore` for intentionally excluded content. Text metrics inspect HTML/SVG text nodes directly present in the document. SVG resource definitions and text instantiated through `<use>` are outside the count, as are shadow-root text and direct native MathML; these require manual review. Slidev's standard KaTeX HTML rendering is counted.
 
-`max-table-rows` identifies each over-limit table separately. Visible empty rows count, but an empty visible descendant alone does not make a hidden row or list item visible: it must expose text or painted content.
+`max-table-rows` identifies each over-limit table separately. Visible empty rows count. A hidden row or list item becomes countable only through measurable DOM text that passes the visibility checks; an empty visible descendant is insufficient. Graphic-only visibility overrides inside hidden structures require manual review.
 
 These warnings suggest shortening or splitting content and do not provide automatic fixes. The guideline's ten-line visual budget and semantic requirements need manual review. Existing layout rules still check geometry, and `min-font-size` retains its 14 CSS pixel default rather than the guideline's 18pt.
 

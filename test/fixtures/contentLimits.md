@@ -118,12 +118,12 @@ layout: default
 
 ---
 
-# Hidden list with painted descendant
+# Hidden list with empty SVG
 
-<ul style="visibility: hidden"><li>A<ul><li>B<ul><li>C<div style="visibility: visible; width: 20px; height: 20px; background: red"></div></li></ul></li></ul></li></ul>
+<ul style="visibility: hidden"><li>A<ul><li>B<ul><li>C<svg style="visibility: visible" width="20" height="20"></svg></li></ul></li></ul></li></ul>
 
 ---
 
-# Hidden rows with painted descendants
+# Hidden rows with empty SVG
 
-<table style="visibility: hidden"><tbody><tr v-for="n in 8"><td><div style="visibility: visible; width: 20px; height: 20px; background: red"></div></td></tr></tbody></table>
+<table style="visibility: hidden"><tbody><tr v-for="n in 8"><td><svg style="visibility: visible" width="20" height="20"></svg></td></tr></tbody></table>
