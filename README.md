@@ -49,7 +49,7 @@ The following rules run by default as warnings, based on the [slide guidelines](
 | `max-list-depth`      | 2 nested list levels                            |
 | `max-table-rows`      | 7 visible rows per table, including header rows |
 
-Body counts include prose, lists, code, and table text inside `.slidev-layout`, but exclude headings, hidden content, and elements marked `data-slidev-check-ignore`. Characters are counted as Unicode grapheme clusters, so an emoji or a letter with combining marks counts as one character. Inline formatting does not count text twice. Wrapped lines count separately; columns are counted separately, and each table row counts as one line unless its text wraps. Theme content outside the layout and speaker notes are not counted.
+Body counts include prose, lists, code, and table text inside `.slidev-layout`, but exclude headings, hidden content, and elements marked `data-slidev-check-ignore`. Characters are counted as Unicode grapheme clusters, so an emoji or a letter with combining marks counts as one character. Inline formatting does not count text twice. Wrapped lines count separately; columns are counted separately, and table text at the same vertical position within a row counts as one line. Rows without visible text add no body lines; `max-table-rows` still counts those rows. Theme content outside the layout and speaker notes are not counted.
 
 These rules suggest shortening or splitting content and do not provide automatic fixes. Semantic requirements such as one message per slide and audience-appropriate wording still require human review. The existing `min-font-size` rule uses its own default of 14 CSS pixels; it does not enforce the guideline's 18pt body font size.
 
