@@ -85,3 +85,14 @@ layout: two-cols
 # Separated Unicode characters
 
 <div style="font-size: 18px; line-height: 24px">{{ '🇺 '.repeat(201) }}</div>
+
+---
+
+# Inline mathematics
+
+$x^2 + y^2 = z^2$<br>
+$x^2 + y^2 = z^2$<br>
+$x^2 + y^2 = z^2$<br>
+$x^2 + y^2 = z^2$<br>
+$x^2 + y^2 = z^2$<br>
+$x^2 + y^2 = z^2$

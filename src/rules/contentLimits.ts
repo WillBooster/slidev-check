@@ -74,8 +74,8 @@ function findContentLimit({
       if (rects.length === 0) continue;
       // Inline markup shares a line with its block; separate columns have separate blocks.
       let block = element;
-      while (block !== layout && getComputedStyle(block).display.startsWith('inline') && block.parentElement) {
-        block = block.parentElement;
+      for (let parent: Element | null = element; parent && parent !== layout; parent = parent.parentElement) {
+        if (getComputedStyle(parent).display.startsWith('inline') && parent.parentElement) block = parent.parentElement;
       }
       if (metric === 'characters') {
         if (previousBlock !== block) text.push('\n');
