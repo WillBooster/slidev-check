@@ -39,15 +39,40 @@ describe('cli', () => {
     expect(json.stdout).toBe('');
   }, 180_000);
 
+  test('warns on rendered content limits without counting hidden text or inline markup twice', async () => {
+    const { exitCode, violations } = await runCliJson(fixture('contentLimits.md'));
+    expect(exitCode).toBe(0);
+    const content = violations.filter((v) =>
+      ['max-body-characters', 'max-body-lines', 'max-list-depth', 'max-table-rows'].includes(v.ruleId)
+    );
+    expect(content.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
+      ['max-body-characters', 'warn', 2],
+      ['max-body-lines', 'warn', 4],
+      ['max-list-depth', 'warn', 6],
+      ['max-table-rows', 'warn', 8],
+      ['max-body-lines', 'warn', 9],
+    ]);
+    expect(content.map((v) => v.message)).toEqual([
+      'Body text has 201 characters, exceeding the maximum of 200.',
+      'Body text has 11 lines, exceeding the maximum of 10.',
+      'List has 3 levels, exceeding the maximum of 2.',
+      'Table has 8 rows, exceeding the maximum of 7.',
+      'Body text has 11 lines, exceeding the maximum of 10.',
+    ]);
+  }, 90_000);
+
   test('reports elements that overflow the slide', async () => {
     const { exitCode, violations } = await runCliJson(fixture('overflow.md'));
     expect(exitCode).toBe(1);
     expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
       ['no-overflow', 'error', 2],
       ['optimal-zoom', 'warn', 2],
+      ['max-body-characters', 'warn', 2],
+      ['max-body-lines', 'warn', 2],
       ['no-overflow', 'error', 3],
     ]);
-    const [text, zoom, box] = violations;
+    const [text, zoom] = violations;
+    const box = violations.at(-1);
     expect(zoom?.message).toMatch(
       /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.\d+">` keeps the margin\.$/
     );
