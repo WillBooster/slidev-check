@@ -78,7 +78,7 @@ layout: two-cols
 
 # Mixed font sizes
 
-<div style="font-size: 24px; line-height: 30px"><div v-for="n in 10">字<small style="font-size: 8px">注</small></div></div>
+<div style="font-size: 24px; line-height: 30px"><div v-for="n in 10">字<small style="font-size: 8px; line-height: 0">注</small></div></div>
 
 ---
 
@@ -240,3 +240,9 @@ a &= b \\
 a &= b
 \end{aligned}
 $$
+
+---
+
+# Tight leading
+
+<div style="font-size: 18px; line-height: 10px">字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字<br>字</div>

@@ -93,6 +93,7 @@ function findContentLimit({
       const lineBox = metric === 'lines' ? (ruby ?? (katex ? stackedMathBox(element, katex) : undefined)) : undefined;
       const rects = [...(lineBox ?? range).getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
       if (rects.length === 0) continue;
+      const style = getComputedStyle(element);
       // KaTeX uses internal blocks to position scripts; those are not separate body lines.
       let block = katex ?? ruby ?? element;
       while (
@@ -108,13 +109,25 @@ function findContentLimit({
         previousBlock = block;
         continue;
       }
+      const leading = Math.max(
+        Number.parseFloat(style.lineHeight),
+        Number.parseFloat(getComputedStyle(block).lineHeight)
+      );
+      if (!katex && !ruby && leading < Number.parseFloat(style.fontSize)) {
+        return [
+          {
+            message: `Body line count cannot be determined reliably: text has effective line-height ${leading}px below font size ${style.fontSize}.`,
+            help: 'Consider increasing line-height to at least the font size, then checking again.',
+          },
+        ];
+      }
       block = block.closest('tr') ?? block;
       const rows = blocks.get(block) ?? [];
       for (const rect of rects) {
         const line = {
           rect,
           column: columnOf(element, rect),
-          vertical: getComputedStyle(element).writingMode !== 'horizontal-tb',
+          vertical: style.writingMode !== 'horizontal-tb',
         };
         if (!rows.some((row) => sameLine(row, line))) rows.push(line);
       }

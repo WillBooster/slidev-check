@@ -53,6 +53,8 @@ Body counts include prose, lists, code, and table text inside `.slidev-layout`, 
 
 Custom layouts must mark their content root with `class="slidev-layout"`; slides without this class are not checked by these four rules. Visibility checks respect display, visibility, opacity, and content-visibility, as well as `data-slidev-check-ignore`. Visible text inside boxless `display: contents` wrappers is counted. Counts use laid-out text, so CSS clipping, line clamping, and overflowing text still count. Mark screen-reader-only text or intentionally excluded content with `data-slidev-check-ignore`.
 
+`max-body-lines` requires adequate line spacing for ordinary text. When both the text and its enclosing block have numeric line-heights smaller than the text’s font size, it warns that the count is indeterminate; increase line-height and recheck. KaTeX and ruby use their composite geometry.
+
 Text metrics inspect HTML and SVG text. Direct native MathML is not counted; use Slidev’s standard KaTeX rendering, whose visible HTML text is counted.
 
 These rules suggest shortening or splitting content and do not provide automatic fixes. Semantic requirements such as one message per slide and audience-appropriate wording still require human review. The existing `min-font-size` rule uses its own default of 14 CSS pixels; it does not enforce the guideline's 18pt body font size.

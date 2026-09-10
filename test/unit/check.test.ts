@@ -64,6 +64,7 @@ describe('cli', () => {
       ['max-body-lines', 'warn', 27],
       ['max-body-lines', 'warn', 28],
       ['max-body-lines', 'warn', 29],
+      ['max-body-lines', 'warn', 30],
     ]);
     expect(content.map((v) => v.message)).toEqual([
       'Body text has 201 characters, exceeding the maximum of 200.',
@@ -84,6 +85,7 @@ describe('cli', () => {
       'Body text has 11 lines, exceeding the maximum of 10.',
       'Body text has 11 lines, exceeding the maximum of 10.',
       'Body text has 11 lines, exceeding the maximum of 10.',
+      'Body line count cannot be determined reliably: text has effective line-height 10px below font size 18px.',
     ]);
   }, 90_000);
 
