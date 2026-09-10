@@ -34,7 +34,7 @@ function findContentLimit({
   subject: string;
   unit: string;
 }): RuleFinding[] {
-  const { describe, measureText } = globalThis.__slidevCheck;
+  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
@@ -152,7 +152,8 @@ function findContentLimit({
   }
 
   function hasVisibleContent(element: Element): boolean {
-    if (isContentChecked(element) && getComputedStyle(element).display !== 'contents') return true;
+    if (isSvgResource(element)) return false;
+    if (isChecked(element)) return true;
     return [element, ...element.querySelectorAll('*')].some(
       (candidate) => isContentChecked(candidate) && measureText(candidate) !== undefined
     );

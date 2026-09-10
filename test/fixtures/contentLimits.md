@@ -211,3 +211,9 @@ layout: default
 # Skipped cell text
 
 <table><tbody><tr><td style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(201) }}</td></tr></tbody></table>
+
+---
+
+# Empty visible rows with ineffective content visibility
+
+<table><tbody><tr v-for="n in 8" style="content-visibility: hidden"><td></td></tr></tbody></table>
