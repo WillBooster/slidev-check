@@ -34,6 +34,7 @@
     "lint": "bun wb lint",
     "lint-fix": "bun wb lint --fix",
     "prepare": "(bun lefthook install || true) && (test ! -f .lefthook/normalize-bun-lockfile.sh || bash .lefthook/normalize-bun-lockfile.sh)",
+    "release": "wb release",
     "start": "bun src/cli.ts",
     "test": "bun wb test",
     "test/ci": "bun wb test-on-ci",

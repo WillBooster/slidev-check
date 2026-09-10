@@ -9,6 +9,7 @@ concurrency:
   queue: max
 permissions:
   contents: write
+  id-token: write
 jobs:
   release:
     uses: WillBooster/reusable-workflows/.github/workflows/release.yml@main
