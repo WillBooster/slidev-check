@@ -1,6 +1,10 @@
 import type { Rule, RuleFinding } from '../types.ts';
 
 type Metric = 'characters' | 'lines' | 'listDepth' | 'tableRows';
+interface TextLine {
+  rect: DOMRect;
+  column: string;
+}
 
 export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 200, 'Body text', 'characters');
 export const maxBodyLines = contentLimit('max-body-lines', 'lines', 10, 'Body text', 'lines');
@@ -22,6 +26,7 @@ function contentLimit(id: string, metric: Metric, max: number, subject: string, 
   };
 }
 
+/* oxlint-disable unicorn/consistent-function-scoping -- Helpers must remain inside the serialized page.evaluate callback. */
 function findContentLimit({
   containerSelector,
   metric,
@@ -35,7 +40,7 @@ function findContentLimit({
   subject: string;
   unit: string;
 }): RuleFinding[] {
-  const { isChecked } = globalThis.__slidevCheck;
+  const { isChecked, measureText } = globalThis.__slidevCheck;
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
 
@@ -59,7 +64,7 @@ function findContentLimit({
   } else {
     const text: string[] = [];
     let previousBlock: Element | undefined;
-    const blocks = new Map<Element, { rect: DOMRect; column: string }[]>();
+    const blocks = new Map<Element, TextLine[]>();
     const walker = document.createTreeWalker(layout, NodeFilter.SHOW_ALL);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (node instanceof Element) {
@@ -74,7 +79,7 @@ function findContentLimit({
       }
       if (node.nodeType !== Node.TEXT_NODE) continue;
       const element = node.parentElement;
-      if (!element || !isChecked(element) || element.closest('h1, h2, h3, h4, h5, h6, script, style')) continue;
+      if (!element || !isTextChecked(element) || element.closest('h1, h2, h3, h4, h5, h6, script, style')) continue;
       const content = node.textContent ?? '';
       if (!content.trim()) {
         text.push(content);
@@ -89,7 +94,11 @@ function findContentLimit({
       if (rects.length === 0) continue;
       // KaTeX uses internal blocks to position scripts; those are not separate body lines.
       let block = element.closest('.katex') ?? ruby ?? element;
-      while (block !== layout && ['inline', 'ruby'].includes(getComputedStyle(block).display) && block.parentElement) {
+      while (
+        block !== layout &&
+        ['inline', 'ruby', 'contents'].includes(getComputedStyle(block).display) &&
+        block.parentElement
+      ) {
         block = block.parentElement;
       }
       if (metric === 'characters') {
@@ -101,16 +110,8 @@ function findContentLimit({
       block = block.closest('tr') ?? block;
       const rows = blocks.get(block) ?? [];
       for (const rect of rects) {
-        const column = columnOf(element, rect);
-        if (
-          !rows.some(
-            (row) =>
-              row.column === column &&
-              Math.min(row.rect.bottom, rect.bottom) - Math.max(row.rect.top, rect.top) >
-                Math.min(row.rect.height, rect.height) / 2
-          )
-        )
-          rows.push({ rect, column });
+        const line = { rect, column: columnOf(element, rect) };
+        if (!rows.some((row) => sameLine(row, line))) rows.push(line);
       }
       blocks.set(block, rows);
     }
@@ -119,7 +120,19 @@ function findContentLimit({
       const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
       count = [...segmenter.segment(text.join(''))].filter(({ segment }) => segment.trim()).length;
     } else {
-      for (const rows of blocks.values()) count += rows.length;
+      const entries = [...blocks];
+      for (const [block, rows] of entries) {
+        for (const row of rows) {
+          // A badge shares its surrounding prose line; independent cards have no such parent text.
+          if (
+            !entries.some(
+              ([parent, parentRows]) =>
+                parent !== block && parent.contains(block) && parentRows.some((parentRow) => sameLine(parentRow, row))
+            )
+          )
+            count++;
+        }
+      }
     }
   }
   return count > max
@@ -131,8 +144,33 @@ function findContentLimit({
       ]
     : [];
 
+  function sameLine(a: TextLine, b: TextLine): boolean {
+    return (
+      a.column === b.column &&
+      Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top) >
+        Math.min(a.rect.height, b.rect.height) / 2
+    );
+  }
+
+  function isTextChecked(element: Element): boolean {
+    const style = getComputedStyle(element);
+    if (style.display !== 'contents') return isChecked(element);
+    if (
+      !(element instanceof HTMLElement || element instanceof SVGElement) ||
+      element.closest('[data-slidev-check-ignore]') ||
+      style.visibility !== 'visible'
+    )
+      return false;
+    let box = element.parentElement;
+    while (box && getComputedStyle(box).display === 'contents') box = box.parentElement;
+    // Boxless elements have no visibility-testable box, but their direct text can still render.
+    return box?.checkVisibility({ opacityProperty: true, contentVisibilityAuto: true }) ?? false;
+  }
+
   function hasVisibleContent(element: Element): boolean {
-    return isChecked(element) || [...element.querySelectorAll('*')].some(isChecked);
+    return [element, ...element.querySelectorAll('*')].some(
+      (candidate) => isChecked(candidate) || (isTextChecked(candidate) && measureText(candidate) !== undefined)
+    );
   }
 
   function columnOf(element: Element, rect: DOMRect): string {
@@ -162,3 +200,5 @@ function findContentLimit({
     return columns.join('/');
   }
 }
+
+/* oxlint-enable unicorn/consistent-function-scoping */

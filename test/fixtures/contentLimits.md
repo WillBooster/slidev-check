@@ -144,3 +144,28 @@ $x^2 + y^2 = z^2$
 # Ignored list descendants
 
 <ul data-slidev-check-ignore style="visibility: hidden"><li><span style="visibility: visible">A</span><ul><li><span style="visibility: visible">B</span><ul><li><span style="visibility: visible">C</span></li></ul></li></ul></li></ul>
+
+---
+
+# Inline badges in prose
+
+<div style="font-size: 18px; line-height: 24px"><div v-for="n in 6">状態: <span style="display: inline-block; padding: 0 4px">完了</span>です。</div></div>
+
+---
+
+# Boxless inline wrappers
+
+<div style="font-size: 18px; line-height: 24px"><div v-for="n in 6"><span style="display: contents"><span>A</span></span><span style="display: contents"><span>B</span></span></div></div>
+
+---
+
+# Direct boxless text
+
+<div style="font-size: 18px; word-break: break-all"><span style="display: contents">{{ '字'.repeat(201) }}</span></div>
+
+
+---
+
+# Boxless list items
+
+<ul><li style="display: contents">A<ul><li style="display: contents">B<ul><li style="display: contents">C</li></ul></li></ul></li></ul>
