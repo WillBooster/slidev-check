@@ -35,6 +35,7 @@ function findContentLimit({
   unit: string;
 }): RuleFinding[] {
   const { describe, isChecked, measure, measureText, paints } = globalThis.__slidevCheck;
+  const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
   if (metric === 'tableRows') return findTables(layout);
@@ -66,12 +67,18 @@ function findContentLimit({
   function countCharacters(root: Element): number {
     const text: string[] = [];
     let previousBlock: Element | undefined;
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
+      acceptNode: (node) =>
+        node instanceof SVGElement && svgResources.has(node.localName)
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT,
+    });
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (node instanceof Element) {
         if (
           isChecked(node) &&
           (node.matches('br, hr, img, svg, canvas, iframe, video, audio, object, embed, input, select, textarea') ||
+            node instanceof SVGUseElement ||
             !['inline', 'contents', 'ruby', 'ruby-text'].includes(getComputedStyle(node).display))
         )
           text.push('\n');
@@ -119,9 +126,11 @@ function findContentLimit({
   }
 
   function hasVisibleContent(element: Element): boolean {
+    if (isSvgResource(element)) return false;
     if (isChecked(element)) return true;
     // A visibility override must expose content, not merely create an empty box.
     for (const candidate of [element, ...element.querySelectorAll('*')]) {
+      if (isSvgResource(candidate)) continue;
       if (isTextChecked(candidate) && measureText(candidate) !== undefined) return true;
       if (!isChecked(candidate) || !paints(candidate)) continue;
       const rect = measure(candidate);
@@ -131,6 +140,7 @@ function findContentLimit({
   }
 
   function isTextChecked(element: Element): boolean {
+    if (isSvgResource(element)) return false;
     const style = getComputedStyle(element);
     if (style.display !== 'contents') return isChecked(element);
     if (
@@ -143,5 +153,12 @@ function findContentLimit({
     while (box && getComputedStyle(box).display === 'contents') box = box.parentElement;
     // Boxless elements have no visibility-testable box, but their direct text can still render.
     return box?.checkVisibility({ opacityProperty: true, contentVisibilityAuto: true }) ?? false;
+  }
+
+  function isSvgResource(element: Element): boolean {
+    for (let parent: Element | null = element; parent; parent = parent.parentElement) {
+      if (parent instanceof SVGElement && svgResources.has(parent.localName)) return true;
+    }
+    return false;
   }
 }

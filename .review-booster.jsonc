@@ -2,7 +2,7 @@
   "facts": [
     "Content rules in src/rules/contentLimits.ts inspect .slidev-layout roots; custom layouts must supply that class, as documented in README.md.",
     "Character counts include laid-out text even when CSS clips or clamps it; data-slidev-check-ignore is the explicit exclusion mechanism for intentionally excluded content.",
-    "Text metrics inspect HTML and SVG text; direct native MathML is outside the documented scope, while Slidev's standard KaTeX HTML rendering is counted and its MathML accessibility copy is excluded.",
+    "Text metrics inspect HTML/SVG light-DOM text; SVG resource definitions, use-instance text, shadow-root text and direct native MathML are outside the documented scope, while Slidev's standard KaTeX HTML rendering is counted and its MathML accessibility copy is excluded.",
     "The guideline's visual ten-line budget requires manual review; automatic content checks cover body characters, list depth, and table rows, alongside the existing layout rules.",
   ],
 }

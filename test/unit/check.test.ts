@@ -81,6 +81,13 @@ describe('cli', () => {
     ]);
   }, 90_000);
 
+  test('counts direct SVG text while excluding SVG resource definitions', async () => {
+    const { violations } = await runCliJson(fixture('svgText.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.severity, v.slide.no])).toEqual([['warn', 3]]);
+    expect(content[0]?.message).toContain('201 characters');
+  }, 90_000);
+
   test('reports elements that overflow the slide', async () => {
     const { exitCode, violations } = await runCliJson(fixture('overflow.md'));
     expect(exitCode).toBe(1);
