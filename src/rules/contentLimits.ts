@@ -4,6 +4,7 @@ type Metric = 'characters' | 'lines' | 'listDepth' | 'tableRows';
 interface TextLine {
   rect: DOMRect;
   column: string;
+  vertical: boolean;
 }
 
 export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 200, 'Body text', 'characters');
@@ -110,7 +111,11 @@ function findContentLimit({
       block = block.closest('tr') ?? block;
       const rows = blocks.get(block) ?? [];
       for (const rect of rects) {
-        const line = { rect, column: columnOf(element, rect) };
+        const line = {
+          rect,
+          column: columnOf(element, rect),
+          vertical: getComputedStyle(element).writingMode !== 'horizontal-tb',
+        };
         if (!rows.some((row) => sameLine(row, line))) rows.push(line);
       }
       blocks.set(block, rows);
@@ -145,10 +150,14 @@ function findContentLimit({
     : [];
 
   function sameLine(a: TextLine, b: TextLine): boolean {
+    const start = a.vertical ? 'left' : 'top';
+    const end = a.vertical ? 'right' : 'bottom';
+    const size = a.vertical ? 'width' : 'height';
     return (
+      a.vertical === b.vertical &&
       a.column === b.column &&
-      Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top) >
-        Math.min(a.rect.height, b.rect.height) / 2
+      Math.min(a.rect[end], b.rect[end]) - Math.max(a.rect[start], b.rect[start]) >
+        Math.min(a.rect[size], b.rect[size]) / 2
     );
   }
 
@@ -180,21 +189,28 @@ function findContentLimit({
       if (style.columnSpan === 'all') break;
       if (!(parent instanceof HTMLElement) || (style.columnCount === 'auto' && style.columnWidth === 'auto')) continue;
       const bounds = parent.getBoundingClientRect();
-      const scale = bounds.width / parent.offsetWidth;
-      const padding = Number.parseFloat(style.paddingLeft);
-      const width = parent.clientWidth - padding - Number.parseFloat(style.paddingRight);
+      const vertical = style.writingMode !== 'horizontal-tb';
+      const scale = vertical ? bounds.height / parent.offsetHeight : bounds.width / parent.offsetWidth;
+      const padding = Number.parseFloat(vertical ? style.paddingTop : style.paddingLeft);
+      const extent =
+        (vertical ? parent.clientHeight : parent.clientWidth) -
+        padding -
+        Number.parseFloat(vertical ? style.paddingBottom : style.paddingRight);
       const gap =
         style.columnGap === 'normal'
           ? Number.parseFloat(style.fontSize)
-          : Number.parseFloat(style.columnGap) * (style.columnGap.endsWith('%') ? width / 100 : 1);
+          : Number.parseFloat(style.columnGap) * (style.columnGap.endsWith('%') ? extent / 100 : 1);
       const requestedCount = Number.parseInt(style.columnCount, 10);
       const columnWidth = Number.parseFloat(style.columnWidth);
       const fittingCount = Number.isNaN(columnWidth)
         ? Infinity
-        : Math.max(1, Math.floor((width + gap) / (columnWidth + gap)));
+        : Math.max(1, Math.floor((extent + gap) / (columnWidth + gap)));
       const count = Math.min(Number.isNaN(requestedCount) ? Infinity : requestedCount, fittingCount);
-      const stride = (width + gap) / count;
-      const offset = (rect.left - bounds.left) / scale - parent.clientLeft - padding;
+      const stride = (extent + gap) / count;
+      const offset =
+        (vertical ? rect.top - bounds.top : rect.left - bounds.left) / scale -
+        (vertical ? parent.clientTop : parent.clientLeft) -
+        padding;
       columns.push(Math.floor((offset + 0.5) / stride));
     }
     return columns.join('/');

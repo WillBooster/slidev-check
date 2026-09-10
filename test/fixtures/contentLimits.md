@@ -169,3 +169,15 @@ $x^2 + y^2 = z^2$
 # Boxless list items
 
 <ul><li style="display: contents">A<ul><li style="display: contents">B<ul><li style="display: contents">C</li></ul></li></ul></li></ul>
+
+---
+
+# Vertical text
+
+<div style="writing-mode: vertical-rl; height: 1em; font-size: 18px; line-height: 24px; word-break: break-all">{{ '字'.repeat(11) }}</div>
+
+---
+
+# Vertical text left to right
+
+<div style="writing-mode: vertical-lr; height: 1em; font-size: 18px; line-height: 24px; word-break: break-all">{{ '字'.repeat(11) }}</div>
