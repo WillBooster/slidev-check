@@ -46,7 +46,7 @@ The following rules run by default as warnings, based on the [slide guidelines](
 | --------------------- | ------------------------------------------- |
 | `max-body-characters` | 200 non-whitespace characters per slide     |
 | `max-list-depth`      | 2 nested list levels                        |
-| `max-table-rows`      | 7 visible rows per table, including headers |
+| `max-table-rows`      | 8 visible rows per table, including headers |
 
 Character counts include prose, lists, code, and table text inside `.slidev-layout`, excluding headings, hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Laid-out ignored or hidden text preserves character boundaries without contributing to the count. Inline markup does not count text twice. Whitespace, formatting-only controls, and DOM separators do not add characters. Theme content outside the layout and speaker notes are not counted.
 

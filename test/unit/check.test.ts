@@ -74,17 +74,17 @@ describe('cli', () => {
       true
     );
     expect(content.filter((v) => v.ruleId === 'max-table-rows').map((v) => v.message)).toEqual([
-      expect.stringContaining('has 8 rows'),
-      expect.stringContaining('has 8 rows'),
-      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 9 rows'),
+      expect.stringContaining('has 9 rows'),
+      expect.stringContaining('has 9 rows'),
       expect.stringContaining('First'),
       expect.stringContaining('Second'),
-      expect.stringContaining('has 8 rows'),
-      expect.stringContaining('has 8 rows'),
+      expect.stringContaining('has 9 rows'),
+      expect.stringContaining('has 9 rows'),
     ]);
     expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 16).map((v) => v.message)).toEqual([
-      expect.stringContaining('has 8 rows'),
       expect.stringContaining('has 9 rows'),
+      expect.stringContaining('has 10 rows'),
     ]);
   }, 90_000);
 

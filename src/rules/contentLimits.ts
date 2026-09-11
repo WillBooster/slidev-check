@@ -4,7 +4,7 @@ type Metric = 'characters' | 'listDepth' | 'tableRows';
 
 export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 200, 'Body text', 'characters');
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
-export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 7, 'Table', 'rows');
+export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 
 function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
   return {

@@ -36,13 +36,13 @@ layout: default
 
 # Table boundary
 
-<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><tr v-for="n in 6"><td>{{ n }}</td><td>A</td></tr><tr style="display: none"><td>Hidden</td></tr><tr data-slidev-check-ignore><td>Ignored</td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px"><thead><tr><th style="padding: 2px 8px">Key</th><th style="padding: 2px 8px">Value</th></tr></thead><tbody><tr v-for="n in 7"><td style="padding: 2px 8px">{{ n }}</td><td style="padding: 2px 8px">A</td></tr><tr style="display: none"><td style="padding: 2px 8px">Hidden</td></tr><tr data-slidev-check-ignore><td style="padding: 2px 8px">Ignored</td></tr></tbody></table>
 
 ---
 
 # Long table
 
-<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><tr v-for="n in 7"><td>{{ n }}</td><td>A</td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px"><thead><tr><th style="padding: 2px 8px">Key</th><th style="padding: 2px 8px">Value</th></tr></thead><tbody><tr v-for="n in 8"><td style="padding: 2px 8px">{{ n }}</td><td style="padding: 2px 8px">A</td></tr></tbody></table>
 
 ---
 
@@ -54,19 +54,19 @@ layout: default
 
 # Visible rows in a hidden table
 
-<table style="visibility: hidden"><tbody><tr v-for="n in 8" style="visibility: visible"><td>{{ n }}</td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px; visibility: hidden"><tbody><tr v-for="n in 9" style="visibility: visible"><td style="padding: 2px 8px">{{ n }}</td></tr></tbody></table>
 
 ---
 
 # Visible cells in hidden rows
 
-<table><tbody><tr v-for="n in 8" style="visibility: hidden"><td><span style="visibility: visible">{{ n }}</span></td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px"><tbody><tr v-for="n in 9" style="visibility: hidden"><td style="padding: 2px 8px"><span style="visibility: visible">{{ n }}</span></td></tr></tbody></table>
 
 ---
 
 # Fully hidden table
 
-<table style="display: none"><tbody><tr v-for="n in 8" style="visibility: visible"><td>{{ n }}</td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px; display: none"><tbody><tr v-for="n in 9" style="visibility: visible"><td style="padding: 2px 8px">{{ n }}</td></tr></tbody></table>
 
 ---
 
@@ -102,7 +102,7 @@ layout: default
 
 # Multiple long tables
 
-<div style="display: flex; gap: 24px; font-size: 14px; line-height: 20px"><table style="width: 300px"><caption>First</caption><tbody><tr v-for="n in 8"><td>{{ n }}</td></tr></tbody></table><table style="width: 300px"><caption>Second</caption><tbody><tr v-for="n in 9"><td>{{ n }}</td></tr></tbody></table></div>
+<div style="display: flex; gap: 24px; font-size: 14px; line-height: 20px"><table style="font-size: 14px; line-height: 20px; width: 300px"><caption>First</caption><tbody><tr v-for="n in 9"><td style="padding: 2px 8px">{{ n }}</td></tr></tbody></table><table style="font-size: 14px; line-height: 20px; width: 300px"><caption>Second</caption><tbody><tr v-for="n in 10"><td style="padding: 2px 8px">{{ n }}</td></tr></tbody></table></div>
 
 ---
 
@@ -114,7 +114,7 @@ layout: default
 
 # Hidden rows with empty descendants
 
-<table style="visibility: hidden"><tbody><tr v-for="n in 8"><td><div style="visibility: visible"></div></td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px; visibility: hidden"><tbody><tr v-for="n in 9"><td style="padding: 2px 8px"><div style="visibility: visible"></div></td></tr></tbody></table>
 
 ---
 
@@ -126,7 +126,7 @@ layout: default
 
 # Hidden rows with empty SVG
 
-<table style="visibility: hidden"><tbody><tr v-for="n in 8"><td><svg style="visibility: visible" width="20" height="20"></svg></td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px; visibility: hidden"><tbody><tr v-for="n in 9"><td style="padding: 2px 8px"><svg style="visibility: visible" width="20" height="20"></svg></td></tr></tbody></table>
 
 ---
 
@@ -204,7 +204,7 @@ layout: default
 
 # Visible rows with ineffective content visibility
 
-<table><tbody><tr v-for="n in 8" style="content-visibility: hidden"><td>{{ n }}</td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px"><tbody><tr v-for="n in 9" style="content-visibility: hidden"><td style="padding: 2px 8px">{{ n }}</td></tr></tbody></table>
 
 ---
 
@@ -216,4 +216,4 @@ layout: default
 
 # Empty visible rows with ineffective content visibility
 
-<table><tbody><tr v-for="n in 8" style="content-visibility: hidden"><td></td></tr></tbody></table>
+<table style="font-size: 14px; line-height: 20px"><tbody><tr v-for="n in 9" style="content-visibility: hidden"><td style="padding: 2px 8px"></td></tr></tbody></table>
