@@ -2,7 +2,7 @@ import type { Rule, RuleFinding } from '../types.ts';
 
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
-export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 200, 'Body text', 'characters');
+export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 350, 'Body text', 'characters');
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 

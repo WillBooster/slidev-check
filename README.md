@@ -44,7 +44,7 @@ The following rules run by default as warnings, based on the [slide guidelines](
 
 | Rule                  | Limit                                       |
 | --------------------- | ------------------------------------------- |
-| `max-body-characters` | 200 non-whitespace characters per slide     |
+| `max-body-characters` | 350 non-whitespace characters per slide     |
 | `max-list-depth`      | 2 nested list levels                        |
 | `max-table-rows`      | 8 visible rows per table, including headers |
 

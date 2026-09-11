@@ -5,7 +5,7 @@ layout: default
 
 # Character boundary
 
-<div><span>{{ '日'.repeat(100) }}</span> <strong>{{ '👩‍💻'.repeat(50) }}</strong> <a href="https://example.com">{{ 'e\u0301'.repeat(50) }}</a></div>
+<div><span>{{ '日'.repeat(200) }}</span> <strong>{{ '👩‍💻'.repeat(75) }}</strong> <a href="https://example.com">{{ 'e\u0301'.repeat(75) }}</a></div>
 <div style="display: none">{{ 'hidden'.repeat(100) }}</div>
 <div style="visibility: hidden">{{ 'hidden'.repeat(100) }}</div>
 <div style="opacity: 0">{{ 'hidden'.repeat(100) }}</div>
@@ -17,7 +17,7 @@ layout: default
 
 # Over character limit
 
-<div><span>{{ '日'.repeat(100) }}</span> <strong>{{ '👩‍💻'.repeat(50) }}</strong> <a href="https://example.com">{{ 'e\u0301'.repeat(50) }}</a>!</div>
+<div><span>{{ '日'.repeat(200) }}</span> <strong>{{ '👩‍💻'.repeat(75) }}</strong> <a href="https://example.com">{{ 'e\u0301'.repeat(75) }}</a>!</div>
 
 ---
 
@@ -48,7 +48,7 @@ layout: default
 
 # Separated Unicode characters
 
-<div style="font-size: 18px; line-height: 24px">{{ '🇺 '.repeat(201) }}</div>
+<div style="font-size: 18px; line-height: 24px">{{ '🇺 '.repeat(351) }}</div>
 
 ---
 
@@ -72,7 +72,7 @@ layout: default
 
 # Unicode across a line break
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<br>🇺!</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(348) }}🇺<br>🇺!</div>
 
 ---
 
@@ -90,7 +90,7 @@ layout: default
 
 # Direct boxless text
 
-<div style="font-size: 18px; word-break: break-all"><span style="display: contents">{{ '字'.repeat(201) }}</span></div>
+<div style="font-size: 18px; word-break: break-all"><span style="display: contents">{{ '字'.repeat(351) }}</span></div>
 
 ---
 
@@ -132,49 +132,49 @@ layout: default
 
 # Ignored inline separator
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<span data-slidev-check-ignore>x</span>🇸!</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(348) }}🇺<span data-slidev-check-ignore>x</span>🇸!</div>
 
 ---
 
 # Word break separator
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<wbr>🇸!</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(348) }}🇺<wbr>🇸!</div>
 
 ---
 
 # Split combining character
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}e<span>&#x301;</span></div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(349) }}e<span>&#x301;</span></div>
 
 ---
 
 # Empty ignored inline span
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}🇺<span data-slidev-check-ignore></span>🇸</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(349) }}🇺<span data-slidev-check-ignore></span>🇸</div>
 
 ---
 
 # Unrendered inline content
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(199) }}🇺<span style="display: none">x</span>🇸</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(349) }}🇺<span style="display: none">x</span>🇸</div>
 
 ---
 
 # Formatting controls
 
-<div>{{ '\u200b'.repeat(201) }}</div>
+<div>{{ '\u200b'.repeat(351) }}</div>
 
 ---
 
 # Transparent inline separator
 
-<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(198) }}🇺<span style="opacity: 0">x</span>🇸!</div>
+<div style="font-size: 18px; word-break: break-all">{{ 'a'.repeat(348) }}🇺<span style="opacity: 0">x</span>🇸!</div>
 
 ---
 
 # Skipped direct text
 
-<div style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(201) }}</div>
+<div style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(351) }}</div>
 
 ---
 
@@ -186,19 +186,19 @@ layout: default
 
 # Boxless text inside skipped content
 
-<div style="content-visibility: hidden; font-size: 18px; word-break: break-all"><span style="display: contents">{{ 'a'.repeat(201) }}</span></div>
+<div style="content-visibility: hidden; font-size: 18px; word-break: break-all"><span style="display: contents">{{ 'a'.repeat(351) }}</span></div>
 
 ---
 
 # Visible boxless text with ineffective properties
 
-<div style="font-size: 18px; word-break: break-all"><span style="display: contents; opacity: 0; content-visibility: hidden">{{ 'a'.repeat(201) }}</span></div>
+<div style="font-size: 18px; word-break: break-all"><span style="display: contents; opacity: 0; content-visibility: hidden">{{ 'a'.repeat(351) }}</span></div>
 
 ---
 
 # Visible inline text with ineffective content visibility
 
-<div style="font-size: 18px; word-break: break-all"><span style="content-visibility: hidden">{{ 'a'.repeat(201) }}</span></div>
+<div style="font-size: 18px; word-break: break-all"><span style="content-visibility: hidden">{{ 'a'.repeat(351) }}</span></div>
 
 ---
 
@@ -210,7 +210,7 @@ layout: default
 
 # Skipped cell text
 
-<table><tbody><tr><td style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(201) }}</td></tr></tbody></table>
+<table><tbody><tr><td style="content-visibility: hidden; font-size: 18px; word-break: break-all">{{ 'a'.repeat(351) }}</td></tr></tbody></table>
 
 ---
 

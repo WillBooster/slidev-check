@@ -68,7 +68,7 @@ describe('cli', () => {
       ['max-table-rows', 'warn', 35],
     ]);
     expect(
-      content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('201 characters'))
+      content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('351 characters'))
     ).toBe(true);
     expect(content.filter((v) => v.ruleId === 'max-list-depth').every((v) => v.message.includes('3 levels'))).toBe(
       true
@@ -92,7 +92,7 @@ describe('cli', () => {
     const { violations } = await runCliJson(fixture('svgText.md'));
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');
     expect(content.map((v) => [v.severity, v.slide.no])).toEqual([['warn', 3]]);
-    expect(content[0]?.message).toContain('201 characters');
+    expect(content[0]?.message).toContain('351 characters');
   }, 90_000);
 
   test('reports elements that overflow the slide', async () => {
