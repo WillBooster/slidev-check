@@ -15,6 +15,8 @@ permissions:
 jobs:
   test:
     uses: WillBooster/reusable-workflows/.github/workflows/test.yml@main
+    with:
+      github_hosted_runner: true
     secrets:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAKUMI_GUARD_TOKEN: ${{ secrets.TAKUMI_GUARD_TOKEN }}

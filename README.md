@@ -1,9 +1,10 @@
 # slidev-check
 
 [![npm version](https://img.shields.io/npm/v/slidev-check.svg)](https://www.npmjs.com/package/slidev-check)
+[![license](https://img.shields.io/npm/l/slidev-check.svg)](https://www.npmjs.com/package/slidev-check)
 [![Test](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/slidev-check/actions/workflows/test.yml)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-[![wbfy](https://img.shields.io/badge/wbfy-20.10.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+[![wbfy](https://img.shields.io/badge/wbfy-20.14.1-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 
 ![slidev-check](docs/hero.svg)
 
