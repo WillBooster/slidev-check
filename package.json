@@ -57,7 +57,7 @@
     "lefthook": "2.1.14",
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
-    "oxlint-tsgolint": "7.0.2001",
+    "oxlint-tsgolint": "7.0.2002",
     "playwright-chromium": "1.63.0",
     "semantic-release": "25.0.9",
     "sort-package-json": "4.0.0",
