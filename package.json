@@ -46,7 +46,7 @@
     "picocolors": "1.1.1"
   },
   "devDependencies": {
-    "@slidev/cli": "52.20.1",
+    "@slidev/cli": "53.0.0",
     "@slidev/theme-default": "latest",
     "@tsconfig/bun": "1.0.11",
     "@types/bun": "1.4.2",
@@ -64,7 +64,7 @@
     "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "@slidev/cli": "^52.0.0",
+    "@slidev/cli": "^52.0.0 || ^53.0.0",
     "playwright-chromium": "^1.10.0"
   },
   "publishConfig": {
