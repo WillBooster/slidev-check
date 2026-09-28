@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { getErrorMessage } from '@willbooster/shared-lib';
 import type { Fix, Violation } from './types.ts';
 
 /**
@@ -48,7 +49,7 @@ export function applyFixes(violations: Violation[]): number {
       written.push(filepath);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     throw new Error(`${message} (${written.length} of ${rewritten.size} files were already rewritten)`, {
       cause: error,
     });

@@ -1,4 +1,5 @@
 import { createServer, resolveOptions } from '@slidev/cli';
+import { raceWithTimeout } from '@willbooster/shared-lib';
 import { chromium, type Browser, type Page } from 'playwright-chromium';
 import { installBrowserHelpers } from './browser.ts';
 import type { SlideLocation } from './types.ts';
@@ -60,12 +61,16 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
   let browser: Browser | undefined;
   const close = async (): Promise<void> => {
     debug('closing browser');
-    await withTimeout(browser?.close() ?? Promise.resolve(), 10_000);
+    // A wedged dev server can make close calls hang; never let that block the caller.
+    await raceWithTimeout(browser?.close().catch(() => {}) ?? Promise.resolve(), 10_000);
     // Vite's close() waits for open keep-alive connections and can hang; drop them first.
     const httpServer = server.httpServer as { closeAllConnections?: () => void } | null;
     httpServer?.closeAllConnections?.();
     debug('closing server');
-    await withTimeout(server.close(), 10_000);
+    await raceWithTimeout(
+      server.close().catch(() => {}),
+      10_000
+    );
     debug('closed');
   };
   try {
@@ -92,11 +97,6 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
     await close();
     throw error;
   }
-}
-
-/** A wedged dev server can make close calls hang; never let that block the caller. */
-function withTimeout(promise: Promise<unknown>, ms: number): Promise<unknown> {
-  return Promise.race([promise.catch(() => {}), new Promise((resolve) => setTimeout(resolve, ms).unref())]);
 }
 
 /** Mirrors the waiting logic of `slidev export` so async content (Mermaid, Monaco, iframes) is settled. */
