@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { getErrorMessage } from '@willbooster/shared-lib';
 import { check } from './check.ts';
 import { applyFixes } from './fix.ts';
 import { formatViolations } from './report.ts';
@@ -59,7 +60,7 @@ try {
       try {
         violations = await check(options);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = getErrorMessage(error);
         process.stderr.write(
           `slidev-check: rewrote ${fixed} problem(s) in the slides, but re-checking failed: ${message}\n`
         );
@@ -77,6 +78,6 @@ try {
     process.stdout.write(`${report}\n`);
   process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
 } catch (error) {
-  process.stderr.write(`slidev-check: ${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(`slidev-check: ${getErrorMessage(error)}\n`);
   process.exit(2);
 }
