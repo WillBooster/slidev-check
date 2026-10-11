@@ -22,5 +22,5 @@
   },
   "exclude": ["test/fixtures"],
   "extends": "@tsconfig/bun/tsconfig.json",
-  "include": ["*.config.ts", "scripts/**/*", "src", "src/**/*", "test", "test/**/*"]
+  "include": ["*.config.mts", "*.config.ts", "scripts/**/*", "src", "src/**/*", "test", "test/**/*"]
 }
