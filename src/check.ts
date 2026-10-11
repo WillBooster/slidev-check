@@ -9,16 +9,10 @@ export interface CheckOptions extends RenderOptions {
   severities?: Partial<Record<string, Severity>>;
 }
 
-const settingOf = (rule: Rule): RuleSetting | undefined => defaultRules[rule.id as keyof typeof defaultRules];
-
 export async function check(options: CheckOptions): Promise<Violation[]> {
   const severityOf = (rule: Rule): Severity => {
     const setting = settingOf(rule);
     return options.severities?.[rule.id] ?? (typeof setting === 'string' ? setting : (setting?.[0] ?? 'error'));
-  };
-  const optionsOf = (rule: Rule): Record<string, unknown> | undefined => {
-    const setting = settingOf(rule);
-    return typeof setting === 'string' ? undefined : setting?.[1];
   };
   const rules = (options.rules ?? allRules).filter((rule) => severityOf(rule) !== 'off');
   const deck = await renderDeck(options);
@@ -52,4 +46,13 @@ export async function check(options: CheckOptions): Promise<Violation[]> {
   } finally {
     await deck.close();
   }
+}
+
+function optionsOf(rule: Rule): Record<string, unknown> | undefined {
+  const setting = settingOf(rule);
+  return typeof setting === 'string' ? undefined : setting?.[1];
+}
+
+function settingOf(rule: Rule): RuleSetting | undefined {
+  return defaultRules[rule.id as keyof typeof defaultRules];
 }
