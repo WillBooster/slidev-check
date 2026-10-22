@@ -61,7 +61,7 @@
     "oxlint-tsgolint": "7.0.2004",
     "playwright-chromium": "1.64.0",
     "semantic-release": "25.0.9",
-    "sort-package-json": "4.0.0"
+    "sort-package-json": "4.1.0"
   },
   "peerDependencies": {
     "@slidev/cli": "^52.0.0 || ^53.0.0",
