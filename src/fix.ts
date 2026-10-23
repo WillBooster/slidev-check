@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+
 import { getErrorMessage } from '@willbooster/shared-lib';
+
 import type { Fix, Violation } from './types.ts';
 
 /**

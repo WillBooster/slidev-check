@@ -1,4 +1,5 @@
 import pc from 'picocolors';
+
 import type { Violation } from './types.ts';
 
 export interface ReportStats {

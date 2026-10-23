@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
+
 import { check } from '../../src/check.ts';
 import { applyFixes } from '../../src/fix.ts';
 import { allRules } from '../../src/rules/index.ts';
