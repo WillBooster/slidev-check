@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+
 import { getErrorMessage } from '@willbooster/shared-lib';
+
 import { check } from './check.ts';
 import { applyFixes } from './fix.ts';
 import { formatViolations } from './report.ts';

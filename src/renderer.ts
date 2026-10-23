@@ -1,6 +1,7 @@
 import { createServer, resolveOptions } from '@slidev/cli';
 import { raceWithTimeout } from '@willbooster/shared-lib';
-import { chromium, type Browser, type Page } from 'playwright-chromium';
+import { type Browser, chromium, type Page } from 'playwright-chromium';
+
 import { installBrowserHelpers } from './browser.ts';
 import type { SlideLocation } from './types.ts';
 
