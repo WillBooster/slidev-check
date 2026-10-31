@@ -47,7 +47,7 @@
     "verify-full": "bun wb verify --full"
   },
   "dependencies": {
-    "@willbooster/shared-lib": "10.24.0",
+    "@willbooster/shared-lib": "11.0.0",
     "picocolors": "1.1.1"
   },
   "devDependencies": {
