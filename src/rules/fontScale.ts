@@ -57,16 +57,20 @@ function findShrunkHeading({
   min: number;
   epsilon: number;
 }): RuleFinding[] {
-  const { describe, fontScales, isChecked } = globalThis.__slidevCheck;
+  const { describe, fontScales, isChecked, measureText } = globalThis.__slidevCheck;
   const container = document.querySelector(containerSelector);
   // The first heading is the slide heading, as in `optimal-zoom`; the deck title on cover/intro layouts is not one.
   const heading = container?.querySelector('.slidev-layout:not(.cover, .intro) :is(h1, h2, h3, h4, h5, h6)');
   if (!container || !heading || !isChecked(heading)) return [];
-  const [scale = 1] = fontScales(container, [heading]);
+  // Inline markup such as `# <span style="font-size: 0.8em">…</span>` shrinks the heading text, not the heading.
+  const texts = [heading, ...heading.querySelectorAll('*')].filter(
+    (element) => isChecked(element) && measureText(element)
+  );
+  const scale = Math.min(...fontScales(container, texts));
   return scale < min - epsilon
     ? [
         {
-          message: `Heading \`${describe(heading)}\` is rendered at ${scale.toFixed(2)}× the theme's default size, below the minimum of ${min}×.`,
+          message: `Heading \`${describe(heading)}\` renders text at ${scale.toFixed(2)}× the theme's default size, below the minimum of ${min}×.`,
           help: 'Consider shortening the heading instead of shrinking it.',
         },
       ]

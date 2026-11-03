@@ -56,3 +56,9 @@ Body text.
 Body text shrunk with Transform.
 
 </Transform>
+
+---
+
+# <span style="font-size: 0.8em">Heading text shrunk inline</span>
+
+Body text.
