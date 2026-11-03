@@ -31,7 +31,7 @@ export interface BrowserHelpers {
   /**
    * The rendered font size of each element (computed font size times every `zoom`, `scale`, and
    * `transform` scale on the way to the root) relative to its size without the slide author's
-   * scaling: inline `zoom`, `font-size`, and `transform` styles inside the slide container
+   * scaling: inline `zoom`, `font-size`, `scale`, and `transform` styles inside the slide container
    * (including Slidev's `<Transform>`), the `zoom` frontmatter, and the `<style>` blocks of the slides.
    */
   fontScales: (container: Element, elements: readonly Element[]) => number[];
@@ -164,7 +164,7 @@ function defineFontScales(): void {
     return size;
   };
 
-  const SCALING_PROPERTIES = ['zoom', 'font-size', 'transform', '--slidev-slide-zoom-scale'];
+  const SCALING_PROPERTIES = ['zoom', 'font-size', 'scale', 'transform', '--slidev-slide-zoom-scale'];
   const fontScales = (container: Element, elements: readonly Element[]): number[] => {
     const rendered = elements.map((element) => renderedFontSize(element));
     // Vite's dev server injects each slide's `<style>` block as a `<style>` element with this id.
