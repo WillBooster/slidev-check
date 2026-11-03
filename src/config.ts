@@ -14,10 +14,13 @@ export const defaultRules = {
   'no-overflow': 'error',
   'no-overlap': 'error',
   'max-heading-lines': ['warn', { max: 1 }],
+  'min-heading-scale': ['warn', { min: 1 }],
   'min-font-size': ['warn', { min: 14 }],
+  'min-font-scale': ['warn', { min: 0.6 }],
   'max-body-characters': ['warn', { max: 350 }],
   'max-list-depth': ['warn', { max: 2 }],
   'max-table-rows': ['warn', { max: 8 }],
+  'min-list-items': ['warn', { min: 2 }],
   'optimal-zoom': ['warn', { marginLines: 1, maxZoom: 1 }],
 } as const satisfies Record<string, RuleSetting>;
 
