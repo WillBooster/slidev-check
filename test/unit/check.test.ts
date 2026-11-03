@@ -172,12 +172,13 @@ describe('cli', () => {
     expect(scales[3]?.message).toMatch(/^The slide /);
   }, 90_000);
 
-  test('warns on single-item lists, including nested ones, but not in table cells or split numbered lists', async () => {
+  test('warns on single-item lists, including nested ones, but not in table cells or parts of a split numbered list', async () => {
     const { exitCode, violations } = await runCliJson(fixture('listItems.md'));
     expect(exitCode).toBe(0);
     expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no, v.message])).toEqual([
       ['min-list-items', 'warn', 1, 'List `<ul>Only child` has 1 item, fewer than the minimum of 2.'],
       ['min-list-items', 'warn', 2, 'List `<ul>Only item` has 1 item, fewer than the minimum of 2.'],
+      ['min-list-items', 'warn', 3, 'List `<ol>Only step` has 1 item, fewer than the minimum of 2.'],
     ]);
   }, 90_000);
 });
