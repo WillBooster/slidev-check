@@ -28,6 +28,13 @@ export interface BrowserHelpers {
   isBackground: (rect: DOMRect, slide: DOMRect) => boolean;
   /** Bounding box union of a list of rects; `undefined` when every rect is empty. */
   union: (rects: Iterable<DOMRect>) => DOMRect | undefined;
+  /**
+   * The rendered font size of each element (computed font size times every `zoom` and `scale`
+   * on the way to the root) relative to its size without the slide author's scaling: inline
+   * `zoom` and `font-size` styles inside the slide container, the `zoom` frontmatter, and the
+   * `<style>` blocks of the slides.
+   */
+  fontScales: (container: Element, elements: readonly Element[]) => number[];
 }
 
 declare global {
@@ -124,6 +131,7 @@ function defineHelpers(): void {
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
+  // `defineFontScales` adds the remaining helper.
   globalThis.__slidevCheck = {
     describe,
     measure,
@@ -134,10 +142,50 @@ function defineHelpers(): void {
     paints,
     isBackground,
     union,
+  } as BrowserHelpers;
+}
+
+// code-gauge-allow functionCognitiveComplexity 20 -- the helpers must be nested to be serialized into the page.
+function defineFontScales(): void {
+  const renderedFontSize = (element: Element): number => {
+    let size = Number.parseFloat(getComputedStyle(element).fontSize);
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      // Computed font sizes exclude `zoom` and `scale` (the latter implements Slidev's `zoom` frontmatter).
+      size *= Number.parseFloat(style.zoom) || 1;
+      const scale = Number.parseFloat(style.scale);
+      if (!Number.isNaN(scale)) size *= scale;
+    }
+    return size;
   };
+
+  const SCALING_PROPERTIES = ['zoom', 'font-size', '--slidev-slide-zoom-scale'];
+  const fontScales = (container: Element, elements: readonly Element[]): number[] => {
+    const rendered = elements.map((element) => renderedFontSize(element));
+    // Vite's dev server injects each slide's `<style>` block as a `<style>` element with this id.
+    const slideSheets = [...document.querySelectorAll('style')]
+      .filter((style) => /\.md\?vue&type=style/.test(style.dataset['viteDevId'] ?? ''))
+      .map((style) => style.sheet)
+      .filter((sheet): sheet is CSSStyleSheet => sheet !== null && !sheet.disabled);
+    const styled = [container, ...container.querySelectorAll('[style]')].filter(
+      (element) => (element instanceof HTMLElement || element instanceof SVGElement) && element.hasAttribute('style')
+    ) as (HTMLElement | SVGElement)[];
+    const originals = styled.map((element) => element.getAttribute('style') ?? '');
+    try {
+      for (const sheet of slideSheets) sheet.disabled = true;
+      for (const element of styled) for (const property of SCALING_PROPERTIES) element.style.removeProperty(property);
+      return elements.map((element, i) => (rendered[i] ?? 0) / renderedFontSize(element));
+    } finally {
+      for (const sheet of slideSheets) sheet.disabled = false;
+      for (const [i, element] of styled.entries()) element.setAttribute('style', originals[i] ?? '');
+    }
+  };
+
+  globalThis.__slidevCheck.fontScales = fontScales;
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 
 export async function installBrowserHelpers(page: Page): Promise<void> {
   await page.evaluate(defineHelpers);
+  await page.evaluate(defineFontScales);
 }

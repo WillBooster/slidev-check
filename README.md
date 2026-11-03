@@ -30,7 +30,7 @@ Nothing is printed when no rule is violated. Otherwise each violation is reporte
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
 
 Found 0 warnings and 1 error.
-Finished in 3521ms with 8 rules.
+Finished in 3521ms with 11 rules.
 ```
 
 Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
@@ -48,12 +48,19 @@ The following rules run by default as warnings, based on the [slide guidelines](
 | `max-body-characters` | 350 non-whitespace characters per slide     |
 | `max-list-depth`      | 2 nested list levels                        |
 | `max-table-rows`      | 8 visible rows per table, including headers |
+| `min-list-items`      | 2 visible items per list                    |
+| `min-font-scale`      | 0.6× the theme's default text size          |
+| `min-heading-scale`   | 1× the theme's default slide heading size   |
 
 Character counts include prose, lists, code, and table text inside `.slidev-layout`, excluding headings, hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Laid-out ignored or hidden text preserves character boundaries without contributing to the count. Inline markup does not count text twice. Whitespace, formatting-only controls, and DOM separators do not add characters. Theme content outside the layout and speaker notes are not counted.
 
 Custom layouts must mark their content root with `class="slidev-layout"`. Visibility checks respect display, visibility, opacity, and content-visibility; visible text inside boxless `display: contents` wrappers is counted. Text skipped by `content-visibility: hidden` is excluded; the same declaration on elements where it has no effect does not hide visible text. Text clipped or clamped by CSS still counts. Use `data-slidev-check-ignore` for intentionally excluded content. Text metrics inspect HTML/SVG text nodes directly present in the document. SVG resource definitions and text instantiated through `<use>` are outside the count, as are shadow-root text and direct native MathML; these require manual review. Slidev's standard KaTeX HTML rendering is counted.
 
 `max-table-rows` identifies each over-limit table separately. Structure budgets count visible row and list-item boxes, including empty boxes and boxes whose contents are skipped by `content-visibility: hidden`. A hidden row or list item becomes countable only through measurable DOM text that passes the visibility checks; an empty visible descendant is insufficient. Graphic-only visibility overrides inside hidden structures require manual review.
+
+`min-list-items` counts the direct visible items of each `<ul>`/`<ol>` in the layout, so a nested list with one item is reported too. Lists inside table cells are skipped because a column often keeps the same shape in every cell, and so are numbered lists that Markdown split into `<ol start>` parts around other content.
+
+`min-font-scale` and `min-heading-scale` compare the rendered size of text (its font size multiplied by every `zoom` and `scale` above it) with its size when the slide author's scaling is removed: inline `zoom` and `font-size` styles, the `zoom` frontmatter, and the slide's `<style>` blocks. Styles of the theme, Slidev, the deck's global stylesheets, and utility classes such as `text-sm` belong to the default. `min-font-scale` reports each shrunk region once, at its outermost shrunk element (typically a zoom wrapper). `min-heading-scale` checks the first heading of each slide, excluding the deck title on cover and intro layouts as `max-heading-lines` does, so a heading shrunk to fit on one line is reported even when `max-heading-lines` no longer is. Verbatim source quotations, which the guideline allows to be shrunk further, need `data-slidev-check-ignore`.
 
 These warnings suggest shortening or splitting content and do not provide automatic fixes. The guideline's ten-line visual budget and semantic requirements need manual review. Existing layout rules still check geometry, and `min-font-size` retains its 14 CSS pixel default rather than the guideline's 18pt.
 

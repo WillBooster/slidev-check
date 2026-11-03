@@ -157,6 +157,29 @@ describe('cli', () => {
     expect(violations[0]?.message).toMatch(/has a font size of 12px, smaller than the minimum of 14px/);
     expect(violations[0]?.help).toBe('Consider increasing the font size.');
   }, 90_000);
+
+  test('warns on headings and text scaled below the theme default, once per shrunk region', async () => {
+    const { exitCode, violations } = await runCliJson(fixture('fontScale.md'));
+    expect(exitCode).toBe(0);
+    const scales = violations.filter((v) => ['min-heading-scale', 'min-font-scale'].includes(v.ruleId));
+    expect(scales.map((v) => [v.ruleId, v.severity, v.slide.no, v.message.match(/[\d.]+×/)?.[0]])).toEqual([
+      ['min-heading-scale', 'warn', 3, '0.73×'],
+      ['min-font-scale', 'warn', 4, '0.50×'],
+      ['min-heading-scale', 'warn', 5, '0.50×'],
+      ['min-font-scale', 'warn', 5, '0.50×'],
+    ]);
+    expect(scales[1]?.message).toContain('`<div>First item');
+    expect(scales[3]?.message).toMatch(/^The slide /);
+  }, 90_000);
+
+  test('warns on single-item lists, including nested ones, but not in table cells or split numbered lists', async () => {
+    const { exitCode, violations } = await runCliJson(fixture('listItems.md'));
+    expect(exitCode).toBe(0);
+    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no, v.message])).toEqual([
+      ['min-list-items', 'warn', 1, 'List `<ul>Only child` has 1 item, fewer than the minimum of 2.'],
+      ['min-list-items', 'warn', 2, 'List `<ul>Only item` has 1 item, fewer than the minimum of 2.'],
+    ]);
+  }, 90_000);
 });
 
 const zoomViolations = (violations: Violation[]): Violation[] => violations.filter((v) => v.ruleId === 'optimal-zoom');
