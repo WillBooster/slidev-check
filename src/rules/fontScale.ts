@@ -7,17 +7,25 @@ export const minFontScale: Rule = {
   id: 'min-font-scale',
   description: "Text must not be scaled below the minimum ratio of the theme's default size.",
   check: ({ page, containerSelector, options }) =>
-    page.evaluate(findShrunkText, { containerSelector, min: Number(options?.['min'] ?? 0.6) }),
+    page.evaluate(findShrunkText, { containerSelector, min: Number(options?.['min'] ?? 0.6), epsilon: EPSILON }),
 };
 
 export const minHeadingScale: Rule = {
   id: 'min-heading-scale',
   description: "The slide heading must not be scaled below the minimum ratio of the theme's default size.",
   check: ({ page, containerSelector, options }) =>
-    page.evaluate(findShrunkHeading, { containerSelector, min: Number(options?.['min'] ?? 1) }),
+    page.evaluate(findShrunkHeading, { containerSelector, min: Number(options?.['min'] ?? 1), epsilon: EPSILON }),
 };
 
-function findShrunkText({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
+function findShrunkText({
+  containerSelector,
+  min,
+  epsilon,
+}: {
+  containerSelector: string;
+  min: number;
+  epsilon: number;
+}): RuleFinding[] {
   const { describe, fontScales, isChecked, measureText } = globalThis.__slidevCheck;
   const container = document.querySelector(containerSelector);
   const layout = container?.querySelector('.slidev-layout');
@@ -25,7 +33,7 @@ function findShrunkText({ containerSelector, min }: { containerSelector: string;
 
   const elements = [layout, ...layout.querySelectorAll('*')].filter((element) => isChecked(element));
   const scales = fontScales(container, elements);
-  const shrunk = new Set(elements.filter((_, i) => (scales[i] ?? 1) < min - EPSILON));
+  const shrunk = new Set(elements.filter((_, i) => (scales[i] ?? 1) < min - epsilon));
   // Report each shrunk region once, at its outermost shrunk element (typically a zoom wrapper).
   const regions = new Map<Element, number>();
   for (const [i, element] of elements.entries()) {
@@ -40,14 +48,22 @@ function findShrunkText({ containerSelector, min }: { containerSelector: string;
   }));
 }
 
-function findShrunkHeading({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
+function findShrunkHeading({
+  containerSelector,
+  min,
+  epsilon,
+}: {
+  containerSelector: string;
+  min: number;
+  epsilon: number;
+}): RuleFinding[] {
   const { describe, fontScales, isChecked } = globalThis.__slidevCheck;
   const container = document.querySelector(containerSelector);
   // The first heading is the slide heading, as in `optimal-zoom`; the deck title on cover/intro layouts is not one.
   const heading = container?.querySelector('.slidev-layout:not(.cover, .intro) :is(h1, h2, h3, h4, h5, h6)');
   if (!container || !heading || !isChecked(heading)) return [];
   const [scale = 1] = fontScales(container, [heading]);
-  return scale < min - EPSILON
+  return scale < min - epsilon
     ? [
         {
           message: `Heading \`${describe(heading)}\` is rendered at ${scale.toFixed(2)}× the theme's default size, below the minimum of ${min}×.`,
