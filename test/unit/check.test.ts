@@ -167,6 +167,7 @@ describe('cli', () => {
       ['min-font-scale', 'warn', 4, '0.50×'],
       ['min-heading-scale', 'warn', 5, '0.50×'],
       ['min-font-scale', 'warn', 5, '0.50×'],
+      ['min-font-scale', 'warn', 6, '0.50×'],
     ]);
     expect(scales[1]?.message).toContain('`<div>First item');
     expect(scales[3]?.message).toMatch(/^The slide /);

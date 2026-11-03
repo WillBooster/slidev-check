@@ -12,8 +12,7 @@ function findShortLists({ containerSelector, min }: { containerSelector: string;
   const findings: RuleFinding[] = [];
   for (const list of document.querySelectorAll(`${containerSelector} .slidev-layout :is(ul, ol)`)) {
     // A table column often keeps the same shape in every cell, so lists in cells are left alone.
-    if (!isChecked(list) || list.closest('table')) continue;
-    if (isNumberedListPart(list)) continue;
+    if (!isChecked(list) || list.closest('table') || isNumberedListPart(list)) continue;
     const items = [...list.children].filter((child) => child.localName === 'li' && isChecked(child)).length;
     if (items > 0 && items < min)
       findings.push({

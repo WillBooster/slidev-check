@@ -46,3 +46,13 @@ zoom: 0.5
 # Zoomed slide
 
 Body text.
+
+---
+
+# Transformed body
+
+<Transform :scale="0.5">
+
+Body text shrunk with Transform.
+
+</Transform>

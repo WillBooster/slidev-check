@@ -29,10 +29,10 @@ export interface BrowserHelpers {
   /** Bounding box union of a list of rects; `undefined` when every rect is empty. */
   union: (rects: Iterable<DOMRect>) => DOMRect | undefined;
   /**
-   * The rendered font size of each element (computed font size times every `zoom` and `scale`
-   * on the way to the root) relative to its size without the slide author's scaling: inline
-   * `zoom` and `font-size` styles inside the slide container, the `zoom` frontmatter, and the
-   * `<style>` blocks of the slides.
+   * The rendered font size of each element (computed font size times every `zoom`, `scale`, and
+   * `transform` scale on the way to the root) relative to its size without the slide author's
+   * scaling: inline `zoom`, `font-size`, and `transform` styles inside the slide container
+   * (including Slidev's `<Transform>`), the `zoom` frontmatter, and the `<style>` blocks of the slides.
    */
   fontScales: (container: Element, elements: readonly Element[]) => number[];
 }
@@ -145,21 +145,26 @@ function defineHelpers(): void {
   } as BrowserHelpers;
 }
 
-// code-gauge-allow functionCognitiveComplexity 20 -- the helpers must be nested to be serialized into the page.
+// code-gauge-allow functionCognitiveComplexity 23 -- the helpers must be nested to be serialized into the page.
+// code-gauge-allow functionNcss 31 -- the helpers must be nested to be serialized into the page.
 function defineFontScales(): void {
   const renderedFontSize = (element: Element): number => {
     let size = Number.parseFloat(getComputedStyle(element).fontSize);
     for (let node: Element | null = element; node; node = node.parentElement) {
       const style = getComputedStyle(node);
-      // Computed font sizes exclude `zoom` and `scale` (the latter implements Slidev's `zoom` frontmatter).
+      // Computed font sizes exclude `zoom`, `scale` (Slidev's `zoom` frontmatter), and `transform` (Slidev's `<Transform>`).
       size *= Number.parseFloat(style.zoom) || 1;
       const scale = Number.parseFloat(style.scale);
       if (!Number.isNaN(scale)) size *= scale;
+      if (style.transform !== 'none') {
+        const { a, b, c, d } = new DOMMatrix(style.transform);
+        size *= Math.sqrt(Math.abs(a * d - b * c));
+      }
     }
     return size;
   };
 
-  const SCALING_PROPERTIES = ['zoom', 'font-size', '--slidev-slide-zoom-scale'];
+  const SCALING_PROPERTIES = ['zoom', 'font-size', 'transform', '--slidev-slide-zoom-scale'];
   const fontScales = (container: Element, elements: readonly Element[]): number[] => {
     const rendered = elements.map((element) => renderedFontSize(element));
     // Vite's dev server injects each slide's `<style>` block as a `<style>` element with this id.

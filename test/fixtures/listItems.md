@@ -16,9 +16,9 @@ theme: default
 
 1. Numbered step
 
-   ```sh
-   echo interrupted
-   ```
+```sh
+echo interrupted
+```
 
 2. Next step
 
