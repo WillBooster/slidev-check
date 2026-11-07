@@ -5,16 +5,20 @@ const DEFAULT_MAX = 1;
 
 function findWrappedHeading({ containerSelector, max }: { containerSelector: string; max: number }): SlideFinding[] {
   const { describe, isChecked } = globalThis.slidevCheck;
-  // The slide heading is a heading opening a title region: the root of `default` (image-*/iframe-*
-  // render their text column as one), the left column of `two-cols`, or the header of `two-cols-header`. Other
-  // layouts (e.g., cover, section, center) center their heading as the whole content, where wrapping takes no space
-  // from a body, and headings nested in columns or wrappers belong to the body.
-  const heading = document
+  // The slide heading opens a title region: the root of `default` (image-*/iframe-* render their text column as one),
+  // the left column of `two-cols`, or the header of `two-cols-header`. Other layouts (e.g., cover, section, center)
+  // center their heading as the whole content, where wrapping takes no space from a body. A heading after content
+  // that takes space, or nested in columns or wrappers, belongs to the body.
+  const region = document
     .querySelector(containerSelector)
     ?.querySelector(
-      ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header) > :is(h1, h2, h3, h4, h5, h6):first-child'
+      ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header)'
     );
-  if (!heading || !isChecked(heading)) return [];
+  const heading = [...(region?.children ?? [])].find(
+    (child) =>
+      child.getBoundingClientRect().height > 0 && !['absolute', 'fixed'].includes(getComputedStyle(child).position)
+  );
+  if (!heading?.matches('h1, h2, h3, h4, h5, h6') || !isChecked(heading)) return [];
   // Count rendered lines as the number of distinct line-box rows.
   const range = document.createRange();
   range.selectNodeContents(heading);

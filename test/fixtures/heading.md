@@ -75,3 +75,14 @@ Right column.
 A paragraph opens this slide without a title.
 
 ## This body heading after the paragraph is intentionally made so long that it wraps onto a second line without being reported
+
+---
+
+<div style="display: none">Hidden note.</div>
+<div v-show="false">Hidden by v-show.</div>
+<div></div>
+<div class="absolute top-0 right-0">Logo</div>
+
+# This heading after elements taking no space is intentionally so long that it must wrap onto a second line
+
+Body text.
