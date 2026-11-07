@@ -6,9 +6,16 @@ export const maxBodyCharacters = contentLimit('max-body-characters', 'characters
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 
-function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
+function contentLimit<const Id extends string, const Max extends number>(
+  id: Id,
+  metric: Metric,
+  max: Max,
+  subject: string,
+  unit: string
+): Rule & { id: Id; defaultSetting: readonly ['warn', { readonly max: Max }] } {
   return {
     id,
+    defaultSetting: ['warn', { max }] as const,
     description: `${subject} should not exceed ${max} ${unit} ${metric === 'tableRows' ? 'per table' : 'per slide'}.`,
     check: ({ page, containerSelector, options }) =>
       page.evaluate(findContentLimit, {

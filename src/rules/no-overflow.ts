@@ -53,9 +53,10 @@ function findOverflowingElements({
   return findings;
 }
 
-export const noOverflow: Rule = {
+export const noOverflow = {
   id: 'no-overflow',
+  defaultSetting: 'error',
   description: 'Elements must stay within the slide bounds.',
   check: ({ page, containerSelector }) =>
     page.evaluate(findOverflowingElements, { containerSelector, tolerance: TOLERANCE_PX }),
-};
+} as const satisfies Rule;

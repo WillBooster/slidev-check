@@ -467,8 +467,9 @@ function toFinding(
   };
 }
 
-export const optimalZoom: Rule = {
+export const optimalZoom = {
   id: 'optimal-zoom',
+  defaultSetting: ['warn', { marginLines: DEFAULT_MARGIN_LINES, maxZoom: DEFAULT_MAX_ZOOM }],
   description:
     'A zoomed slide must use the largest zoom up to the maximum that keeps a margin above the slide bottom, unless a larger zoom still keeps it.',
   check: async ({ page, containerSelector, options, source, slide }) => {
@@ -486,4 +487,4 @@ export const optimalZoom: Rule = {
       .map((analysis) => toFinding(analysis, settings.marginLines, source, slide.line))
       .filter((finding) => finding !== undefined);
   },
-};
+} as const satisfies Rule;

@@ -3,19 +3,21 @@ import type { Rule, RuleFinding } from '../types.ts';
 // Absorbs floating-point error, e.g. `font-size: 0.6em` must not fall below a minimum of 0.6.
 const EPSILON = 0.001;
 
-export const minFontScale: Rule = {
+export const minFontScale = {
   id: 'min-font-scale',
+  defaultSetting: ['warn', { min: 0.6 }],
   description: "Text must not be scaled below the minimum ratio of the theme's default size.",
   check: ({ page, containerSelector, options }) =>
     page.evaluate(findShrunkText, { containerSelector, min: Number(options?.['min'] ?? 0.6), epsilon: EPSILON }),
-};
+} as const satisfies Rule;
 
-export const minHeadingScale: Rule = {
+export const minHeadingScale = {
   id: 'min-heading-scale',
+  defaultSetting: ['warn', { min: 1 }],
   description: "The slide heading must not be scaled below the minimum ratio of the theme's default size.",
   check: ({ page, containerSelector, options }) =>
     page.evaluate(findShrunkHeading, { containerSelector, min: Number(options?.['min'] ?? 1), epsilon: EPSILON }),
-};
+} as const satisfies Rule;
 
 function findShrunkText({
   containerSelector,

@@ -1,58 +1,120 @@
-import { defaultRules, type RuleSetting } from './config.ts';
-import { renderDeck, type RenderOptions } from './renderer.ts';
+import { debug } from './debug.ts';
+import { renderDeck, type RenderedDeck, type RenderOptions } from './renderer.ts';
 import { allRules } from './rules/index.ts';
-import type { Rule, Severity, Violation } from './types.ts';
+import type { AnyRule, DeckRuleFinding, DeckSlide, RuleContext, RuleSetting, Severity, Violation } from './types.ts';
 
 export interface CheckOptions extends RenderOptions {
-  rules?: readonly Rule[];
-  /** Overrides of the default rule severities. */
+  /** Rules to run instead of the built-in ones. The rules of the deck's theme are always added. */
+  rules?: readonly AnyRule[];
+  /** Overrides of the rules' default severities by rule id, including the theme's rules. */
   severities?: Partial<Record<string, Severity>>;
 }
 
+export interface CheckResult {
+  violations: Violation[];
+  /** The rules that were run (those not turned off). */
+  rules: readonly AnyRule[];
+}
+
+interface EnabledRule {
+  rule: AnyRule;
+  severity: Exclude<Severity, 'off'>;
+}
+
+/** Renders the deck and returns the violations of the rules, sorted by slide and then by rule order. */
 export async function check(options: CheckOptions): Promise<Violation[]> {
-  const severityOf = (rule: Rule): Severity => {
-    const setting = settingOf(rule);
-    return options.severities?.[rule.id] ?? (typeof setting === 'string' ? setting : (setting?.[0] ?? 'error'));
-  };
-  const rules = (options.rules ?? allRules).filter((rule) => severityOf(rule) !== 'off');
+  const { violations } = await checkWithRules(options);
+  return violations;
+}
+
+export async function checkWithRules(options: CheckOptions): Promise<CheckResult> {
   const deck = await renderDeck(options);
   try {
-    const violations: Violation[] = [];
-    for (const { source, ...slide } of deck.slides) {
-      const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
-      if ((await deck.page.locator(containerSelector).count()) === 0) continue; // hidden slide
-      for (const rule of rules) {
-        if (process.env['SLIDEV_CHECK_DEBUG']) console.error(`[check-debug] slide ${slide.no} rule ${rule.id}`);
-        const findings = await rule.check({
-          page: deck.page,
-          slide,
-          source,
-          containerSelector,
-          width: deck.width,
-          height: deck.height,
-          options: optionsOf(rule),
-        });
-        violations.push(
-          ...findings.map((finding) => ({
-            ruleId: rule.id,
-            severity: severityOf(rule) as Exclude<Severity, 'off'>,
-            slide,
-            ...finding,
-          }))
-        );
-      }
-    }
-    return violations;
+    const rules = [...(options.rules ?? allRules), ...deck.themeRules];
+    assertUniqueIds(rules);
+    const enabled = rules
+      .map((rule) => ({ rule, severity: options.severities?.[rule.id] ?? severityOf(rule) }))
+      .filter((entry): entry is EnabledRule => entry.severity !== 'off');
+    const collected = await collectViolations(deck, enabled);
+    const violations = collected
+      .toSorted((a, b) => a.violation.slide.no - b.violation.slide.no || a.ruleIndex - b.ruleIndex)
+      .map(({ violation }) => violation);
+    return { violations, rules: enabled.map(({ rule }) => rule) };
   } finally {
     await deck.close();
   }
 }
 
-function optionsOf(rule: Rule): Record<string, unknown> | undefined {
-  const setting = settingOf(rule);
-  return typeof setting === 'string' ? undefined : setting?.[1];
+function assertUniqueIds(rules: readonly AnyRule[]): void {
+  const seen = new Set<string>();
+  for (const { id } of rules) {
+    if (seen.has(id)) throw new Error(`More than one rule has the id "${id}".`);
+    seen.add(id);
+  }
 }
 
-function settingOf(rule: Rule): RuleSetting | undefined {
-  return defaultRules[rule.id as keyof typeof defaultRules];
+const builtInSettings: ReadonlyMap<string, RuleSetting> = new Map(
+  allRules.map((rule) => [rule.id, rule.defaultSetting])
+);
+
+function settingOf(rule: AnyRule): RuleSetting {
+  return rule.defaultSetting ?? builtInSettings.get(rule.id) ?? 'error';
+}
+
+function severityOf(rule: AnyRule): Severity {
+  const setting = settingOf(rule);
+  return typeof setting === 'string' ? setting : setting[0];
+}
+
+/** Runs slide rules slide by slide, then deck rules, one rule at a time because rules may change the DOM. */
+async function collectViolations(
+  deck: RenderedDeck,
+  rules: readonly EnabledRule[]
+): Promise<{ ruleIndex: number; violation: Violation }[]> {
+  const slides = await visibleSlides(deck);
+  const results: { ruleIndex: number; violation: Violation }[] = [];
+  const add = (ruleIndex: number, { rule, severity }: EnabledRule, findings: DeckRuleFinding[]): void => {
+    for (const { slide, ...finding } of findings)
+      results.push({ ruleIndex, violation: { ruleId: rule.id, severity, slide, ...finding } });
+  };
+  for (const target of slides) {
+    for (const [ruleIndex, entry] of rules.entries()) {
+      if (!entry.rule.check) continue;
+      debug(`slide ${target.slide.no} rule ${entry.rule.id}`);
+      const findings = await entry.rule.check({ ...contextBase(deck, entry.rule), ...target });
+      add(
+        ruleIndex,
+        entry,
+        findings.map((finding) => ({ ...finding, slide: target.slide }))
+      );
+    }
+  }
+  for (const [ruleIndex, entry] of rules.entries()) {
+    if (!entry.rule.checkDeck) continue;
+    debug(`deck rule ${entry.rule.id}`);
+    add(ruleIndex, entry, await entry.rule.checkDeck({ ...contextBase(deck, entry.rule), slides }));
+  }
+  return results;
+}
+
+async function visibleSlides(deck: RenderedDeck): Promise<DeckSlide[]> {
+  const slides = await Promise.all(
+    deck.slides.map(async ({ source, ...slide }) => {
+      const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
+      // Slidev renders no container for a hidden slide.
+      const visible = (await deck.page.locator(containerSelector).count()) > 0;
+      return visible ? { slide, source, containerSelector } : undefined;
+    })
+  );
+  return slides.filter((slide) => slide !== undefined);
+}
+
+function contextBase(deck: RenderedDeck, rule: AnyRule): Omit<RuleContext, keyof DeckSlide> {
+  const setting = settingOf(rule);
+  return {
+    page: deck.page,
+    width: deck.width,
+    height: deck.height,
+    options: typeof setting === 'string' ? undefined : setting[1],
+  };
 }

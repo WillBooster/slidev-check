@@ -102,12 +102,13 @@ function findOverlappingElements({
   return findings;
 }
 
-export const noOverlap: Rule = {
+export const noOverlap = {
   id: 'no-overlap',
+  defaultSetting: 'error',
   description: 'Visible elements must not overlap each other.',
   check: ({ page, containerSelector }) =>
     page.evaluate(findOverlappingElements, {
       containerSelector,
       tolerance: TOLERANCE_PX,
     }),
-};
+} as const satisfies Rule;

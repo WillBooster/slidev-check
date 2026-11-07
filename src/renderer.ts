@@ -3,7 +3,9 @@ import { raceWithTimeout } from '@willbooster/shared-lib';
 import { type Browser, chromium, type Page } from 'playwright-chromium';
 
 import { installBrowserHelpers } from './browser.ts';
-import type { SlideLocation } from './types.ts';
+import { debug } from './debug.ts';
+import { loadThemeRules } from './themeRules.ts';
+import type { AnyRule, SlideLocation } from './types.ts';
 
 export interface RenderOptions {
   entry: string;
@@ -24,6 +26,8 @@ export interface RenderedDeck {
   slides: RenderedSlide[];
   width: number;
   height: number;
+  /** Rules shipped by the deck's theme. */
+  themeRules: readonly AnyRule[];
   close: () => Promise<void>;
 }
 
@@ -31,13 +35,11 @@ export interface RenderedDeck {
  * Starts Slidev's own dev server and opens its print page in Chromium, the same
  * way `slidev export` does, so the checked DOM is exactly what Slidev renders.
  */
-const debug = process.env['SLIDEV_CHECK_DEBUG']
-  ? (m: string) => console.error(`[check-debug] ${Date.now() % 100_000} ${m}`)
-  : () => {};
-
+// code-gauge-allow functionNcss 41 -- the startup steps are sequential and share the server and browser handles.
 export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> {
   debug('resolveOptions');
   const resolved = await resolveOptions({ entry: options.entry, theme: options.theme }, 'export');
+  const themeRules = await loadThemeRules(resolved.themeRoots[0]);
   debug('createServer');
   const server = await createServer(resolved, {
     server: { port: 0, host: '127.0.0.1' },
@@ -93,7 +95,7 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
     debug('installHelpers');
     await installBrowserHelpers(page);
     debug('ready');
-    return { page, slides, width, height, close };
+    return { page, slides, width, height, themeRules, close };
   } catch (error) {
     await close();
     throw error;

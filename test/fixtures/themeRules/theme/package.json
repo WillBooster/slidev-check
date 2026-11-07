@@ -1,0 +1,9 @@
+{
+  "name": "slidev-theme-rules-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./slidev-check": "./slidevCheck.ts"
+  }
+}

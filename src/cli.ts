@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 
 import { getErrorMessage } from '@willbooster/shared-lib';
 
-import { check } from './check.ts';
+import { checkWithRules } from './check.ts';
 import { applyFixes } from './fix.ts';
 import { formatViolations } from './report.ts';
 import { allRules } from './rules/index.ts';
@@ -23,6 +23,8 @@ Options:
 
 Rules:
 ${allRules.map((rule) => `  ${rule.id.padEnd(22)}${rule.description}`).join('\n')}
+
+Rules shipped by the deck's theme (the \`./slidev-check\` export of its package) run too.
 `;
 
 const { values, positionals } = parseArgs({
@@ -52,7 +54,7 @@ try {
     wait: Number(values.wait),
     timeout: Number(values.timeout),
   };
-  let violations = await check(options);
+  let { violations, rules } = await checkWithRules(options);
   let fixed = 0;
   if (values.fix) {
     fixed = applyFixes(violations);
@@ -60,7 +62,7 @@ try {
     // a fix that was skipped means the file changed underneath too.
     if (violations.some((v) => v.fix)) {
       try {
-        violations = await check(options);
+        ({ violations, rules } = await checkWithRules(options));
       } catch (error) {
         const message = getErrorMessage(error);
         process.stderr.write(
@@ -74,7 +76,7 @@ try {
   // everything can be told apart from one that found nothing.
   const report = values.json
     ? JSON.stringify(values.fix ? { fixed, violations } : violations, undefined, 2)
-    : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: allRules.length, fixed });
+    : formatViolations(violations, { durationMs: performance.now() - startedAt, ruleCount: rules.length, fixed });
   // A clean run prints nothing, except that `--fix --json` always reports the number of fixes.
   if (report && (violations.length > 0 || fixed > 0 || (values.fix && values.json)))
     process.stdout.write(`${report}\n`);
