@@ -54,8 +54,9 @@ function enabledRules(rules: readonly Rule[], settings: Partial<Record<string, R
   }
   for (const id of Object.keys(settings)) if (!ids.has(id)) throw new Error(`No rule has the id "${id}" of a setting.`);
 
+  const overrides = new Map(Object.entries(settings));
   return rules
-    .map((rule) => ({ rule, ...resolveSetting(rule.defaultSetting, settings[rule.id]) }))
+    .map((rule) => ({ rule, ...resolveSetting(rule.defaultSetting, overrides.get(rule.id)) }))
     .filter((entry): entry is EnabledRule => entry.severity !== 'off');
 }
 

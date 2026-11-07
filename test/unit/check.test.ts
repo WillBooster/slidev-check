@@ -397,30 +397,30 @@ describe('theme rules', () => {
     ]);
   }, 90_000);
 
-  test('applies setting overrides to theme rules and runs additional rules', async () => {
+  test('applies setting overrides, keeping or merging default options, and runs additional rules', async () => {
     const extra: Rule = {
       id: 'extra',
       description: '',
-      defaultSetting: 'warn',
-      check: perSlide(async () => [{ message: 'extra', help: '' }]),
+      defaultSetting: ['warn', { kept: 1, replaced: 1 }],
+      check: perSlide(async ({ options }) => [{ message: JSON.stringify(options), help: '' }]),
     };
     const violations = await check({
       entry: fixture('themeRules/slides.md'),
       ...options,
       rules: [extra],
       settings: {
-        'fixture-no-marker': ['error', { word: 'same' }],
+        extra: ['error', { replaced: 2 }],
+        'fixture-no-marker': 'error',
         'fixture-unique-titles': 'off',
-        'no-overflow': 'off',
       },
     });
-    expect(themeViolations(violations)).toEqual([['fixture-no-marker', 'error', 3, 'The slide contains `same`.']]);
-    expect(violations.filter((v) => v.ruleId === 'extra').map((v) => [v.severity, v.slide.no])).toEqual([
-      ['warn', 1],
-      ['warn', 2],
-      ['warn', 3],
-      ['warn', 4],
+    expect(themeViolations(violations)).toEqual([
+      ['fixture-no-marker', 'error', 2, 'The slide contains `TODO`.'],
+      ['fixture-no-marker', 'error', 4, 'The slide contains `TODO`.'],
     ]);
+    expect(violations.filter((v) => v.ruleId === 'extra').map((v) => [v.severity, v.slide.no, v.message])).toEqual(
+      [1, 2, 3, 4].map((no) => ['error', no, '{"kept":1,"replaced":2}'])
+    );
   }, 90_000);
 });
 
