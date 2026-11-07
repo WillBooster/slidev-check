@@ -1,4 +1,4 @@
-import type { Rule, RuleSetting } from '../types.ts';
+import type { Rule } from '../types.ts';
 import { maxBodyCharacters, maxListDepth, maxTableRows } from './contentLimits.ts';
 import { minFontScale, minHeadingScale } from './fontScale.ts';
 import { maxHeadingLines } from './max-heading-lines.ts';
@@ -32,6 +32,6 @@ export type RuleId = (typeof allRules)[number]['id'];
  * - `warn`: reported but does not make the check fail.
  * - `off`: the rule is not run.
  */
-export const defaultRules = Object.fromEntries(allRules.map((rule) => [rule.id, rule.defaultSetting])) as Readonly<
-  Record<RuleId, RuleSetting>
->;
+export const defaultRules = Object.fromEntries(allRules.map((rule) => [rule.id, rule.defaultSetting])) as {
+  readonly [R in (typeof allRules)[number] as R['id']]: R['defaultSetting'];
+};
