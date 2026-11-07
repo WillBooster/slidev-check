@@ -1,4 +1,4 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import type { RuleFinding, SlideRule } from '../types.ts';
 
 const DEFAULT_MAX = 1;
 
@@ -30,12 +30,13 @@ function findWrappedHeadings({ containerSelector, max }: { containerSelector: st
   return findings;
 }
 
-export const maxHeadingLines: Rule = {
+export const maxHeadingLines = {
   id: 'max-heading-lines',
+  defaultSetting: ['warn', { max: DEFAULT_MAX }],
   description: 'Slide headings must not wrap into more lines than allowed.',
   check: ({ page, containerSelector, options }) =>
     page.evaluate(findWrappedHeadings, {
       containerSelector,
       max: Number(options?.['max'] ?? DEFAULT_MAX),
     }),
-};
+} as const satisfies SlideRule;

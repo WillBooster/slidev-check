@@ -1,4 +1,4 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import type { RuleFinding, SlideRule } from '../types.ts';
 
 const DEFAULT_MIN_PX = 14;
 
@@ -25,12 +25,13 @@ function findTooSmallText({ containerSelector, min }: { containerSelector: strin
   return findings;
 }
 
-export const minFontSize: Rule = {
+export const minFontSize = {
   id: 'min-font-size',
+  defaultSetting: ['warn', { min: DEFAULT_MIN_PX }],
   description: 'Text must not be rendered smaller than the minimum font size.',
   check: ({ page, containerSelector, options }) =>
     page.evaluate(findTooSmallText, {
       containerSelector,
       min: Number(options?.['min'] ?? DEFAULT_MIN_PX),
     }),
-};
+} as const satisfies SlideRule;

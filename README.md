@@ -39,6 +39,48 @@ Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
 
 Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
 
+## Theme rules
+
+A theme can ship rules specific to its layouts. When the deck's theme package has a `./slidev-check` entry in its `package.json` `exports`, slidev-check imports it and runs its default export after the built-in rules. A deck using the theme needs no configuration.
+
+```json
+{
+  "name": "slidev-theme-example",
+  "exports": { "./slidev-check": "./slidevCheck.ts" }
+}
+```
+
+The default export is an array of rules (`Rule` from `slidev-check`). Each rule has:
+
+- `id`: unique among the built-in rules and the theme's rules; a duplicate makes the check fail.
+- `description`.
+- `defaultSetting`: a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`, where the rule receives `options` as `context.options`. `severities` of the `check` API override the severity by `id`.
+- Exactly one of:
+  - `check(context)` (`SlideRule`): called for each visible slide with the page, the slide location, its markdown source, and the CSS selector of its container. It returns findings (`message`, `help`, optional `fix`).
+  - `checkDeck(context)` (`DeckRule`): called once with the page and every visible slide. Each finding also names its `slide`. Use it to compare slides or to run slow per-slide work concurrently.
+
+```ts
+import type { DeckRule, Rule } from 'slidev-check';
+
+const uniqueTitles: DeckRule = {
+  id: 'example/unique-titles',
+  description: 'Slide titles must not repeat.',
+  defaultSetting: 'warn',
+  checkDeck: async ({ slides }) =>
+    slides
+      .filter(({ slide }, index) => slides.findIndex((s) => s.slide.title === slide.title) < index)
+      .map(({ slide }) => ({
+        slide,
+        message: `Title \`${slide.title}\` repeats.`,
+        help: 'Consider renaming the slide.',
+      })),
+};
+
+export default [uniqueTitles] satisfies Rule[];
+```
+
+Violations of theme rules are reported, sorted, and fixed (`--fix`) like those of the built-in rules.
+
 ## Content guidelines
 
 The following rules run by default as warnings, based on the [slide guidelines](https://github.com/WillBooster/agentic-workflows/pull/665):

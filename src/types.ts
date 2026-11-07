@@ -36,18 +36,34 @@ export interface Violation {
   fix?: Fix;
 }
 
-export interface RuleContext {
-  page: Page;
+/** A rule setting: a severity, optionally with rule-specific options (like ESLint/oxlint). */
+export type RuleSetting = Severity | readonly [Severity, Record<string, unknown>];
+
+/** A visible slide of the deck as seen by rules. */
+export interface DeckSlide {
   slide: SlideLocation;
   /** Markdown source of the slide; its first line is `slide.line` of the file. */
   source: string;
   /** CSS selector of the `.print-slide-container` for the slide. */
   containerSelector: string;
+}
+
+interface BaseRuleContext {
+  /** The print page of the deck, with every slide rendered one below another. */
+  page: Page;
   /** Slide canvas size in CSS pixels. */
   width: number;
   height: number;
-  /** Rule-specific options from the configuration, if any. */
+  /** Rule-specific options from the rule setting, if any. */
   options: Record<string, unknown> | undefined;
+}
+
+/** What `SlideRule.check` receives: one visible slide. */
+export interface RuleContext extends BaseRuleContext, DeckSlide {}
+
+/** What `DeckRule.checkDeck` receives: every visible slide, in deck order. */
+export interface DeckRuleContext extends BaseRuleContext {
+  slides: readonly DeckSlide[];
 }
 
 /** Result returned by a rule for one offending element (without slide/rule metadata). */
@@ -57,8 +73,32 @@ export interface RuleFinding {
   fix?: Fix;
 }
 
-export interface Rule {
+/** Result returned by a deck rule, naming the slide it belongs to. */
+export interface DeckRuleFinding extends RuleFinding {
+  slide: SlideLocation;
+}
+
+interface BaseRule {
+  /** Unique among the built-in rules and the theme's rules. */
   id: string;
   description: string;
-  check: (context: RuleContext) => Promise<RuleFinding[]>;
+  /** Severity (and options) used unless `CheckOptions.severities` overrides the severity. */
+  defaultSetting: RuleSetting;
 }
+
+/** A rule that checks one slide at a time. */
+export interface SlideRule extends BaseRule {
+  check: (context: RuleContext) => Promise<RuleFinding[]>;
+  checkDeck?: never;
+}
+
+/**
+ * A rule that checks the whole deck at once, e.g. to compare slides with each other or to run
+ * slow per-slide work (such as network requests) concurrently.
+ */
+export interface DeckRule extends BaseRule {
+  checkDeck: (context: DeckRuleContext) => Promise<DeckRuleFinding[]>;
+  check?: never;
+}
+
+export type Rule = SlideRule | DeckRule;

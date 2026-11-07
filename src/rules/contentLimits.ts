@@ -1,4 +1,4 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import type { RuleFinding, SlideRule } from '../types.ts';
 
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
@@ -6,9 +6,16 @@ export const maxBodyCharacters = contentLimit('max-body-characters', 'characters
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 
-function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
+function contentLimit<const Id extends string>(
+  id: Id,
+  metric: Metric,
+  max: number,
+  subject: string,
+  unit: string
+): SlideRule & { id: Id } {
   return {
     id,
+    defaultSetting: ['warn', { max }],
     description: `${subject} should not exceed ${max} ${unit} ${metric === 'tableRows' ? 'per table' : 'per slide'}.`,
     check: ({ page, containerSelector, options }) =>
       page.evaluate(findContentLimit, {

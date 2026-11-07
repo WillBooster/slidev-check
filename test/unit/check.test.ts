@@ -383,6 +383,30 @@ describe('applyFixes', () => {
   });
 });
 
+const themeViolations = (violations: Violation[]): [string, string, number, string][] =>
+  violations.filter((v) => v.ruleId.startsWith('fixture-')).map((v) => [v.ruleId, v.severity, v.slide.no, v.message]);
+
+describe('theme rules', () => {
+  test("runs the slide and deck rules exported by the theme's package, skipping hidden slides", async () => {
+    const { exitCode, violations } = await runCliJson(fixture('themeRules/slides.md'));
+    expect(exitCode).toBe(1);
+    expect(themeViolations(violations)).toEqual([
+      ['fixture-no-marker', 'warn', 2, 'The slide contains `TODO`.'],
+      ['fixture-unique-titles', 'error', 3, 'The heading `Plan` repeats.'],
+      ['fixture-no-marker', 'warn', 4, 'The slide contains `TODO`.'],
+    ]);
+  }, 90_000);
+
+  test('applies severity overrides to theme rules', async () => {
+    const violations = await check({
+      entry: fixture('themeRules/slides.md'),
+      ...options,
+      severities: { 'fixture-no-marker': 'off', 'fixture-unique-titles': 'warn' },
+    });
+    expect(themeViolations(violations)).toEqual([['fixture-unique-titles', 'warn', 3, 'The heading `Plan` repeats.']]);
+  }, 90_000);
+});
+
 describe('check API', () => {
   test('runs only the requested rules and applies severity overrides', async () => {
     const violations = await check({
