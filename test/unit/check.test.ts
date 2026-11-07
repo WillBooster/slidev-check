@@ -142,10 +142,17 @@ describe('cli', () => {
     expect(output).toContain('Found 0 warnings and 1 error.');
   }, 90_000);
 
-  test('warns on headings wrapping beyond the allowed lines, ignoring the cover title', async () => {
+  test('warns on slide headings wrapping beyond the allowed lines only in the title bar', async () => {
     const { exitCode, violations } = await runCliJson(fixture('heading.md'));
     expect(exitCode).toBe(0); // warnings do not fail the check
-    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([['max-heading-lines', 'warn', 3]]);
+    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
+      ['max-heading-lines', 'warn', 3],
+      ['max-heading-lines', 'warn', 8],
+      ['max-heading-lines', 'warn', 9],
+      ['max-heading-lines', 'warn', 10],
+      ['max-heading-lines', 'warn', 12],
+      ['max-heading-lines', 'warn', 13],
+    ]);
     expect(violations[0]?.message).toMatch(/spans 2 lines, exceeding the maximum of 1/);
     expect(violations[0]?.help).toBe('Consider shortening the heading.');
   }, 90_000);
