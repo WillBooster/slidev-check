@@ -95,3 +95,21 @@ Body text.
 ## This body heading after the ignored title is intentionally made so long that it wraps onto a second line
 
 Body text.
+
+---
+layout: two-cols
+---
+
+# This left column title is intentionally made so long that it must wrap onto a second line in the default theme
+
+::right::
+
+Right column.
+
+---
+layout: image-left
+---
+
+# This text column title is intentionally made so long that it must wrap onto a second line in the default theme
+
+Body text.
