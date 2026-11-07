@@ -149,6 +149,7 @@ describe('cli', () => {
       ['max-heading-lines', 'warn', 3],
       ['max-heading-lines', 'warn', 8],
       ['max-heading-lines', 'warn', 10],
+      ['max-heading-lines', 'warn', 11],
     ]);
     expect(violations[0]?.message).toMatch(/spans 2 lines, exceeding the maximum of 1/);
     expect(violations[0]?.help).toBe('Consider shortening the heading.');

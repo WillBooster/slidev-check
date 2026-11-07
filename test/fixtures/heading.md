@@ -86,3 +86,17 @@ A paragraph opens this slide without a title.
 # This heading after elements taking no space is intentionally so long that it must wrap onto a second line
 
 Body text.
+
+---
+
+<div style="float: right; width: 20px; height: 20px; background: gray"></div>
+
+# This heading beside a floated decoration is intentionally so long that it must wrap onto a second line
+
+Body text.
+
+---
+
+<div style="display: contents"><p>Body text inside a boxless wrapper opens this slide without a title.</p></div>
+
+## This body heading after the boxless wrapper is intentionally made so long that it wraps onto a second line
