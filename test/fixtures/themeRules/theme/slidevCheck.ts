@@ -1,4 +1,4 @@
-import type { AnyRule, DeckRule, Rule } from '../../../../src/index.ts';
+import { perSlide, type Rule, type SlideFinding } from '../../../../src/index.ts';
 
 // A rule may carry properties of its own.
 const noMarker: Rule & { documentationUrl: string } = {
@@ -6,24 +6,28 @@ const noMarker: Rule & { documentationUrl: string } = {
   documentationUrl: 'https://example.com/no-marker',
   description: 'Slides must not contain the marker word.',
   defaultSetting: ['warn', { word: 'TODO' }],
-  check: async ({ page, containerSelector, options }) => {
-    const word = String(options?.['word']);
-    const text = await page
-      .locator(`${containerSelector} .slidev-layout`)
-      .evaluate((layout) => {
-        const copy = layout.cloneNode(true) as Element;
-        for (const ignored of copy.querySelectorAll('[data-slidev-check-ignore]')) ignored.remove();
-        return copy.textContent ?? '';
-      });
-    return text.includes(word) ? [{ message: `The slide contains \`${word}\`.`, help: 'Consider resolving it.' }] : [];
-  },
+  check: perSlide(({ page, containerSelector, options }) =>
+    page.evaluate(findMarker, { containerSelector, word: String(options?.['word']) })
+  ),
 };
 
-const uniqueTitles: DeckRule = {
+function findMarker({ containerSelector, word }: { containerSelector: string; word: string }): SlideFinding[] {
+  const layout = document.querySelector(`${containerSelector} .slidev-layout`);
+  if (!layout) return [];
+  const walker = document.createTreeWalker(layout, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    if (parent && globalThis.slidevCheck.isChecked(parent) && node.textContent?.includes(word))
+      return [{ message: `The slide contains \`${word}\`.`, help: 'Consider resolving it.' }];
+  }
+  return [];
+}
+
+const uniqueTitles: Rule = {
   id: 'fixture-unique-titles',
   description: 'Slide headings must differ from those of earlier slides.',
   defaultSetting: 'error',
-  checkDeck: async ({ page, slides }) => {
+  check: async ({ page, slides }) => {
     const headings = await Promise.all(
       slides.map(({ containerSelector }) => page.locator(`${containerSelector} .slidev-layout h1`).innerText())
     );
@@ -33,4 +37,4 @@ const uniqueTitles: DeckRule = {
   },
 };
 
-export default [noMarker, uniqueTitles] satisfies AnyRule[];
+export default [noMarker, uniqueTitles] satisfies Rule[];

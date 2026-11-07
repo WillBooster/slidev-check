@@ -1,17 +1,15 @@
+export type { BrowserHelpers } from './browser.ts';
 export { check, type CheckOptions } from './check.ts';
 export { applyFixes } from './fix.ts';
+export { perSlide, type SlideContext, type SlideFinding } from './perSlide.ts';
 export { formatViolations } from './report.ts';
-export { allRules, defaultRules, type RuleId } from './rules/index.ts';
+export { allRules } from './rules/index.ts';
 export type {
-  AnyRule,
-  DeckRule,
-  DeckRuleContext,
-  DeckRuleFinding,
+  CheckContext,
   DeckSlide,
+  Finding,
   Fix,
   Rule,
-  RuleContext,
-  RuleFinding,
   RuleSetting,
   Severity,
   SlideLocation,

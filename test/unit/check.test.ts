@@ -6,8 +6,8 @@ import { stripVTControlCharacters } from 'node:util';
 
 import { check } from '../../src/check.ts';
 import { applyFixes } from '../../src/fix.ts';
-import { allRules } from '../../src/rules/index.ts';
-import type { Fix, Violation } from '../../src/types.ts';
+import { perSlide } from '../../src/perSlide.ts';
+import type { Fix, Rule, Violation } from '../../src/types.ts';
 
 const fixture = (name: string): string => path.join(import.meta.dirname, '../fixtures', name);
 const options = { wait: 0, timeout: 60_000 };
@@ -387,7 +387,7 @@ const themeViolations = (violations: Violation[]): [string, string, number, stri
   violations.filter((v) => v.ruleId.startsWith('fixture-')).map((v) => [v.ruleId, v.severity, v.slide.no, v.message]);
 
 describe('theme rules', () => {
-  test("runs the slide and deck rules exported by the theme's package", async () => {
+  test("runs the rules exported by the theme's package, which skip ignored elements", async () => {
     const { exitCode, violations } = await runCliJson(fixture('themeRules/slides.md'));
     expect(exitCode).toBe(1);
     expect(themeViolations(violations)).toEqual([
@@ -397,32 +397,42 @@ describe('theme rules', () => {
     ]);
   }, 90_000);
 
-  test('applies severity overrides to theme rules', async () => {
+  test('applies setting overrides to theme rules and runs additional rules', async () => {
+    const extra: Rule = {
+      id: 'extra',
+      description: '',
+      defaultSetting: 'warn',
+      check: perSlide(async () => [{ message: 'extra', help: '' }]),
+    };
     const violations = await check({
       entry: fixture('themeRules/slides.md'),
       ...options,
-      severities: { 'fixture-no-marker': 'off', 'fixture-unique-titles': 'warn' },
+      rules: [extra],
+      settings: {
+        'fixture-no-marker': ['error', { word: 'same' }],
+        'fixture-unique-titles': 'off',
+        'no-overflow': 'off',
+      },
     });
-    expect(themeViolations(violations)).toEqual([['fixture-unique-titles', 'warn', 3, 'The heading `Plan` repeats.']]);
+    expect(themeViolations(violations)).toEqual([['fixture-no-marker', 'error', 3, 'The slide contains `same`.']]);
+    expect(violations.filter((v) => v.ruleId === 'extra').map((v) => [v.severity, v.slide.no])).toEqual([
+      ['warn', 1],
+      ['warn', 2],
+      ['warn', 3],
+      ['warn', 4],
+    ]);
   }, 90_000);
 });
 
 describe('check API', () => {
-  test('runs only the requested rules and applies severity overrides', async () => {
-    // A rule without `defaultSetting` is reported as an error.
-    const custom = { id: 'custom', description: '', check: async () => [{ message: 'custom', help: '' }] };
-    const violations = await check({
-      entry: fixture('overlap.md'),
-      ...options,
-      rules: [...allRules.filter((rule) => rule.id === 'no-overlap'), custom],
-      severities: { 'no-overlap': 'warn' },
-    });
-    const overlaps = violations.filter((v) => v.ruleId === 'no-overlap');
-    expect(overlaps.length).toBeGreaterThan(0);
-    expect(overlaps.every((v) => v.severity === 'warn')).toBe(true);
-    expect(violations.filter((v) => v.ruleId === 'custom').map((v) => v.severity)).toEqual(['error', 'error', 'error']);
-
-    const off = await check({ entry: fixture('overlap.md'), ...options, severities: { 'no-overlap': 'off' } });
-    expect(off.filter((v) => v.ruleId === 'no-overlap')).toEqual([]);
+  test('fails before rendering on a duplicate rule id or a setting of an unknown rule', async () => {
+    const duplicate: Rule = { id: 'no-overflow', description: '', defaultSetting: 'error', check: async () => [] };
+    const entry = fixture('clean.md');
+    await expect(check({ entry, ...options, rules: [duplicate] })).rejects.toThrow(
+      'More than one rule has the id "no-overflow".'
+    );
+    await expect(check({ entry, ...options, settings: { unknown: 'warn' } })).rejects.toThrow(
+      'No rule has the id "unknown"'
+    );
   }, 90_000);
 });

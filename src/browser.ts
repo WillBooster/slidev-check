@@ -39,7 +39,7 @@ export interface BrowserHelpers {
 
 declare global {
   // eslint-disable-next-line no-var -- `var` is required for a `globalThis` property declaration.
-  var __slidevCheck: BrowserHelpers;
+  var slidevCheck: BrowserHelpers;
 }
 
 // The helpers must be defined inside `defineHelpers` because the whole function is serialized
@@ -132,7 +132,7 @@ function defineHelpers(): void {
   };
 
   // `defineFontScales` adds the remaining helper.
-  globalThis.__slidevCheck = {
+  globalThis.slidevCheck = {
     describe,
     measure,
     measureText,
@@ -186,7 +186,7 @@ function defineFontScales(): void {
     }
   };
 
-  globalThis.__slidevCheck.fontScales = fontScales;
+  globalThis.slidevCheck.fontScales = fontScales;
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 

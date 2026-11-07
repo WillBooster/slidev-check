@@ -37,11 +37,15 @@ Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
 
 `--fix` rewrites the slide files with the fixes that rules attach to their findings and reports what remains (with `--json`, as `{ "fixed": N, "violations": [...] }`). Currently `optimal-zoom` provides fixes: for an element with an inline `zoom` style (typically a `<div style="zoom: 0.8">` around the whole slide body), it finds the largest zoom at which the content still keeps a margin (one text line by default) above the slide bottom and within the slide width, warns when the declared zoom is smaller (the content could be larger) or larger (the content is too tight, sticks out, or overflows; a zoom above 1 that still keeps the margin is left alone), and `--fix` replaces the declared value with the optimal one. Several wrappers on one slide are optimized in document order, so their fixes are consistent with each other. A slide without a wrapper whose content is too tight at zoom 1 is reported with the wrapper to add.
 
-Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all built-in rules. Theme rules are expected to skip it too.
+Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
 
-## Theme rules
+## Custom rules
 
-A theme can ship rules specific to its layouts. When the deck's theme package has a `./slidev-check` entry in its `package.json` `exports`, slidev-check imports it and runs its default export after the built-in rules. A deck using the theme needs no configuration.
+Rules come from three sources, run in this order:
+
+1. The built-in rules (`allRules`).
+2. The rules of the deck's theme. When the theme package has a `./slidev-check` entry in its `package.json` `exports`, slidev-check imports it and runs its default export. A deck using the theme needs no configuration.
+3. `rules` of the `check` API.
 
 ```json
 {
@@ -50,37 +54,38 @@ A theme can ship rules specific to its layouts. When the deck's theme package ha
 }
 ```
 
-The default export is an array of rules (`AnyRule` from `slidev-check`). Each rule has:
+A rule (`Rule` from `slidev-check`) has:
 
-- `id`: unique among the built-in rules and the theme's rules; a duplicate makes the check fail.
+- `id`: unique across all three sources.
 - `description`.
-- `defaultSetting` (default: `'error'`): a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`, where the rule receives `options` as `context.options`. `severities` of the `check` API override the severity by `id`.
-- Exactly one of:
-  - `check(context)` (`Rule`): called for each visible slide with the page, the slide location, its markdown source, and the CSS selector of its container. It returns findings (`message`, `help`, optional `fix`).
-  - `checkDeck(context)` (`DeckRule`): called once with the page and every visible slide. Each finding also names its `slide`. Use it to compare slides or to run slow per-slide work concurrently.
+- `defaultSetting`: a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`. The rule receives the options as `context.options`.
+- `check(context)`: called once with the page, the canvas size, the options, and every visible slide (`slides`: location, markdown source, and the CSS selector of its container). It returns findings, each naming its `slide`, with `message`, `help`, and an optional `fix`.
+
+`perSlide(fn)` builds `check` from a function that checks one slide at a time and returns findings without `slide`. The built-in rules use it. Its slides are checked one after another; implement `check` directly to compare slides or to run slow per-slide work concurrently.
+
+Inside `page.evaluate`, `globalThis.slidevCheck` provides the helpers the built-in rules use (`BrowserHelpers`). `slidevCheck.isChecked(element)` is false for hidden elements and for elements inside `[data-slidev-check-ignore]`. Every rule filters elements with it, so the attribute excludes content from theme rules too.
 
 ```ts
-import type { AnyRule, DeckRule } from 'slidev-check';
+import { perSlide, type Rule, type SlideFinding } from 'slidev-check';
 
-const uniqueTitles: DeckRule = {
-  id: 'example/unique-titles',
-  description: 'Slide titles must not repeat.',
+const noTodo: Rule = {
+  id: 'example/no-todo',
+  description: 'Slides must not contain TODO.',
   defaultSetting: 'warn',
-  checkDeck: async ({ slides }) =>
-    slides
-      // A slide without a heading has no title.
-      .filter(({ slide }, index) => slide.title && slides.findIndex((s) => s.slide.title === slide.title) < index)
-      .map(({ slide }) => ({
-        slide,
-        message: `Title \`${slide.title}\` repeats.`,
-        help: 'Consider renaming the slide.',
-      })),
+  check: perSlide(({ page, containerSelector }) => page.evaluate(findTodos, containerSelector)),
 };
 
-export default [uniqueTitles] satisfies AnyRule[];
+function findTodos(containerSelector: string): SlideFinding[] {
+  const { describe, isChecked } = globalThis.slidevCheck;
+  return [...document.querySelectorAll(`${containerSelector} .slidev-layout p`)]
+    .filter((p) => isChecked(p) && p.textContent?.includes('TODO'))
+    .map((p) => ({ message: `\`${describe(p)}\` contains TODO.`, help: 'Consider resolving it.' }));
+}
+
+export default [noTodo] satisfies Rule[];
 ```
 
-Violations of theme rules are reported, sorted, and fixed (`--fix`) like those of the built-in rules. slidev-check does not filter what a theme rule inspects, so a rule that reads the DOM must skip elements inside `[data-slidev-check-ignore]` itself.
+`settings` of the `check` API overrides settings by `id`. A bare severity keeps the rule's default options; a `[severity, options]` pair merges the options over them. A duplicate `id`, or a setting for an unknown `id`, fails the check before the deck is rendered.
 
 ## Content guidelines
 

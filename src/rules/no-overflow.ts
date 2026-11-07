@@ -1,4 +1,5 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
 /** Sub-pixel rendering noise below this value is not reported. */
 const TOLERANCE_PX = 1;
@@ -11,8 +12,8 @@ function findOverflowingElements({
 }: {
   containerSelector: string;
   tolerance: number;
-}): RuleFinding[] {
-  const { describe, measure, isChecked } = globalThis.__slidevCheck;
+}): SlideFinding[] {
+  const { describe, measure, isChecked } = globalThis.slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -35,7 +36,7 @@ function findOverflowingElements({
 
   // Report only the innermost offenders: an ancestor that overflows solely because a
   // descendant overflows on the same side adds no information.
-  const findings: RuleFinding[] = [];
+  const findings: SlideFinding[] = [];
   for (const candidate of candidates) {
     const sides = (Object.keys(candidate.overflow) as Side[]).filter((s) => candidate.overflow[s] > tolerance);
     const explainedByDescendant = sides.every((side) =>
@@ -53,10 +54,11 @@ function findOverflowingElements({
   return findings;
 }
 
-export const noOverflow = {
+export const noOverflow: Rule = {
   id: 'no-overflow',
   defaultSetting: 'error',
   description: 'Elements must stay within the slide bounds.',
-  check: ({ page, containerSelector }) =>
-    page.evaluate(findOverflowingElements, { containerSelector, tolerance: TOLERANCE_PX }),
-} as const satisfies Rule;
+  check: perSlide(({ page, containerSelector }) =>
+    page.evaluate(findOverflowingElements, { containerSelector, tolerance: TOLERANCE_PX })
+  ),
+};

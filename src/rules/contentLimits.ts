@@ -1,4 +1,5 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
@@ -6,25 +7,20 @@ export const maxBodyCharacters = contentLimit('max-body-characters', 'characters
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 
-function contentLimit<const Id extends string, const Max extends number>(
-  id: Id,
-  metric: Metric,
-  max: Max,
-  subject: string,
-  unit: string
-): Rule & { id: Id; defaultSetting: readonly ['warn', { readonly max: Max }] } {
+function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
   return {
     id,
-    defaultSetting: ['warn', { max }] as const,
+    defaultSetting: ['warn', { max }],
     description: `${subject} should not exceed ${max} ${unit} ${metric === 'tableRows' ? 'per table' : 'per slide'}.`,
-    check: ({ page, containerSelector, options }) =>
+    check: perSlide(({ page, containerSelector, options }) =>
       page.evaluate(findContentLimit, {
         containerSelector,
         metric,
         max: Number(options?.['max'] ?? max),
         subject,
         unit,
-      }),
+      })
+    ),
   };
 }
 
@@ -40,8 +36,8 @@ function findContentLimit({
   max: number;
   subject: string;
   unit: string;
-}): RuleFinding[] {
-  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
+}): SlideFinding[] {
+  const { describe, isChecked, measureText } = globalThis.slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
@@ -56,8 +52,8 @@ function findContentLimit({
       ]
     : [];
 
-  function findTables(root: Element): RuleFinding[] {
-    const findings: RuleFinding[] = [];
+  function findTables(root: Element): SlideFinding[] {
+    const findings: SlideFinding[] = [];
     for (const table of root.querySelectorAll('table')) {
       const rows = [...table.querySelectorAll('tr')].filter(
         (row) => row.closest('table') === table && hasVisibleContent(row)

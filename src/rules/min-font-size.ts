@@ -1,13 +1,14 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
 const DEFAULT_MIN_PX = 14;
 
-function findTooSmallText({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
-  const { describe, isChecked, measureText } = globalThis.__slidevCheck;
+function findTooSmallText({ containerSelector, min }: { containerSelector: string; min: number }): SlideFinding[] {
+  const { describe, isChecked, measureText } = globalThis.slidevCheck;
   const container = document.querySelector(containerSelector);
   if (!container) return [];
 
-  const findings: RuleFinding[] = [];
+  const findings: SlideFinding[] = [];
   for (const element of container.querySelectorAll('*')) {
     if (!isChecked(element)) continue;
     if (!measureText(element)) continue; // only elements that render text themselves
@@ -25,13 +26,14 @@ function findTooSmallText({ containerSelector, min }: { containerSelector: strin
   return findings;
 }
 
-export const minFontSize = {
+export const minFontSize: Rule = {
   id: 'min-font-size',
   defaultSetting: ['warn', { min: DEFAULT_MIN_PX }],
   description: 'Text must not be rendered smaller than the minimum font size.',
-  check: ({ page, containerSelector, options }) =>
+  check: perSlide(({ page, containerSelector, options }) =>
     page.evaluate(findTooSmallText, {
       containerSelector,
       min: Number(options?.['min'] ?? DEFAULT_MIN_PX),
-    }),
-} as const satisfies Rule;
+    })
+  ),
+};

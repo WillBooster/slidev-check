@@ -5,7 +5,7 @@ import { type Browser, chromium, type Page } from 'playwright-chromium';
 import { installBrowserHelpers } from './browser.ts';
 import { debug } from './debug.ts';
 import { loadThemeRules } from './themeRules.ts';
-import type { AnyRule, SlideLocation } from './types.ts';
+import type { Rule, SlideLocation } from './types.ts';
 
 export interface RenderOptions {
   entry: string;
@@ -21,27 +21,48 @@ export interface RenderedSlide extends SlideLocation {
   source: string;
 }
 
-export interface RenderedDeck {
-  page: Page;
+export interface ResolvedDeck {
+  options: Awaited<ReturnType<typeof resolveOptions>>;
   slides: RenderedSlide[];
   width: number;
   height: number;
   /** Rules shipped by the deck's theme. */
-  themeRules: readonly AnyRule[];
+  themeRules: readonly Rule[];
+}
+
+export interface RenderedDeck {
+  page: Page;
   close: () => Promise<void>;
+}
+
+/** Parses the deck and loads its theme's rules without starting anything. */
+export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck> {
+  debug('resolveOptions');
+  const resolved = await resolveOptions({ entry: options.entry, theme: options.theme }, 'export');
+  const width = resolved.data.config.canvasWidth;
+  return {
+    options: resolved,
+    slides: resolved.data.slides.map((slide, index) => ({
+      no: index + 1,
+      filepath: slide.source.filepath,
+      line: slide.source.start + 1,
+      title: slide.title,
+      source: slide.source.raw,
+    })),
+    width,
+    height: Math.round(width / resolved.data.config.aspectRatio),
+    themeRules: await loadThemeRules(resolved.themeRoots[0]),
+  };
 }
 
 /**
  * Starts Slidev's own dev server and opens its print page in Chromium, the same
  * way `slidev export` does, so the checked DOM is exactly what Slidev renders.
  */
-// code-gauge-allow functionNcss 41 -- the startup steps are sequential and share the server and browser handles.
-export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> {
-  debug('resolveOptions');
-  const resolved = await resolveOptions({ entry: options.entry, theme: options.theme }, 'export');
-  const themeRules = await loadThemeRules(resolved.themeRoots[0]);
+// code-gauge-allow functionNcss 36 -- the startup steps are sequential and share the server and browser handles.
+export async function renderDeck(deck: ResolvedDeck, options: RenderOptions): Promise<RenderedDeck> {
   debug('createServer');
-  const server = await createServer(resolved, {
+  const server = await createServer(deck.options, {
     server: { port: 0, host: '127.0.0.1' },
     logLevel: 'silent',
     clearScreen: false,
@@ -50,16 +71,7 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
   await server.listen();
   const address = server.httpServer?.address();
   if (!address || typeof address !== 'object') throw new Error('Failed to start the Slidev server.');
-
-  const width = resolved.data.config.canvasWidth;
-  const height = Math.round(width / resolved.data.config.aspectRatio);
-  const slides: RenderedSlide[] = resolved.data.slides.map((slide, index) => ({
-    no: index + 1,
-    filepath: slide.source.filepath,
-    line: slide.source.start + 1,
-    title: slide.title,
-    source: slide.source.raw,
-  }));
+  const { width, height, slides } = deck;
 
   let browser: Browser | undefined;
   const close = async (): Promise<void> => {
@@ -95,7 +107,7 @@ export async function renderDeck(options: RenderOptions): Promise<RenderedDeck> 
     debug('installHelpers');
     await installBrowserHelpers(page);
     debug('ready');
-    return { page, slides, width, height, themeRules, close };
+    return { page, close };
   } catch (error) {
     await close();
     throw error;

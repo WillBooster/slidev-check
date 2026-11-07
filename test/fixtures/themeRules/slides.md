@@ -6,6 +6,8 @@ theme: ./theme
 
 Nothing to do here.
 
+<p data-slidev-check-ignore>TODO: ignored content is not checked.</p>
+
 ---
 
 # Plan

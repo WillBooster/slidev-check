@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { z } from 'zod';
 
-import type { AnyRule, DeckRule, Rule } from './types.ts';
+import type { Rule } from './types.ts';
 
 /** The subpath a theme package exports its rules from. */
 const THEME_RULES_SUBPATH = './slidev-check';
@@ -15,26 +15,20 @@ const manifestSchema = z.object({
 });
 
 const severitySchema = z.enum(['error', 'warn', 'off']);
-const baseRuleSchema = z.object({
-  id: z.string(),
-  description: z.string(),
-  defaultSetting: z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())])]).optional(),
-});
-const functionSchema = <T>(): z.ZodType<T> => z.custom<T>((value) => typeof value === 'function');
 const themeRulesSchema = z.array(
-  z.union([
-    baseRuleSchema.extend({ check: functionSchema<Rule['check']>(), checkDeck: z.undefined().optional() }).loose(),
-    baseRuleSchema
-      .extend({ checkDeck: functionSchema<DeckRule['checkDeck']>(), check: z.undefined().optional() })
-      .loose(),
-  ])
+  z.looseObject({
+    id: z.string(),
+    description: z.string(),
+    defaultSetting: z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())])]),
+    check: z.custom<Rule['check']>((value) => typeof value === 'function'),
+  })
 );
 
 /**
  * Loads the rules a theme ships as the default export of the `./slidev-check` entry of its
  * `package.json` `exports`. A theme without that entry has no rules.
  */
-export async function loadThemeRules(themeRoot: string | undefined): Promise<readonly AnyRule[]> {
+export async function loadThemeRules(themeRoot: string | undefined): Promise<readonly Rule[]> {
   if (!themeRoot) return [];
   const manifestFile = Bun.file(path.join(themeRoot, 'package.json'));
   if (!(await manifestFile.exists())) return [];
@@ -47,8 +41,6 @@ export async function loadThemeRules(themeRoot: string | undefined): Promise<rea
   const module: { default?: unknown } = await import(entry);
   const result = themeRulesSchema.safeParse(module.default);
   if (!result.success)
-    throw new Error(
-      `The default export of ${entry} must be an array of rules, each with either \`check\` or \`checkDeck\`: ${z.prettifyError(result.error)}`
-    );
+    throw new Error(`The default export of ${entry} must be an array of rules: ${z.prettifyError(result.error)}`);
   return result.data;
 }
