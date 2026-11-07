@@ -1,4 +1,5 @@
-import type { Fix, Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Fix, Rule } from '../types.ts';
 
 const DEFAULT_MARGIN_LINES = 1;
 const DEFAULT_MAX_ZOOM = 1;
@@ -48,7 +49,7 @@ function analyzeZoom({
   minZoom: number;
   step: number;
 }): ZoomAnalysis[] {
-  const { describe, fragments, textFragments, isChecked, paints, isBackground } = globalThis.__slidevCheck;
+  const { describe, fragments, textFragments, isChecked, paints, isBackground } = globalThis.slidevCheck;
   const container = document.querySelector(containerSelector);
   const layout = container?.querySelector('.slidev-layout');
   // The cover/intro layouts center their content; a zoom only serves body slides.
@@ -439,7 +440,7 @@ function toFinding(
   marginLines: number,
   source: string,
   firstLine: number
-): RuleFinding | undefined {
+): SlideFinding | undefined {
   const { kind, description, current, optimal, bottom, optimalBottom, blockedBy } = analysis;
   const split = 'Consider splitting the content into multiple slides.';
   const unfit = blockedBy
@@ -467,12 +468,12 @@ function toFinding(
   };
 }
 
-export const optimalZoom = {
+export const optimalZoom: Rule = {
   id: 'optimal-zoom',
   defaultSetting: ['warn', { marginLines: DEFAULT_MARGIN_LINES, maxZoom: DEFAULT_MAX_ZOOM }],
   description:
     'A zoomed slide must use the largest zoom up to the maximum that keeps a margin above the slide bottom, unless a larger zoom still keeps it.',
-  check: async ({ page, containerSelector, options, source, slide }) => {
+  check: perSlide(async ({ page, containerSelector, options, source, slide }) => {
     const settings = {
       marginLines: Number(options?.['marginLines'] ?? DEFAULT_MARGIN_LINES),
       maxZoom: Number(options?.['maxZoom'] ?? DEFAULT_MAX_ZOOM),
@@ -486,5 +487,5 @@ export const optimalZoom = {
     return analyses
       .map((analysis) => toFinding(analysis, settings.marginLines, source, slide.line))
       .filter((finding) => finding !== undefined);
-  },
-} as const satisfies Rule;
+  }),
+};

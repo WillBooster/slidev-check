@@ -1,16 +1,18 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
-export const minListItems = {
+export const minListItems: Rule = {
   id: 'min-list-items',
   defaultSetting: ['warn', { min: 2 }],
   description: 'A list must have at least the minimum number of items.',
-  check: ({ page, containerSelector, options }) =>
-    page.evaluate(findShortLists, { containerSelector, min: Number(options?.['min'] ?? 2) }),
-} as const satisfies Rule;
+  check: perSlide(({ page, containerSelector, options }) =>
+    page.evaluate(findShortLists, { containerSelector, min: Number(options?.['min'] ?? 2) })
+  ),
+};
 
-function findShortLists({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
-  const { describe, isChecked } = globalThis.__slidevCheck;
-  const findings: RuleFinding[] = [];
+function findShortLists({ containerSelector, min }: { containerSelector: string; min: number }): SlideFinding[] {
+  const { describe, isChecked } = globalThis.slidevCheck;
+  const findings: SlideFinding[] = [];
   for (const list of document.querySelectorAll(`${containerSelector} .slidev-layout :is(ul, ol)`)) {
     // A table column often keeps the same shape in every cell, so lists in cells are left alone.
     if (!isChecked(list) || list.closest('table') || isNumberedListPart(list)) continue;

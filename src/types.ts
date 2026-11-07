@@ -24,20 +24,13 @@ export interface Fix {
   to: string;
 }
 
-export interface Violation {
-  ruleId: string;
-  severity: Exclude<Severity, 'off'>;
-  slide: SlideLocation;
-  /** What is wrong. Includes a short description of the offending element. */
-  message: string;
-  /** How to fix it, phrased as a suggestion (`Consider ...`). */
-  help: string;
-  /** Present when the violation can be resolved automatically (`--fix`). */
-  fix?: Fix;
-}
-
 /** A rule setting: a severity, optionally with rule-specific options (like ESLint/oxlint). */
 export type RuleSetting = Severity | readonly [Severity, Record<string, unknown>];
+
+export interface Violation extends Finding {
+  ruleId: string;
+  severity: Exclude<Severity, 'off'>;
+}
 
 /** A visible slide of the deck as seen by rules. */
 export interface DeckSlide {
@@ -48,61 +41,39 @@ export interface DeckSlide {
   containerSelector: string;
 }
 
-interface BaseRuleContext {
-  /** The print page of the deck, with every slide rendered one below another. */
+/** What `Rule.check` receives. */
+export interface CheckContext {
+  /**
+   * The print page of the deck, with every slide rendered one below another. Functions passed to
+   * `page.evaluate` can use `globalThis.slidevCheck` (`BrowserHelpers`).
+   */
   page: Page;
   /** Slide canvas size in CSS pixels. */
   width: number;
   height: number;
   /** Rule-specific options from the rule setting, if any. */
   options: Record<string, unknown> | undefined;
-}
-
-/** What `Rule.check` receives: one visible slide. */
-export interface RuleContext extends BaseRuleContext, DeckSlide {}
-
-/** What `DeckRule.checkDeck` receives: every visible slide, in deck order. */
-export interface DeckRuleContext extends BaseRuleContext {
+  /** Every visible slide, in deck order. */
   slides: readonly DeckSlide[];
 }
 
-/** Result returned by a rule for one offending element (without slide/rule metadata). */
-export interface RuleFinding {
+/** One problem found by a rule. */
+export interface Finding {
+  slide: SlideLocation;
+  /** What is wrong. Includes a short description of the offending element. */
   message: string;
+  /** How to fix it, phrased as a suggestion (`Consider ...`). */
   help: string;
+  /** Present when the finding can be resolved automatically (`--fix`). */
   fix?: Fix;
 }
 
-/** Result returned by a deck rule, naming the slide it belongs to. */
-export interface DeckRuleFinding extends RuleFinding {
-  slide: SlideLocation;
-}
-
-interface BaseRule {
-  /** Unique among the built-in rules and the theme's rules. */
+export interface Rule {
+  /** Unique among the built-in rules, the theme's rules, and `CheckOptions.rules`. */
   id: string;
   description: string;
-  /**
-   * Severity (and options) used unless `CheckOptions.severities` overrides the severity. When omitted,
-   * the setting of the built-in rule with the same id applies, else `'error'` without options.
-   */
-  defaultSetting?: RuleSetting;
+  /** Severity and options used unless `CheckOptions.settings` overrides them. */
+  defaultSetting: RuleSetting;
+  /** Checks the whole deck. Use `perSlide` for a rule that looks at one slide at a time. */
+  check: (context: CheckContext) => Promise<Finding[]>;
 }
-
-/** A rule that checks one slide at a time. */
-export interface Rule extends BaseRule {
-  check: (context: RuleContext) => Promise<RuleFinding[]>;
-  checkDeck?: never;
-}
-
-/**
- * A rule that checks the whole deck at once, e.g. to compare slides with each other or to run
- * slow per-slide work (such as network requests) concurrently.
- */
-export interface DeckRule extends BaseRule {
-  checkDeck: (context: DeckRuleContext) => Promise<DeckRuleFinding[]>;
-  check?: never;
-}
-
-/** Either kind of rule, as accepted by `CheckOptions.rules` and exported by a theme. */
-export type AnyRule = Rule | DeckRule;

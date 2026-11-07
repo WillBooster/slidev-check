@@ -1,23 +1,26 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
 // Absorbs floating-point error, e.g. `font-size: 0.6em` must not fall below a minimum of 0.6.
 const EPSILON = 0.001;
 
-export const minFontScale = {
+export const minFontScale: Rule = {
   id: 'min-font-scale',
   defaultSetting: ['warn', { min: 0.6 }],
   description: "Text must not be scaled below the minimum ratio of the theme's default size.",
-  check: ({ page, containerSelector, options }) =>
-    page.evaluate(findShrunkText, { containerSelector, min: Number(options?.['min'] ?? 0.6), epsilon: EPSILON }),
-} as const satisfies Rule;
+  check: perSlide(({ page, containerSelector, options }) =>
+    page.evaluate(findShrunkText, { containerSelector, min: Number(options?.['min'] ?? 0.6), epsilon: EPSILON })
+  ),
+};
 
-export const minHeadingScale = {
+export const minHeadingScale: Rule = {
   id: 'min-heading-scale',
   defaultSetting: ['warn', { min: 1 }],
   description: "The slide heading must not be scaled below the minimum ratio of the theme's default size.",
-  check: ({ page, containerSelector, options }) =>
-    page.evaluate(findShrunkHeading, { containerSelector, min: Number(options?.['min'] ?? 1), epsilon: EPSILON }),
-} as const satisfies Rule;
+  check: perSlide(({ page, containerSelector, options }) =>
+    page.evaluate(findShrunkHeading, { containerSelector, min: Number(options?.['min'] ?? 1), epsilon: EPSILON })
+  ),
+};
 
 function findShrunkText({
   containerSelector,
@@ -27,8 +30,8 @@ function findShrunkText({
   containerSelector: string;
   min: number;
   epsilon: number;
-}): RuleFinding[] {
-  const { describe, fontScales, isChecked, measureText } = globalThis.__slidevCheck;
+}): SlideFinding[] {
+  const { describe, fontScales, isChecked, measureText } = globalThis.slidevCheck;
   const container = document.querySelector(containerSelector);
   const layout = container?.querySelector('.slidev-layout');
   if (!container || !layout) return [];
@@ -58,8 +61,8 @@ function findShrunkHeading({
   containerSelector: string;
   min: number;
   epsilon: number;
-}): RuleFinding[] {
-  const { describe, fontScales, isChecked, measureText } = globalThis.__slidevCheck;
+}): SlideFinding[] {
+  const { describe, fontScales, isChecked, measureText } = globalThis.slidevCheck;
   const container = document.querySelector(containerSelector);
   // The first heading is the slide heading, as in `optimal-zoom`; the deck title on cover/intro layouts is not one.
   const heading = container?.querySelector('.slidev-layout:not(.cover, .intro) :is(h1, h2, h3, h4, h5, h6)');

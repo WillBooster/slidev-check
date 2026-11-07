@@ -1,4 +1,5 @@
-import type { Rule, RuleFinding } from '../types.ts';
+import { perSlide, type SlideFinding } from '../perSlide.ts';
+import type { Rule } from '../types.ts';
 
 /** Overlaps narrower than this in either direction are treated as touching, not overlapping. */
 const TOLERANCE_PX = 2;
@@ -9,8 +10,8 @@ function findOverlappingElements({
 }: {
   containerSelector: string;
   tolerance: number;
-}): RuleFinding[] {
-  const { describe, fragments, textFragments, isChecked, paints, isBackground, union } = globalThis.__slidevCheck;
+}): SlideFinding[] {
+  const { describe, fragments, textFragments, isChecked, paints, isBackground, union } = globalThis.slidevCheck;
   // Scan the whole slide container, not just the `[data-slidev-no]` wrapper:
   // global layers (e.g. a theme's decorative band) are rendered outside the wrapper.
   const container = document.querySelector(containerSelector);
@@ -87,7 +88,7 @@ function findOverlappingElements({
     }
   }
 
-  const findings: RuleFinding[] = [];
+  const findings: SlideFinding[] = [];
   for (const byPartner of overlaps.values()) {
     for (const { a, b, width, height } of byPartner.values()) {
       findings.push({
@@ -102,13 +103,14 @@ function findOverlappingElements({
   return findings;
 }
 
-export const noOverlap = {
+export const noOverlap: Rule = {
   id: 'no-overlap',
   defaultSetting: 'error',
   description: 'Visible elements must not overlap each other.',
-  check: ({ page, containerSelector }) =>
+  check: perSlide(({ page, containerSelector }) =>
     page.evaluate(findOverlappingElements, {
       containerSelector,
       tolerance: TOLERANCE_PX,
-    }),
-} as const satisfies Rule;
+    })
+  ),
+};
