@@ -20,8 +20,13 @@ export interface BrowserHelpers {
   fragments: (element: Element) => DOMRect[];
   /** The painted pieces of the element's direct text nodes only, one per line. */
   textFragments: (element: Element) => DOMRect[];
-  /** Whether the element is rendered and neither hidden nor excluded with `data-slidev-check-ignore`. */
+  /**
+   * Whether the element is rendered and neither hidden nor excluded with `data-slidev-check-ignore`.
+   * Every element a rule inspects must pass it; it does not look at the element's descendants.
+   */
   isChecked: (element: Element) => element is HTMLElement | SVGElement;
+  /** The text of the element's descendant text nodes whose parent passes `isChecked`. */
+  checkedText: (element: Element) => string;
   /** Whether the element paints something itself: replaced content, or a visible background or border. */
   paints: (element: Element) => boolean;
   /** Whether a painted box covers so much of the slide that it is a background rather than content. */
@@ -131,7 +136,7 @@ function defineHelpers(): void {
     return `<${tag}${id}${classes}>${snippet}`;
   };
 
-  // `defineFontScales` adds the remaining helper.
+  // `defineFontScales` and `defineCheckedText` add the remaining helpers.
   globalThis.slidevCheck = {
     describe,
     measure,
@@ -190,7 +195,18 @@ function defineFontScales(): void {
 }
 /* oxlint-enable unicorn/consistent-function-scoping */
 
+function defineCheckedText(): void {
+  globalThis.slidevCheck.checkedText = (element: Element): string => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    let text = '';
+    for (let node = walker.nextNode(); node; node = walker.nextNode())
+      if (node.parentElement && globalThis.slidevCheck.isChecked(node.parentElement)) text += node.textContent ?? '';
+    return text;
+  };
+}
+
 export async function installBrowserHelpers(page: Page): Promise<void> {
   await page.evaluate(defineHelpers);
+  await page.evaluate(defineCheckedText);
   await page.evaluate(defineFontScales);
 }

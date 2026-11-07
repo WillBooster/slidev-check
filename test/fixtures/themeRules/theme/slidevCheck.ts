@@ -13,14 +13,9 @@ const noMarker: Rule & { documentationUrl: string } = {
 
 function findMarker({ containerSelector, word }: { containerSelector: string; word: string }): SlideFinding[] {
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
-  if (!layout) return [];
-  const walker = document.createTreeWalker(layout, NodeFilter.SHOW_TEXT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const parent = node.parentElement;
-    if (parent && globalThis.slidevCheck.isChecked(parent) && node.textContent?.includes(word))
-      return [{ message: `The slide contains \`${word}\`.`, help: 'Consider resolving it.' }];
-  }
-  return [];
+  return layout && globalThis.slidevCheck.checkedText(layout).includes(word)
+    ? [{ message: `The slide contains \`${word}\`.`, help: 'Consider resolving it.' }]
+    : [];
 }
 
 const uniqueTitles: Rule = {
@@ -28,11 +23,17 @@ const uniqueTitles: Rule = {
   description: 'Slide headings must differ from those of earlier slides.',
   defaultSetting: 'error',
   check: async ({ page, slides }) => {
-    const headings = await Promise.all(
-      slides.map(({ containerSelector }) => page.locator(`${containerSelector} .slidev-layout h1`).innerText())
+    const headings = await page.evaluate(
+      (selectors) =>
+        selectors.map((selector) => {
+          const { checkedText, isChecked } = globalThis.slidevCheck;
+          const heading = document.querySelector(`${selector} .slidev-layout h1`);
+          return heading && isChecked(heading) ? checkedText(heading) : '';
+        }),
+      slides.map(({ containerSelector }) => containerSelector)
     );
     return slides
-      .filter((_, index) => headings.indexOf(headings[index] ?? '') < index)
+      .filter((_, index) => headings[index] && headings.indexOf(headings[index]) < index)
       .map(({ slide }) => ({ slide, message: `The heading \`${slide.title}\` repeats.`, help: 'Consider renaming it.' }));
   },
 };

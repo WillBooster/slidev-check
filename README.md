@@ -63,7 +63,12 @@ A rule (`Rule` from `slidev-check`) has:
 
 `perSlide(fn)` builds `check` from a function that checks one slide at a time and returns findings without `slide`. The built-in rules use it. Its slides are checked one after another; implement `check` directly to compare slides or to run slow per-slide work concurrently.
 
-Inside `page.evaluate`, `globalThis.slidevCheck` provides the helpers the built-in rules use (`BrowserHelpers`). `slidevCheck.isChecked(element)` is false for hidden elements and for elements inside `[data-slidev-check-ignore]`. Every rule filters elements with it, so the attribute excludes content from theme rules too.
+Inside `page.evaluate`, `globalThis.slidevCheck` provides the helpers the built-in rules use (`BrowserHelpers`). They exclude ignored and hidden content the same way for every rule:
+
+- `isChecked(element)` is false for hidden elements and for elements inside `[data-slidev-check-ignore]`. It does not look at descendants.
+- `checkedText(element)` returns the text of the element's descendants that pass `isChecked`.
+
+slidev-check cannot filter what a rule reads from the page. A rule must pass every element it inspects through `isChecked` and read text with `checkedText`.
 
 ```ts
 import { perSlide, type Rule, type SlideFinding } from 'slidev-check';
@@ -76,9 +81,9 @@ const noTodo: Rule = {
 };
 
 function findTodos(containerSelector: string): SlideFinding[] {
-  const { describe, isChecked } = globalThis.slidevCheck;
+  const { checkedText, describe, isChecked } = globalThis.slidevCheck;
   return [...document.querySelectorAll(`${containerSelector} .slidev-layout p`)]
-    .filter((p) => isChecked(p) && p.textContent?.includes('TODO'))
+    .filter((p) => isChecked(p) && checkedText(p).includes('TODO'))
     .map((p) => ({ message: `\`${describe(p)}\` contains TODO.`, help: 'Consider resolving it.' }));
 }
 
