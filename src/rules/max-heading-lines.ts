@@ -5,14 +5,14 @@ const DEFAULT_MAX = 1;
 
 function findWrappedHeading({ containerSelector, max }: { containerSelector: string; max: number }): SlideFinding[] {
   const { describe, isChecked } = globalThis.slidevCheck;
-  // The slide heading is the first heading placed directly in a title region: the root of `default` (image-*/iframe-*
+  // The slide heading is a heading opening a title region: the root of `default` (image-*/iframe-*
   // render their text column as one), the left column of `two-cols`, or the header of `two-cols-header`. Other
   // layouts (e.g., cover, section, center) center their heading as the whole content, where wrapping takes no space
   // from a body, and headings nested in columns or wrappers belong to the body.
   const heading = document
     .querySelector(containerSelector)
     ?.querySelector(
-      ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header) > :is(h1, h2, h3, h4, h5, h6)'
+      ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header) > :is(h1, h2, h3, h4, h5, h6):first-child'
     );
   if (!heading || !isChecked(heading)) return [];
   // Count rendered lines as the number of distinct line-box rows.

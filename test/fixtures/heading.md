@@ -69,3 +69,9 @@ Left column.
 ::right::
 
 Right column.
+
+---
+
+A paragraph opens this slide without a title.
+
+## This body heading after the paragraph is intentionally made so long that it wraps onto a second line without being reported
