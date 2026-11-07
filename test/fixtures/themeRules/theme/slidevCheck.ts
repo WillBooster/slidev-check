@@ -1,7 +1,9 @@
 import type { AnyRule, DeckRule, Rule } from '../../../../src/index.ts';
 
-const noMarker: Rule = {
+// A rule may carry properties of its own.
+const noMarker: Rule & { documentationUrl: string } = {
   id: 'fixture-no-marker',
+  documentationUrl: 'https://example.com/no-marker',
   description: 'Slides must not contain the marker word.',
   defaultSetting: ['warn', { word: 'TODO' }],
   check: async ({ page, containerSelector, options }) => {

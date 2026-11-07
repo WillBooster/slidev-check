@@ -23,8 +23,10 @@ const baseRuleSchema = z.object({
 const functionSchema = <T>(): z.ZodType<T> => z.custom<T>((value) => typeof value === 'function');
 const themeRulesSchema = z.array(
   z.union([
-    baseRuleSchema.extend({ check: functionSchema<Rule['check']>() }).strict(),
-    baseRuleSchema.extend({ checkDeck: functionSchema<DeckRule['checkDeck']>() }).strict(),
+    baseRuleSchema.extend({ check: functionSchema<Rule['check']>(), checkDeck: z.undefined().optional() }).loose(),
+    baseRuleSchema
+      .extend({ checkDeck: functionSchema<DeckRule['checkDeck']>(), check: z.undefined().optional() })
+      .loose(),
   ])
 );
 
