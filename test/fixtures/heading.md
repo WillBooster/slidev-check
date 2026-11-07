@@ -72,31 +72,18 @@ Right column.
 
 ---
 
-A paragraph opens this slide without a title.
-
-## This body heading after the paragraph is intentionally made so long that it wraps onto a second line without being reported
-
----
-
 <div style="display: none">Hidden note.</div>
 <div v-show="false">Hidden by v-show.</div>
-<div></div>
 <div class="absolute top-0 right-0">Logo</div>
-
-# This heading after elements taking no space is intentionally so long that it must wrap onto a second line
-
-Body text.
-
----
-
 <div style="float: right; width: 20px; height: 20px; background: gray"></div>
+<h1 v-show="false">Hidden alternate title</h1>
 
-# This heading beside a floated decoration is intentionally so long that it must wrap onto a second line
+# This heading after elements hidden or out of flow is intentionally so long that it must wrap onto a second line
 
 Body text.
 
 ---
 
-<div style="display: contents"><p>Body text inside a boxless wrapper opens this slide without a title.</p></div>
+<h1 style="transform: translateY(8px)">This transformed heading is intentionally made so long that it must wrap onto a second line in the default theme</h1>
 
-## This body heading after the boxless wrapper is intentionally made so long that it wraps onto a second line
+Body text.
