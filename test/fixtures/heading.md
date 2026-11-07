@@ -87,3 +87,11 @@ Body text.
 <h1 style="transform: translateY(8px)">This transformed heading is intentionally made so long that it must wrap onto a second line in the default theme</h1>
 
 Body text.
+
+---
+
+<h1 data-slidev-check-ignore>This ignored title is intentionally made so long that it must wrap onto a second line in the default theme</h1>
+
+## This body heading after the ignored title is intentionally made so long that it wraps onto a second line
+
+Body text.

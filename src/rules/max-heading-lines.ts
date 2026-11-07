@@ -16,9 +16,12 @@ function findWrappedHeading({ containerSelector, max }: { containerSelector: str
       ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header)'
     );
   const heading = [...(region?.children ?? [])].find(
-    (child) => child.matches('h1, h2, h3, h4, h5, h6') && isChecked(child)
+    (child) =>
+      child.matches('h1, h2, h3, h4, h5, h6') &&
+      child.checkVisibility({ opacityProperty: true, visibilityProperty: true, contentVisibilityAuto: true })
   );
-  if (!heading) return [];
+  // An ignored title stays the title, so that it does not promote a body heading to one.
+  if (!heading || !isChecked(heading)) return [];
   // Count rendered lines as the number of distinct line-box rows.
   const range = document.createRange();
   range.selectNodeContents(heading);
