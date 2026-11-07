@@ -1,7 +1,7 @@
 import { debug } from './debug.ts';
 import { renderDeck, type RenderedDeck, type RenderOptions } from './renderer.ts';
 import { allRules } from './rules/index.ts';
-import type { DeckRuleFinding, DeckSlide, Rule, RuleContext, Severity, Violation } from './types.ts';
+import type { DeckRuleFinding, DeckSlide, Rule, RuleContext, RuleSetting, Severity, Violation } from './types.ts';
 
 export interface CheckOptions extends RenderOptions {
   /** Rules to run instead of the built-in ones. The rules of the deck's theme are always added. */
@@ -53,8 +53,17 @@ function assertUniqueIds(rules: readonly Rule[]): void {
   }
 }
 
+const builtInSettings: ReadonlyMap<string, RuleSetting> = new Map(
+  allRules.map((rule) => [rule.id, rule.defaultSetting])
+);
+
+function settingOf(rule: Rule): RuleSetting {
+  return rule.defaultSetting ?? builtInSettings.get(rule.id) ?? 'error';
+}
+
 function severityOf(rule: Rule): Severity {
-  return typeof rule.defaultSetting === 'string' ? rule.defaultSetting : rule.defaultSetting[0];
+  const setting = settingOf(rule);
+  return typeof setting === 'string' ? setting : setting[0];
 }
 
 /** Runs slide rules slide by slide, then deck rules, one rule at a time because rules may change the DOM. */
@@ -101,10 +110,11 @@ async function visibleSlides(deck: RenderedDeck): Promise<DeckSlide[]> {
 }
 
 function contextBase(deck: RenderedDeck, rule: Rule): Omit<RuleContext, keyof DeckSlide> {
+  const setting = settingOf(rule);
   return {
     page: deck.page,
     width: deck.width,
     height: deck.height,
-    options: typeof rule.defaultSetting === 'string' ? undefined : rule.defaultSetting[1],
+    options: typeof setting === 'string' ? undefined : setting[1],
   };
 }

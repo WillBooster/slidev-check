@@ -409,14 +409,18 @@ describe('theme rules', () => {
 
 describe('check API', () => {
   test('runs only the requested rules and applies severity overrides', async () => {
+    // A rule without `defaultSetting` is reported as an error.
+    const custom = { id: 'custom', description: '', check: async () => [{ message: 'custom', help: '' }] };
     const violations = await check({
       entry: fixture('overlap.md'),
       ...options,
-      rules: allRules.filter((rule) => rule.id === 'no-overlap'),
+      rules: [...allRules.filter((rule) => rule.id === 'no-overlap'), custom],
       severities: { 'no-overlap': 'warn' },
     });
-    expect(violations.length).toBeGreaterThan(0);
-    expect(violations.every((v) => v.ruleId === 'no-overlap' && v.severity === 'warn')).toBe(true);
+    const overlaps = violations.filter((v) => v.ruleId === 'no-overlap');
+    expect(overlaps.length).toBeGreaterThan(0);
+    expect(overlaps.every((v) => v.severity === 'warn')).toBe(true);
+    expect(violations.filter((v) => v.ruleId === 'custom').map((v) => v.severity)).toEqual(['error', 'error', 'error']);
 
     const off = await check({ entry: fixture('overlap.md'), ...options, severities: { 'no-overlap': 'off' } });
     expect(off.filter((v) => v.ruleId === 'no-overlap')).toEqual([]);

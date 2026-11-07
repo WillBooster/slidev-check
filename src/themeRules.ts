@@ -18,7 +18,7 @@ const severitySchema = z.enum(['error', 'warn', 'off']);
 const baseRuleSchema = z.object({
   id: z.string(),
   description: z.string(),
-  defaultSetting: z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())])]),
+  defaultSetting: z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())])]).optional(),
 });
 const functionSchema = <T>(): z.ZodType<T> => z.custom<T>((value) => typeof value === 'function');
 const themeRulesSchema = z.array(

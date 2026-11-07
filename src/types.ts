@@ -82,8 +82,11 @@ interface BaseRule {
   /** Unique among the built-in rules and the theme's rules. */
   id: string;
   description: string;
-  /** Severity (and options) used unless `CheckOptions.severities` overrides the severity. */
-  defaultSetting: RuleSetting;
+  /**
+   * Severity (and options) used unless `CheckOptions.severities` overrides the severity. When omitted,
+   * the setting of the built-in rule with the same id applies, else `'error'` without options.
+   */
+  defaultSetting?: RuleSetting;
 }
 
 /** A rule that checks one slide at a time. */

@@ -54,7 +54,7 @@ The default export is an array of rules (`Rule` from `slidev-check`). Each rule 
 
 - `id`: unique among the built-in rules and the theme's rules; a duplicate makes the check fail.
 - `description`.
-- `defaultSetting`: a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`, where the rule receives `options` as `context.options`. `severities` of the `check` API override the severity by `id`.
+- `defaultSetting` (default: `'error'`): a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`, where the rule receives `options` as `context.options`. `severities` of the `check` API override the severity by `id`.
 - Exactly one of:
   - `check(context)` (`SlideRule`): called for each visible slide with the page, the slide location, its markdown source, and the CSS selector of its container. It returns findings (`message`, `help`, optional `fix`).
   - `checkDeck(context)` (`DeckRule`): called once with the page and every visible slide. Each finding also names its `slide`. Use it to compare slides or to run slow per-slide work concurrently.
