@@ -1,11 +1,11 @@
 import { debug } from './debug.ts';
 import { renderDeck, type RenderedDeck, type RenderOptions } from './renderer.ts';
 import { allRules } from './rules/index.ts';
-import type { DeckRuleFinding, DeckSlide, Rule, RuleContext, RuleSetting, Severity, Violation } from './types.ts';
+import type { AnyRule, DeckRuleFinding, DeckSlide, RuleContext, RuleSetting, Severity, Violation } from './types.ts';
 
 export interface CheckOptions extends RenderOptions {
   /** Rules to run instead of the built-in ones. The rules of the deck's theme are always added. */
-  rules?: readonly Rule[];
+  rules?: readonly AnyRule[];
   /** Overrides of the rules' default severities by rule id, including the theme's rules. */
   severities?: Partial<Record<string, Severity>>;
 }
@@ -13,11 +13,11 @@ export interface CheckOptions extends RenderOptions {
 export interface CheckResult {
   violations: Violation[];
   /** The rules that were run (those not turned off). */
-  rules: readonly Rule[];
+  rules: readonly AnyRule[];
 }
 
 interface EnabledRule {
-  rule: Rule;
+  rule: AnyRule;
   severity: Exclude<Severity, 'off'>;
 }
 
@@ -45,7 +45,7 @@ export async function checkWithRules(options: CheckOptions): Promise<CheckResult
   }
 }
 
-function assertUniqueIds(rules: readonly Rule[]): void {
+function assertUniqueIds(rules: readonly AnyRule[]): void {
   const seen = new Set<string>();
   for (const { id } of rules) {
     if (seen.has(id)) throw new Error(`More than one rule has the id "${id}".`);
@@ -57,11 +57,11 @@ const builtInSettings: ReadonlyMap<string, RuleSetting> = new Map(
   allRules.map((rule) => [rule.id, rule.defaultSetting])
 );
 
-function settingOf(rule: Rule): RuleSetting {
+function settingOf(rule: AnyRule): RuleSetting {
   return rule.defaultSetting ?? builtInSettings.get(rule.id) ?? 'error';
 }
 
-function severityOf(rule: Rule): Severity {
+function severityOf(rule: AnyRule): Severity {
   const setting = settingOf(rule);
   return typeof setting === 'string' ? setting : setting[0];
 }
@@ -109,7 +109,7 @@ async function visibleSlides(deck: RenderedDeck): Promise<DeckSlide[]> {
   return slides.filter((slide) => slide !== undefined);
 }
 
-function contextBase(deck: RenderedDeck, rule: Rule): Omit<RuleContext, keyof DeckSlide> {
+function contextBase(deck: RenderedDeck, rule: AnyRule): Omit<RuleContext, keyof DeckSlide> {
   const setting = settingOf(rule);
   return {
     page: deck.page,

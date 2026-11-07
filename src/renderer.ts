@@ -5,7 +5,7 @@ import { type Browser, chromium, type Page } from 'playwright-chromium';
 import { installBrowserHelpers } from './browser.ts';
 import { debug } from './debug.ts';
 import { loadThemeRules } from './themeRules.ts';
-import type { Rule, SlideLocation } from './types.ts';
+import type { AnyRule, SlideLocation } from './types.ts';
 
 export interface RenderOptions {
   entry: string;
@@ -27,7 +27,7 @@ export interface RenderedDeck {
   width: number;
   height: number;
   /** Rules shipped by the deck's theme. */
-  themeRules: readonly Rule[];
+  themeRules: readonly AnyRule[];
   close: () => Promise<void>;
 }
 

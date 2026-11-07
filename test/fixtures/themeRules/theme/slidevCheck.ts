@@ -1,12 +1,18 @@
-import type { DeckRule, Rule, SlideRule } from '../../../../src/index.ts';
+import type { AnyRule, DeckRule, Rule } from '../../../../src/index.ts';
 
-const noMarker: SlideRule = {
+const noMarker: Rule = {
   id: 'fixture-no-marker',
   description: 'Slides must not contain the marker word.',
   defaultSetting: ['warn', { word: 'TODO' }],
   check: async ({ page, containerSelector, options }) => {
     const word = String(options?.['word']);
-    const text = await page.locator(`${containerSelector} .slidev-layout`).innerText();
+    const text = await page
+      .locator(`${containerSelector} .slidev-layout`)
+      .evaluate((layout) => {
+        const copy = layout.cloneNode(true) as Element;
+        for (const ignored of copy.querySelectorAll('[data-slidev-check-ignore]')) ignored.remove();
+        return copy.textContent ?? '';
+      });
     return text.includes(word) ? [{ message: `The slide contains \`${word}\`.`, help: 'Consider resolving it.' }] : [];
   },
 };
@@ -25,4 +31,4 @@ const uniqueTitles: DeckRule = {
   },
 };
 
-export default [noMarker, uniqueTitles] satisfies Rule[];
+export default [noMarker, uniqueTitles] satisfies AnyRule[];

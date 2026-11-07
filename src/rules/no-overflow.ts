@@ -1,4 +1,4 @@
-import type { RuleFinding, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding } from '../types.ts';
 
 /** Sub-pixel rendering noise below this value is not reported. */
 const TOLERANCE_PX = 1;
@@ -59,4 +59,4 @@ export const noOverflow = {
   description: 'Elements must stay within the slide bounds.',
   check: ({ page, containerSelector }) =>
     page.evaluate(findOverflowingElements, { containerSelector, tolerance: TOLERANCE_PX }),
-} as const satisfies SlideRule;
+} as const satisfies Rule;

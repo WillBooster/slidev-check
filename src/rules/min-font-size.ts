@@ -1,4 +1,4 @@
-import type { RuleFinding, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding } from '../types.ts';
 
 const DEFAULT_MIN_PX = 14;
 
@@ -34,4 +34,4 @@ export const minFontSize = {
       containerSelector,
       min: Number(options?.['min'] ?? DEFAULT_MIN_PX),
     }),
-} as const satisfies SlideRule;
+} as const satisfies Rule;

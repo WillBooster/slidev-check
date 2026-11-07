@@ -1,4 +1,4 @@
-import type { RuleFinding, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding } from '../types.ts';
 
 const DEFAULT_MAX = 1;
 
@@ -39,4 +39,4 @@ export const maxHeadingLines = {
       containerSelector,
       max: Number(options?.['max'] ?? DEFAULT_MAX),
     }),
-} as const satisfies SlideRule;
+} as const satisfies Rule;

@@ -1,4 +1,4 @@
-import type { RuleFinding, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding } from '../types.ts';
 
 /** Overlaps narrower than this in either direction are treated as touching, not overlapping. */
 const TOLERANCE_PX = 2;
@@ -111,4 +111,4 @@ export const noOverlap = {
       containerSelector,
       tolerance: TOLERANCE_PX,
     }),
-} as const satisfies SlideRule;
+} as const satisfies Rule;

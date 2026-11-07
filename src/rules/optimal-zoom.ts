@@ -1,4 +1,4 @@
-import type { Fix, RuleFinding, SlideRule } from '../types.ts';
+import type { Fix, Rule, RuleFinding } from '../types.ts';
 
 const DEFAULT_MARGIN_LINES = 1;
 const DEFAULT_MAX_ZOOM = 1;
@@ -487,4 +487,4 @@ export const optimalZoom = {
       .map((analysis) => toFinding(analysis, settings.marginLines, source, slide.line))
       .filter((finding) => finding !== undefined);
   },
-} as const satisfies SlideRule;
+} as const satisfies Rule;

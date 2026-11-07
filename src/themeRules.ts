@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { z } from 'zod';
 
-import type { DeckRule, Rule, SlideRule } from './types.ts';
+import type { AnyRule, DeckRule, Rule } from './types.ts';
 
 /** The subpath a theme package exports its rules from. */
 const THEME_RULES_SUBPATH = './slidev-check';
@@ -23,7 +23,7 @@ const baseRuleSchema = z.object({
 const functionSchema = <T>(): z.ZodType<T> => z.custom<T>((value) => typeof value === 'function');
 const themeRulesSchema = z.array(
   z.union([
-    baseRuleSchema.extend({ check: functionSchema<SlideRule['check']>() }).strict(),
+    baseRuleSchema.extend({ check: functionSchema<Rule['check']>() }).strict(),
     baseRuleSchema.extend({ checkDeck: functionSchema<DeckRule['checkDeck']>() }).strict(),
   ])
 );
@@ -32,7 +32,7 @@ const themeRulesSchema = z.array(
  * Loads the rules a theme ships as the default export of the `./slidev-check` entry of its
  * `package.json` `exports`. A theme without that entry has no rules.
  */
-export async function loadThemeRules(themeRoot: string | undefined): Promise<readonly Rule[]> {
+export async function loadThemeRules(themeRoot: string | undefined): Promise<readonly AnyRule[]> {
   if (!themeRoot) return [];
   const manifestFile = Bun.file(path.join(themeRoot, 'package.json'));
   if (!(await manifestFile.exists())) return [];

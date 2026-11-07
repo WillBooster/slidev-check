@@ -1,4 +1,4 @@
-import type { RuleFinding, RuleSetting, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding, RuleSetting } from '../types.ts';
 
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
@@ -12,7 +12,7 @@ function contentLimit<const Id extends string>(
   max: number,
   subject: string,
   unit: string
-): SlideRule & { id: Id; defaultSetting: RuleSetting } {
+): Rule & { id: Id; defaultSetting: RuleSetting } {
   return {
     id,
     defaultSetting: ['warn', { max }],

@@ -58,7 +58,7 @@ interface BaseRuleContext {
   options: Record<string, unknown> | undefined;
 }
 
-/** What `SlideRule.check` receives: one visible slide. */
+/** What `Rule.check` receives: one visible slide. */
 export interface RuleContext extends BaseRuleContext, DeckSlide {}
 
 /** What `DeckRule.checkDeck` receives: every visible slide, in deck order. */
@@ -90,7 +90,7 @@ interface BaseRule {
 }
 
 /** A rule that checks one slide at a time. */
-export interface SlideRule extends BaseRule {
+export interface Rule extends BaseRule {
   check: (context: RuleContext) => Promise<RuleFinding[]>;
   checkDeck?: never;
 }
@@ -104,4 +104,5 @@ export interface DeckRule extends BaseRule {
   check?: never;
 }
 
-export type Rule = SlideRule | DeckRule;
+/** Either kind of rule, as accepted by `CheckOptions.rules` and exported by a theme. */
+export type AnyRule = Rule | DeckRule;

@@ -1,4 +1,4 @@
-import type { RuleFinding, SlideRule } from '../types.ts';
+import type { Rule, RuleFinding } from '../types.ts';
 
 export const minListItems = {
   id: 'min-list-items',
@@ -6,7 +6,7 @@ export const minListItems = {
   description: 'A list must have at least the minimum number of items.',
   check: ({ page, containerSelector, options }) =>
     page.evaluate(findShortLists, { containerSelector, min: Number(options?.['min'] ?? 2) }),
-} as const satisfies SlideRule;
+} as const satisfies Rule;
 
 function findShortLists({ containerSelector, min }: { containerSelector: string; min: number }): RuleFinding[] {
   const { describe, isChecked } = globalThis.__slidevCheck;

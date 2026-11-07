@@ -3,6 +3,7 @@ export { applyFixes } from './fix.ts';
 export { formatViolations } from './report.ts';
 export { allRules, defaultRules, type RuleId } from './rules/index.ts';
 export type {
+  AnyRule,
   DeckRule,
   DeckRuleContext,
   DeckRuleFinding,
@@ -14,6 +15,5 @@ export type {
   RuleSetting,
   Severity,
   SlideLocation,
-  SlideRule,
   Violation,
 } from './types.ts';
