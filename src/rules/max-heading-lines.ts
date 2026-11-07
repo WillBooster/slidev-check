@@ -5,12 +5,15 @@ const DEFAULT_MAX = 1;
 
 function findWrappedHeading({ containerSelector, max }: { containerSelector: string; max: number }): SlideFinding[] {
   const { describe, isChecked } = globalThis.slidevCheck;
-  // The first heading is the slide heading, as in `optimal-zoom`. Only these Slidev layouts put it in a title bar
-  // above the body (image-*/iframe-* render their text column as `default`); the others center their heading as
-  // the whole content (e.g., cover, section, center), where wrapping takes no space from a body.
+  // The slide heading is the first heading placed directly in a title region: the root of `default` (image-*/iframe-*
+  // render their text column as one), the left column of `two-cols`, or the header of `two-cols-header`. Other
+  // layouts (e.g., cover, section, center) center their heading as the whole content, where wrapping takes no space
+  // from a body, and headings nested in columns or wrappers belong to the body.
   const heading = document
     .querySelector(containerSelector)
-    ?.querySelector('.slidev-layout:is(.default, .two-columns, .two-cols-header) :is(h1, h2, h3, h4, h5, h6)');
+    ?.querySelector(
+      ':is(.slidev-layout.default, .slidev-layout.two-columns > .col-left, .slidev-layout.two-cols-header > .col-header) > :is(h1, h2, h3, h4, h5, h6)'
+    );
   if (!heading || !isChecked(heading)) return [];
   // Count rendered lines as the number of distinct line-box rows.
   const range = document.createRange();

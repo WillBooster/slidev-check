@@ -145,7 +145,10 @@ describe('cli', () => {
   test('warns on slide headings wrapping beyond the allowed lines only in the title bar', async () => {
     const { exitCode, violations } = await runCliJson(fixture('heading.md'));
     expect(exitCode).toBe(0); // warnings do not fail the check
-    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([['max-heading-lines', 'warn', 3]]);
+    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
+      ['max-heading-lines', 'warn', 3],
+      ['max-heading-lines', 'warn', 8],
+    ]);
     expect(violations[0]?.message).toMatch(/spans 2 lines, exceeding the maximum of 1/);
     expect(violations[0]?.help).toBe('Consider shortening the heading.');
   }, 90_000);
