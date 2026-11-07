@@ -13,14 +13,6 @@ Nothing to do here.
 TODO: decide the plan.
 
 ---
-hide: true
----
-
-# Plan
-
-TODO: hidden slides are not checked.
-
----
 
 # Plan
 

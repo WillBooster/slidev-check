@@ -387,7 +387,7 @@ const themeViolations = (violations: Violation[]): [string, string, number, stri
   violations.filter((v) => v.ruleId.startsWith('fixture-')).map((v) => [v.ruleId, v.severity, v.slide.no, v.message]);
 
 describe('theme rules', () => {
-  test("runs the slide and deck rules exported by the theme's package, skipping hidden slides", async () => {
+  test("runs the slide and deck rules exported by the theme's package", async () => {
     const { exitCode, violations } = await runCliJson(fixture('themeRules/slides.md'));
     expect(exitCode).toBe(1);
     expect(themeViolations(violations)).toEqual([

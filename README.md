@@ -68,7 +68,8 @@ const uniqueTitles: DeckRule = {
   defaultSetting: 'warn',
   checkDeck: async ({ slides }) =>
     slides
-      .filter(({ slide }, index) => slides.findIndex((s) => s.slide.title === slide.title) < index)
+      // A slide without a heading has no title.
+      .filter(({ slide }, index) => slide.title && slides.findIndex((s) => s.slide.title === slide.title) < index)
       .map(({ slide }) => ({
         slide,
         message: `Title \`${slide.title}\` repeats.`,
