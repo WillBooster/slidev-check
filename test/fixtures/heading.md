@@ -113,3 +113,27 @@ layout: image-left
 # This text column title is intentionally made so long that it must wrap onto a second line in the default theme
 
 Body text.
+
+---
+
+# <ruby>Short<rt>annotated</rt></ruby> heading with ruby
+
+Body text.
+
+---
+
+# This heading with <ruby>ruby<rt>annotation</rt></ruby> is intentionally made so long that it must wrap onto a second line
+
+Body text.
+
+---
+
+# Short heading with an icon <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E" style="display:inline;width:1.5em;height:1.5em">
+
+Body text.
+
+---
+
+# Heading with a wide image <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E" style="display:inline;width:20em;height:1em">
+
+Body text.
