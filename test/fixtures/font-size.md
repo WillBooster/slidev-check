@@ -4,7 +4,7 @@ theme: default
 
 # Readable
 
-Normal body text and <span class="text-sm">small but acceptable text</span>.
+Normal body text, <ruby>漢字<rt>かんじ</rt></ruby> with ruby, and <span class="text-sm">small but acceptable text</span>.
 
 ---
 
