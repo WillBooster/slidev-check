@@ -40,7 +40,7 @@ describe('cli', () => {
     expect(json.stdout).toBe('');
   }, 180_000);
 
-  test('warns on rendered content limits without counting hidden text or inline markup twice', async () => {
+  test('warns on rendered content limits without counting hidden text, ruby annotations, or inline markup twice', async () => {
     const { exitCode, violations } = await runCliJson(fixture('contentLimits.md'));
     expect(exitCode).toBe(0);
     const content = violations.filter((v) =>
@@ -67,6 +67,7 @@ describe('cli', () => {
       ['max-body-characters', 'warn', 32],
       ['max-table-rows', 'warn', 33],
       ['max-table-rows', 'warn', 35],
+      ['max-body-characters', 'warn', 37],
     ]);
     expect(
       content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('351 characters'))
@@ -86,6 +87,31 @@ describe('cli', () => {
     expect(content.filter((v) => v.ruleId === 'max-table-rows' && v.slide.no === 16).map((v) => v.message)).toEqual([
       expect.stringContaining('has 9 rows'),
       expect.stringContaining('has 10 rows'),
+    ]);
+  }, 90_000);
+
+  test('takes the body character limit from the headmatter and does not count code by default', async () => {
+    const { violations } = await runCliJson(fixture('bodyCharacterSettings.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
+      [5, expect.stringContaining('has 404 characters, exceeding the maximum of 400')],
+    ]);
+  }, 90_000);
+
+  test('counts code at the codeWeight set in the headmatter', async () => {
+    const { violations } = await runCliJson(fixture('codeWeight.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 101 characters, exceeding the maximum of 100')],
+    ]);
+  }, 90_000);
+
+  test('does not report a weighted count equal to the limit despite floating-point error', async () => {
+    const { violations } = await runCliJson(fixture('fractionalCodeWeight.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 3.1 characters, exceeding the maximum of 3')],
     ]);
   }, 90_000);
 

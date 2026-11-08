@@ -3,20 +3,30 @@ import type { Rule } from '../types.ts';
 
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
-export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 350, 'Body text', 'characters');
+export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 350, 'Body text', 'characters', {
+  codeWeight: 0,
+});
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
 
-function contentLimit(id: string, metric: Metric, max: number, subject: string, unit: string): Rule {
+function contentLimit(
+  id: string,
+  metric: Metric,
+  max: number,
+  subject: string,
+  unit: string,
+  defaultOptions: Record<string, unknown> = {}
+): Rule {
   return {
     id,
-    defaultSetting: ['warn', { max }],
+    defaultSetting: ['warn', { max, ...defaultOptions }],
     description: `${subject} should not exceed ${max} ${unit} ${metric === 'tableRows' ? 'per table' : 'per slide'}.`,
     check: perSlide(({ page, containerSelector, options }) =>
       page.evaluate(findContentLimit, {
         containerSelector,
         metric,
         max: Number(options?.['max'] ?? max),
+        codeWeight: Number(options?.['codeWeight'] ?? defaultOptions['codeWeight'] ?? 0),
         subject,
         unit,
       })
@@ -28,21 +38,28 @@ function findContentLimit({
   containerSelector,
   metric,
   max,
+  codeWeight,
   subject,
   unit,
 }: {
   containerSelector: string;
   metric: Metric;
   max: number;
+  codeWeight: number;
   subject: string;
   unit: string;
 }): SlideFinding[] {
   const { describe, isChecked, measureText } = globalThis.slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
+  // Slidev renders code through Shiki or magic move (`.slidev-code`) or Monaco, whose lines have no `pre`. A code
+  // block's title sits outside these, in `.slidev-code-wrapper`, and counts as prose.
+  const CODE_SELECTOR = 'pre, .slidev-code, .slidev-monaco-container, [data-slidev-check-code]';
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
   if (metric === 'tableRows') return findTables(layout);
-  const count = metric === 'characters' ? countCharacters(layout) : countListDepth(layout);
+  // Sums of weights such as 0.1 carry floating-point error; rounding before the comparison keeps a count
+  // equal to the limit from being reported.
+  const count = metric === 'characters' ? Math.round(countCharacters(layout) * 100) / 100 : countListDepth(layout);
   return count > max
     ? [
         {
@@ -69,7 +86,7 @@ function findContentLimit({
 
   function countCharacters(root: Element): number {
     const text: string[] = [];
-    const included: { start: number; end: number }[] = [];
+    const included: { start: number; end: number; weight: number }[] = [];
     let offset = 0;
     let previousBlock: Element | undefined;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
@@ -88,7 +105,7 @@ function findContentLimit({
             node instanceof SVGUseElement ||
             !['inline', 'contents', 'ruby', 'ruby-text'].includes(getComputedStyle(node).display))
         )
-          append('\n', false);
+          append('\n', 0);
         continue;
       }
       if (node.nodeType !== Node.TEXT_NODE) continue;
@@ -100,7 +117,7 @@ function findContentLimit({
       if (rects.length === 0) continue;
       const content = node.textContent ?? '';
       if (!content.trim()) {
-        append(content, false);
+        append(content, 0);
         continue;
       }
       let block = element.closest('.katex') ?? element.closest('ruby') ?? element;
@@ -110,14 +127,13 @@ function findContentLimit({
         block.parentElement
       )
         block = block.parentElement;
-      if (previousBlock !== block) append('\n', false);
+      if (previousBlock !== block) append('\n', 0);
       // Excluded but laid-out text still separates surrounding grapheme clusters.
-      append(
-        content,
+      const countable =
         isContentChecked(element) &&
-          !element.closest('h1, h2, h3, h4, h5, h6, script, style') &&
-          rects.some((rect) => rect.width > 0 || rect.height > 0)
-      );
+        !element.closest('h1, h2, h3, h4, h5, h6, script, style, rt, rp') &&
+        rects.some((rect) => rect.width > 0 || rect.height > 0);
+      append(content, countable ? (element.closest(CODE_SELECTOR) ? codeWeight : 1) : 0);
       previousBlock = block;
     }
     const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -126,15 +142,16 @@ function findContentLimit({
     for (const { index, segment } of segmenter.segment(text.join(''))) {
       while ((included[run]?.end ?? Infinity) <= index) run++;
       const current = included[run];
-      if (current && current.start < index + segment.length) count++;
+      if (current && current.start < index + segment.length) count += current.weight;
     }
     return count;
 
-    function append(value: string, countable: boolean): void {
+    /** `weight` is what each grapheme cluster of `value` adds to the count; 0 keeps it as a boundary only. */
+    function append(value: string, weight: number): void {
       text.push(value);
-      if (countable) {
+      if (weight > 0) {
         for (const match of value.matchAll(/[^\s\p{Default_Ignorable_Code_Point}\p{Cc}]+/gu)) {
-          included.push({ start: offset + match.index, end: offset + match.index + match[0].length });
+          included.push({ start: offset + match.index, end: offset + match.index + match[0].length, weight });
         }
       }
       offset += value.length;

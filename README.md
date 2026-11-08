@@ -39,6 +39,18 @@ Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
 
 Add `data-slidev-check-ignore` to an element to exclude it (and its descendants) from all rules.
 
+A deck sets a rule's severity or options under `slidevCheck` in its headmatter, keyed by rule id. A bare severity keeps the rule's default options; a `[severity, options]` pair merges the options over them. Each deck can thus use the limits that fit its kind (e.g., a lecture or a progress report):
+
+```yaml
+---
+slidevCheck:
+  max-body-characters: [warn, { max: 400 }]
+  max-table-rows: off
+---
+```
+
+A setting passed to `check()` (`settings`) replaces the headmatter's setting of the same rule. A rule id that no rule has is an error.
+
 ## Custom rules
 
 Rules come from three sources, run in this order:
@@ -105,7 +117,7 @@ The following rules run by default as warnings, based on the [slide guidelines](
 | `min-font-scale`      | 0.6× the theme's default text size          |
 | `min-heading-scale`   | 1× the theme's default slide heading size   |
 
-Character counts include prose, lists, code, and table text inside `.slidev-layout`, excluding headings, hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Laid-out ignored or hidden text preserves character boundaries without contributing to the count. Inline markup does not count text twice. Whitespace, formatting-only controls, and DOM separators do not add characters. Theme content outside the layout and speaker notes are not counted.
+Character counts include prose, lists, inline code, and table text inside `.slidev-layout`, excluding headings, ruby annotations (`<rt>` and `<rp>`, so furigana do not add to the count), hidden content, and elements marked `data-slidev-check-ignore`. Unicode grapheme clusters count as single characters, including emoji and combining marks. Text in code blocks (`<pre>` and the code of Slidev's code blocks, including `{monaco}` ones, but not their titles) and in elements marked `data-slidev-check-code` (e.g., a theme's prompt block) is not counted by default, because such text is usually shown verbatim for readers to copy rather than read in full; `no-overflow` and `min-font-scale` still check its layout. A deck whose readers must read the code sets the `codeWeight` option of `max-body-characters` (the characters each of them counts as, 0 by default), e.g., `[warn, { codeWeight: 1 }]`. Laid-out ignored or hidden text preserves character boundaries without contributing to the count. Inline markup does not count text twice. Whitespace, formatting-only controls, and DOM separators do not add characters. Theme content outside the layout and speaker notes are not counted.
 
 Custom layouts must mark their content root with `class="slidev-layout"`. Visibility checks respect display, visibility, opacity, and content-visibility; visible text inside boxless `display: contents` wrappers is counted. Text skipped by `content-visibility: hidden` is excluded; the same declaration on elements where it has no effect does not hide visible text. Text clipped or clamped by CSS still counts. Use `data-slidev-check-ignore` for intentionally excluded content. Text metrics inspect HTML/SVG text nodes directly present in the document. SVG resource definitions and text instantiated through `<use>` are outside the count, as are shadow-root text and direct native MathML; these require manual review. Slidev's standard KaTeX HTML rendering is counted.
 

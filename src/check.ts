@@ -8,7 +8,8 @@ export interface CheckOptions extends RenderOptions {
   rules?: readonly Rule[];
   /**
    * Overrides of the rules' default settings by rule id. A bare severity keeps the rule's default
-   * options; a `[severity, options]` pair merges the options over them.
+   * options; a `[severity, options]` pair merges the options over them. A setting here replaces the
+   * deck headmatter's `slidevCheck` setting of the same rule.
    */
   settings?: Partial<Record<string, RuleSetting>>;
 }
@@ -36,7 +37,10 @@ export async function check(options: CheckOptions): Promise<Violation[]> {
 
 export async function checkWithRules(options: CheckOptions): Promise<CheckResult> {
   const deck = await resolveDeck(options);
-  const enabled = enabledRules([...allRules, ...deck.themeRules, ...(options.rules ?? [])], options.settings ?? {});
+  const enabled = enabledRules([...allRules, ...deck.themeRules, ...(options.rules ?? [])], {
+    ...deck.settings,
+    ...options.settings,
+  });
   const rendered = await renderDeck(deck, options);
   try {
     const violations = await collectViolations(deck, rendered, enabled);

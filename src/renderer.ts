@@ -1,11 +1,12 @@
 import { createServer, resolveOptions } from '@slidev/cli';
 import { raceWithTimeout } from '@willbooster/shared-lib';
 import { type Browser, chromium, type Page } from 'playwright-chromium';
+import { z } from 'zod';
 
 import { installBrowserHelpers } from './browser.ts';
 import { debug } from './debug.ts';
 import { loadThemeRules } from './themeRules.ts';
-import type { Rule, SlideLocation } from './types.ts';
+import type { Rule, RuleSetting, SlideLocation } from './types.ts';
 
 export interface RenderOptions {
   entry: string;
@@ -28,12 +29,20 @@ export interface ResolvedDeck {
   height: number;
   /** Rules shipped by the deck's theme. */
   themeRules: readonly Rule[];
+  /** Rule settings from the `slidevCheck` key of the deck's headmatter. */
+  settings: Partial<Record<string, RuleSetting>>;
 }
 
 export interface RenderedDeck {
   page: Page;
   close: () => Promise<void>;
 }
+
+const severitySchema = z.enum(['error', 'warn', 'off']);
+const headmatterSettingsSchema = z.record(
+  z.string(),
+  z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())]).readonly()])
+);
 
 /** Parses the deck and loads its theme's rules without starting anything. */
 export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck> {
@@ -52,6 +61,7 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
     width,
     height: Math.round(width / resolved.data.config.aspectRatio),
     themeRules: await loadThemeRules(resolved.themeRoots[0]),
+    settings: headmatterSettingsSchema.parse(resolved.data.headmatter['slidevCheck'] ?? {}),
   };
 }
 
