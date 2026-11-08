@@ -115,7 +115,7 @@ function findContentLimit({
       append(
         content,
         isContentChecked(element) &&
-          !element.closest('h1, h2, h3, h4, h5, h6, script, style') &&
+          !element.closest('h1, h2, h3, h4, h5, h6, script, style, rt, rp') &&
           rects.some((rect) => rect.width > 0 || rect.height > 0)
       );
       previousBlock = block;

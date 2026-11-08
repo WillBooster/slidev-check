@@ -217,3 +217,15 @@ layout: default
 # Empty visible rows with ineffective content visibility
 
 <table style="font-size: 14px; line-height: 20px"><tbody><tr v-for="n in 9" style="content-visibility: hidden"><td style="padding: 2px 8px"></td></tr></tbody></table>
+
+---
+
+# Ruby boundary
+
+<div style="font-size: 12px; word-break: break-all"><ruby v-for="n in 175">漢字<rp>(</rp><rt>かんじ</rt><rp>)</rp></ruby></div>
+
+---
+
+# Over ruby boundary
+
+<div style="font-size: 12px; word-break: break-all"><ruby v-for="n in 175">漢字<rp>(</rp><rt>かんじ</rt><rp>)</rp></ruby><ruby>字<rt>じ</rt></ruby></div>

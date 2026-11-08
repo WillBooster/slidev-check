@@ -40,7 +40,7 @@ describe('cli', () => {
     expect(json.stdout).toBe('');
   }, 180_000);
 
-  test('warns on rendered content limits without counting hidden text or inline markup twice', async () => {
+  test('warns on rendered content limits without counting hidden text, ruby annotations, or inline markup twice', async () => {
     const { exitCode, violations } = await runCliJson(fixture('contentLimits.md'));
     expect(exitCode).toBe(0);
     const content = violations.filter((v) =>
@@ -67,6 +67,7 @@ describe('cli', () => {
       ['max-body-characters', 'warn', 32],
       ['max-table-rows', 'warn', 33],
       ['max-table-rows', 'warn', 35],
+      ['max-body-characters', 'warn', 37],
     ]);
     expect(
       content.filter((v) => v.ruleId === 'max-body-characters').every((v) => v.message.includes('351 characters'))
