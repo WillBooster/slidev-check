@@ -106,6 +106,14 @@ describe('cli', () => {
     ]);
   }, 90_000);
 
+  test('does not report a weighted count equal to the limit despite floating-point error', async () => {
+    const { violations } = await runCliJson(fixture('fractionalCodeWeight.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 3.1 characters, exceeding the maximum of 3')],
+    ]);
+  }, 90_000);
+
   test('counts direct SVG text while excluding SVG resource definitions', async () => {
     const { violations } = await runCliJson(fixture('svgText.md'));
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');

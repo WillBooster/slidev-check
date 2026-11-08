@@ -54,12 +54,13 @@ function findContentLimit({
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
   if (metric === 'tableRows') return findTables(layout);
-  const count = metric === 'characters' ? countCharacters(layout) : countListDepth(layout);
+  // Sums of weights such as 0.1 carry floating-point error; rounding before the comparison keeps a count
+  // equal to the limit from being reported.
+  const count = metric === 'characters' ? Math.round(countCharacters(layout) * 100) / 100 : countListDepth(layout);
   return count > max
     ? [
         {
-          // Weighted characters can add up to a fraction that floating point cannot represent exactly.
-          message: `${subject} has ${Math.round(count * 100) / 100} ${unit}, exceeding the maximum of ${max}.`,
+          message: `${subject} has ${count} ${unit}, exceeding the maximum of ${max}.`,
           help: 'Consider shortening or splitting the content into multiple slides.',
         },
       ]
