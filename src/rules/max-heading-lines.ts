@@ -22,13 +22,18 @@ function findWrappedHeading({ containerSelector, max }: { containerSelector: str
   );
   // An ignored title stays the title, so that it does not promote a body heading to one.
   if (!heading || !isChecked(heading)) return [];
-  // Count rendered lines as the number of distinct line-box rows.
+  // Count rendered lines as the number of distinct line-box rows. Ruby text (`<rt>`) sits above its base on the
+  // same line, so only the text outside it counts.
   const range = document.createRange();
-  range.selectNodeContents(heading);
   const rowTops: number[] = [];
-  for (const rect of range.getClientRects()) {
-    if (rect.width === 0 || rect.height === 0) continue;
-    if (!rowTops.some((top) => Math.abs(top - rect.top) < rect.height / 2)) rowTops.push(rect.top);
+  const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.parentElement?.closest('rt, rp')) continue;
+    range.selectNodeContents(node);
+    for (const rect of range.getClientRects()) {
+      if (rect.width === 0 || rect.height === 0) continue;
+      if (!rowTops.some((top) => Math.abs(top - rect.top) < rect.height / 2)) rowTops.push(rect.top);
+    }
   }
   return rowTops.length > max
     ? [

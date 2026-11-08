@@ -113,3 +113,15 @@ layout: image-left
 # This text column title is intentionally made so long that it must wrap onto a second line in the default theme
 
 Body text.
+
+---
+
+# <ruby>Short<rt>annotated</rt></ruby> heading with ruby
+
+Body text.
+
+---
+
+# This heading with <ruby>ruby<rt>annotation</rt></ruby> is intentionally made so long that it must wrap onto a second line
+
+Body text.
