@@ -26,7 +26,7 @@ function contentLimit(
         containerSelector,
         metric,
         max: Number(options?.['max'] ?? max),
-        codeWeight: Number(options?.['codeWeight'] ?? 1),
+        codeWeight: Number(options?.['codeWeight'] ?? defaultOptions['codeWeight'] ?? 0),
         subject,
         unit,
       })
