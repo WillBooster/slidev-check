@@ -4,10 +4,16 @@ theme: default
 
 # Readable
 
-Normal body text and <span class="text-sm">small but acceptable text</span>.
+Normal body text, <ruby>漢字<rt>かんじ</rt></ruby> with ruby, and <span class="text-sm">small but acceptable text</span>.
 
 ---
 
 # Fine print
 
 <p class="text-xs">This fine print is too small to read, <strong>even in bold</strong>.</p>
+
+---
+
+# Small ruby base
+
+Readable text with <ruby class="text-xs">漢字<rt>かんじ</rt></ruby> set too small.

@@ -12,6 +12,8 @@ function findTooSmallText({ containerSelector, min }: { containerSelector: strin
   for (const element of container.querySelectorAll('*')) {
     if (!isChecked(element)) continue;
     if (!measureText(element)) continue; // only elements that render text themselves
+    // Ruby text (`<rt>`) annotates its base at about half its size by convention, and the base is checked instead.
+    if (element.closest('rt, rp')) continue;
     const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
     if (!(fontSize < min)) continue;
     // Report only the outermost offender: children inheriting the same problem add no information.
