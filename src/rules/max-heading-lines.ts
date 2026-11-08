@@ -3,6 +3,7 @@ import type { Rule } from '../types.ts';
 
 const DEFAULT_MAX = 1;
 
+// code-gauge-allow functionCognitiveComplexity 27 -- page.evaluate serializes this function alone, so its DOM helpers must nest inside it.
 function findWrappedHeading({ containerSelector, max }: { containerSelector: string; max: number }): SlideFinding[] {
   const { describe, isChecked } = globalThis.slidevCheck;
   // The slide heading is the first visible heading directly in a title region: the root of `default` (image-*/iframe-*
@@ -22,19 +23,7 @@ function findWrappedHeading({ containerSelector, max }: { containerSelector: str
   );
   // An ignored title stays the title, so that it does not promote a body heading to one.
   if (!heading || !isChecked(heading)) return [];
-  // Count rendered lines as the number of distinct line-box rows. Ruby text (`<rt>`) sits above its base on the
-  // same line, so only the text outside it counts.
-  const range = document.createRange();
-  const rowTops: number[] = [];
-  const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    if (node.parentElement?.closest('rt, rp')) continue;
-    range.selectNodeContents(node);
-    for (const rect of range.getClientRects()) {
-      if (rect.width === 0 || rect.height === 0) continue;
-      if (!rowTops.some((top) => Math.abs(top - rect.top) < rect.height / 2)) rowTops.push(rect.top);
-    }
-  }
+  const rowTops = countRowTops(heading);
   return rowTops.length > max
     ? [
         {
@@ -43,6 +32,33 @@ function findWrappedHeading({ containerSelector, max }: { containerSelector: str
         },
       ]
     : [];
+
+  // Count rendered lines as the number of distinct line-box rows of the heading's text and atomic content (images,
+  // icons, empty inline blocks). Ruby text (`<rt>`) sits above its base on the same line, so it is skipped.
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- page.evaluate serializes only findWrappedHeading.
+  function countRowTops(heading: Element): number[] {
+    const atomicSelector = 'img, svg, video, canvas, iframe, object, embed, input, select, textarea';
+    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => {
+        // The box of an atomic element already covers its inner nodes.
+        if (node.parentElement?.matches(atomicSelector) || (node instanceof Element && node.matches('rt, rp')))
+          return NodeFilter.FILTER_REJECT;
+        return node instanceof Element && node.hasChildNodes() && !node.matches(atomicSelector)
+          ? NodeFilter.FILTER_SKIP
+          : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    const range = document.createRange();
+    const rowTops: number[] = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      range.selectNode(node);
+      for (const rect of range.getClientRects()) {
+        if (rect.width === 0 || rect.height === 0) continue;
+        if (!rowTops.some((top) => Math.abs(top - rect.top) < rect.height / 2)) rowTops.push(rect.top);
+      }
+    }
+    return rowTops;
+  }
 }
 
 export const maxHeadingLines: Rule = {
