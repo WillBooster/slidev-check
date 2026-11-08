@@ -162,8 +162,12 @@ describe('cli', () => {
   test('warns on text below the minimum font size, reporting only the outermost element', async () => {
     const { exitCode, violations } = await runCliJson(fixture('font-size.md'));
     expect(exitCode).toBe(0);
-    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([['min-font-size', 'warn', 2]]);
+    expect(violations.map((v) => [v.ruleId, v.severity, v.slide.no])).toEqual([
+      ['min-font-size', 'warn', 2],
+      ['min-font-size', 'warn', 3],
+    ]);
     expect(violations[0]?.message).toMatch(/has a font size of 12px, smaller than the minimum of 14px/);
+    expect(violations[1]?.message).toMatch(/^Element `<ruby\.text-xs>漢字/);
     expect(violations[0]?.help).toBe('Consider increasing the font size.');
   }, 90_000);
 
