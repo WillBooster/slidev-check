@@ -51,8 +51,9 @@ function findContentLimit({
 }): SlideFinding[] {
   const { describe, isChecked, measureText } = globalThis.slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
-  // Slidev renders code blocks through Shiki (`pre` in `.slidev-code-wrapper`) or Monaco, whose lines have no `pre`.
-  const CODE_SELECTOR = 'pre, .slidev-code-wrapper, .slidev-monaco-container, [data-slidev-check-code]';
+  // Slidev renders code through Shiki or magic move (`.slidev-code`) or Monaco, whose lines have no `pre`. A code
+  // block's title sits outside these, in `.slidev-code-wrapper`, and counts as prose.
+  const CODE_SELECTOR = 'pre, .slidev-code, .slidev-monaco-container, [data-slidev-check-code]';
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
   if (metric === 'tableRows') return findTables(layout);

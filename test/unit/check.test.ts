@@ -95,6 +95,7 @@ describe('cli', () => {
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');
     expect(content.map((v) => [v.slide.no, v.message])).toEqual([
       [2, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
+      [5, expect.stringContaining('has 404 characters, exceeding the maximum of 400')],
     ]);
   }, 90_000);
 
