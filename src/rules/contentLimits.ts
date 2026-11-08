@@ -51,6 +51,8 @@ function findContentLimit({
 }): SlideFinding[] {
   const { describe, isChecked, measureText } = globalThis.slidevCheck;
   const svgResources = new Set(['defs', 'symbol', 'clipPath', 'mask', 'pattern', 'marker']);
+  // Slidev renders code blocks through Shiki (`pre` in `.slidev-code-wrapper`) or Monaco, whose lines have no `pre`.
+  const CODE_SELECTOR = 'pre, .slidev-code-wrapper, .slidev-monaco-container, [data-slidev-check-code]';
   const layout = document.querySelector(`${containerSelector} .slidev-layout`);
   if (!layout) return [];
   if (metric === 'tableRows') return findTables(layout);
@@ -130,7 +132,7 @@ function findContentLimit({
         isContentChecked(element) &&
         !element.closest('h1, h2, h3, h4, h5, h6, script, style, rt, rp') &&
         rects.some((rect) => rect.width > 0 || rect.height > 0);
-      append(content, countable ? (element.closest('pre, [data-slidev-check-code]') ? codeWeight : 1) : 0);
+      append(content, countable ? (element.closest(CODE_SELECTOR) ? codeWeight : 1) : 0);
       previousBlock = block;
     }
     const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
