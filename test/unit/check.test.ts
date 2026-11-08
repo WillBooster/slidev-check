@@ -90,12 +90,19 @@ describe('cli', () => {
     ]);
   }, 90_000);
 
-  test('takes the body character limit from the headmatter and counts code at half weight', async () => {
+  test('takes the body character limit from the headmatter and does not count code by default', async () => {
     const { violations } = await runCliJson(fixture('bodyCharacterSettings.md'));
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');
     expect(content.map((v) => [v.slide.no, v.message])).toEqual([
       [2, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
-      [4, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
+    ]);
+  }, 90_000);
+
+  test('counts code at the codeWeight set in the headmatter', async () => {
+    const { violations } = await runCliJson(fixture('codeWeight.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 101 characters, exceeding the maximum of 100')],
     ]);
   }, 90_000);
 

@@ -4,7 +4,7 @@ import type { Rule } from '../types.ts';
 type Metric = 'characters' | 'listDepth' | 'tableRows';
 
 export const maxBodyCharacters = contentLimit('max-body-characters', 'characters', 350, 'Body text', 'characters', {
-  codeWeight: 0.5,
+  codeWeight: 0,
 });
 export const maxListDepth = contentLimit('max-list-depth', 'listDepth', 2, 'List', 'levels');
 export const maxTableRows = contentLimit('max-table-rows', 'tableRows', 8, 'Table', 'rows');
