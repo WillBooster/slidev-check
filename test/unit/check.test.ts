@@ -90,6 +90,15 @@ describe('cli', () => {
     ]);
   }, 90_000);
 
+  test('takes the body character limit from the headmatter and counts code at half weight', async () => {
+    const { violations } = await runCliJson(fixture('bodyCharacterSettings.md'));
+    const content = violations.filter((v) => v.ruleId === 'max-body-characters');
+    expect(content.map((v) => [v.slide.no, v.message])).toEqual([
+      [2, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
+      [4, expect.stringContaining('has 401 characters, exceeding the maximum of 400')],
+    ]);
+  }, 90_000);
+
   test('counts direct SVG text while excluding SVG resource definitions', async () => {
     const { violations } = await runCliJson(fixture('svgText.md'));
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');
