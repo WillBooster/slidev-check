@@ -91,9 +91,11 @@ describe('cli', () => {
   }, 90_000);
 
   test('exits with 1 only when the warnings exceed --max-warnings', async () => {
-    const strict = await runCli(fixture('contentLimits.md'), '--max-warnings', '0');
-    const lenient = await runCli(fixture('contentLimits.md'), '--max-warnings', '100');
-    expect([strict.exitCode, lenient.exitCode]).toEqual([1, 0]);
+    const { violations } = await runCliJson(fixture('contentLimits.md'));
+    const warnings = violations.filter((v) => v.severity === 'warn').length;
+    const atLimit = await runCli(fixture('contentLimits.md'), '--max-warnings', String(warnings));
+    const overLimit = await runCli(fixture('contentLimits.md'), '--max-warnings', String(warnings - 1));
+    expect([violations.length, atLimit.exitCode, overLimit.exitCode]).toEqual([warnings, 0, 1]);
   }, 90_000);
 
   test('takes the body character limit from the headmatter and does not count code by default', async () => {
@@ -442,15 +444,10 @@ describe('theme rules', () => {
     ]);
   }, 90_000);
 
-  test('drops the findings a slide ignores and reports an ignore that drops none', async () => {
-    const { exitCode, violations } = await runCliJson(fixture('themeRules/ignores.md'));
-    expect(exitCode).toBe(1);
-    expect(
-      violations
-        .filter((v) => ['fixture-no-marker', 'unused-ignore'].includes(v.ruleId))
-        .map((v) => [v.ruleId, v.severity, v.slide.no, v.message])
-    ).toEqual([
-      ['unused-ignore', 'error', 3, '`slidevCheckIgnore` of `fixture-no-marker` ignores no finding.'],
+  test('drops the findings of the rules a slide ignores, and only those', async () => {
+    const { violations } = await runCliJson(fixture('themeRules/ignores.md'));
+    expect(themeViolations(violations)).toEqual([
+      ['fixture-unique-titles', 'error', 3, 'The heading `Quoted marker` repeats.'],
       ['fixture-no-marker', 'warn', 4, 'The slide contains `TODO`.'],
     ]);
   }, 90_000);

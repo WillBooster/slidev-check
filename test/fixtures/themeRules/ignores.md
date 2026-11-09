@@ -17,12 +17,12 @@ Write TODO where the plan is open.
 
 ---
 slidevCheckIgnore:
-  fixture-no-marker: Left after the marker was removed.
+  fixture-no-marker: The marker is quoted, not left unresolved.
 ---
 
-# Resolved marker
+# Quoted marker
 
-Nothing to do here.
+Write TODO in the plan again.
 
 ---
 

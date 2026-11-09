@@ -51,7 +51,7 @@ slidevCheck:
 
 A setting passed to `check()` (`settings`) replaces the headmatter's setting of the same rule. A rule id that no rule has is an error.
 
-A slide ignores the findings of a rule on it under `slidevCheckIgnore` in its frontmatter, mapping the rule id to the reason, which is required. Only rules marked `suppressible` can be ignored: those whose false positives no change to the rule can rule out, such as rules judged by a language model. A false positive of any other rule is a bug of the rule. An entry that ignores no finding (e.g., after the slide was fixed) is reported as an `unused-ignore` error, so that it cannot hide a later finding:
+A slide ignores the findings of a rule on it under `slidevCheckIgnore` in its frontmatter, mapping the rule id to the reason, which is required. Only rules marked `suppressible` can be ignored: those whose false positives no change to the rule can rule out, such as rules judged by a language model. A false positive of any other rule is a bug of the rule. An entry that ignores no finding is not reported, because the findings of such a rule vary between runs: a run without the finding does not show that the entry is stale. Review the entry whenever the slide changes:
 
 ```yaml
 ---

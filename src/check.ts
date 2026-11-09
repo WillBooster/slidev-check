@@ -93,7 +93,6 @@ async function collectViolations(
 ): Promise<Violation[]> {
   const slides = await visibleSlides(deck, rendered);
   const ignoresByNo = new Map(deck.slides.map(({ no, ignores }) => [no, ignores]));
-  const usedIgnores = new Set<string>();
   const results: { ruleIndex: number; violation: Violation }[] = [];
   for (const [ruleIndex, { rule, severity, options }] of rules.entries()) {
     debug(`rule ${rule.id}`);
@@ -101,32 +100,11 @@ async function collectViolations(
     for (const { slide, ...finding } of findings) {
       if (ignoresByNo.get(slide.no)?.[rule.id] === undefined)
         results.push({ ruleIndex, violation: { ruleId: rule.id, severity, slide, ...finding } });
-      else usedIgnores.add(`${slide.no} ${rule.id}`);
     }
   }
-  for (const violation of unusedIgnores(slides, ignoresByNo, usedIgnores))
-    results.push({ ruleIndex: rules.length, violation });
   return results
     .toSorted((a, b) => a.violation.slide.no - b.violation.slide.no || a.ruleIndex - b.ruleIndex)
     .map(({ violation }) => violation);
-}
-
-function unusedIgnores(
-  slides: readonly DeckSlide[],
-  ignoresByNo: ReadonlyMap<number, Record<string, string>>,
-  usedIgnores: ReadonlySet<string>
-): Violation[] {
-  return slides.flatMap(({ slide }) =>
-    Object.keys(ignoresByNo.get(slide.no) ?? {})
-      .filter((id) => !usedIgnores.has(`${slide.no} ${id}`))
-      .map((id) => ({
-        ruleId: 'unused-ignore',
-        severity: 'error' as const,
-        slide,
-        message: `\`slidevCheckIgnore\` of \`${id}\` ignores no finding.`,
-        help: 'Consider removing it.',
-      }))
-  );
 }
 
 async function visibleSlides(deck: ResolvedDeck, rendered: RenderedDeck): Promise<DeckSlide[]> {
