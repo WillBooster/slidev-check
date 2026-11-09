@@ -74,6 +74,11 @@ export interface Rule {
   description: string;
   /** Severity and options used unless `CheckOptions.settings` overrides them. */
   defaultSetting: RuleSetting;
+  /**
+   * Whether a slide may ignore the rule's findings with `slidevCheckIgnore` in its frontmatter. Set it only on a rule
+   * whose false positives no change to the rule can rule out (e.g. one judged by a language model); fix any other rule.
+   */
+  suppressible?: boolean;
   /** Checks the whole deck. Use `perSlide` for a rule that looks at one slide at a time. */
   check: (context: CheckContext) => Promise<Finding[]>;
 }

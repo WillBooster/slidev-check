@@ -24,7 +24,7 @@ bunx slidev-check slides.md
 
 The deck is rendered with the `@slidev/cli` and theme installed in _your_ project, so the checked output matches what `slidev` itself shows.
 
-Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1` if any errors are found. Warnings alone keep exit code `0`:
+Nothing is printed when no rule is violated. Otherwise each violation is reported with its location, cause, and a `help:` suggestion, and the exit code is `1` if any errors are found. Warnings alone keep exit code `0` unless they exceed `--max-warnings <n>`, so `--max-warnings 0` makes every warning fail the check:
 
 ```
 3: error no-overflow: Element `<div.absolute>wide` overflows the slide by 220px at the right. help: Consider splitting the content into multiple slides.
@@ -33,7 +33,7 @@ Found 0 warnings and 1 error.
 Finished in 3521ms with 11 rules.
 ```
 
-Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--json`, `--fix`.
+Options: `--theme <name>`, `--wait <ms>`, `--timeout <ms>`, `--max-warnings <n>`, `--json`, `--fix`.
 
 `--fix` rewrites the slide files with the fixes that rules attach to their findings and reports what remains (with `--json`, as `{ "fixed": N, "violations": [...] }`). Currently `optimal-zoom` provides fixes: for an element with an inline `zoom` style (typically a `<div style="zoom: 0.8">` around the whole slide body), it finds the largest zoom at which the content still keeps a margin (one text line by default) above the slide bottom and within the slide width, warns when the declared zoom is smaller (the content could be larger) or larger (the content is too tight, sticks out, or overflows; a zoom above 1 that still keeps the margin is left alone), and `--fix` replaces the declared value with the optimal one. Several wrappers on one slide are optimized in document order, so their fixes are consistent with each other. A slide without a wrapper whose content is too tight at zoom 1 is reported with the wrapper to add.
 
@@ -50,6 +50,15 @@ slidevCheck:
 ```
 
 A setting passed to `check()` (`settings`) replaces the headmatter's setting of the same rule. A rule id that no rule has is an error.
+
+A slide ignores the findings of a rule on it under `slidevCheckIgnore` in its frontmatter, mapping the rule id to the reason, which is required. Only rules marked `suppressible` can be ignored: those whose false positives no change to the rule can rule out, such as rules judged by a language model. A false positive of any other rule is a bug of the rule. An entry that ignores no finding (e.g., after the slide was fixed) is reported as an `unused-ignore` error, so that it cannot hide a later finding:
+
+```yaml
+---
+slidevCheckIgnore:
+  example/title-form: The title is a product name, not an adjective.
+---
+```
 
 ## Custom rules
 
@@ -71,6 +80,7 @@ A rule (`Rule` from `slidev-check`) has:
 - `id`: unique across all three sources.
 - `description`.
 - `defaultSetting`: a severity (`'error'`, `'warn'`, or `'off'`), or `[severity, options]`. The rule receives the options as `context.options`.
+- `suppressible` (optional): whether slides can ignore its findings with `slidevCheckIgnore`.
 - `check(context)`: called once with the page, the canvas size, the options, and every visible slide (`slides`: location, markdown source, and the CSS selector of its container). It returns findings, each naming its `slide`, with `message`, `help`, and an optional `fix`.
 
 `perSlide(fn)` builds `check` from a function that checks one slide at a time and returns findings without `slide`. The built-in rules use it. Its slides are checked one after another; implement `check` directly to compare slides or to run slow per-slide work concurrently.

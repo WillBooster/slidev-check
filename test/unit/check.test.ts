@@ -90,6 +90,12 @@ describe('cli', () => {
     ]);
   }, 90_000);
 
+  test('exits with 1 only when the warnings exceed --max-warnings', async () => {
+    const strict = await runCli(fixture('contentLimits.md'), '--max-warnings', '0');
+    const lenient = await runCli(fixture('contentLimits.md'), '--max-warnings', '100');
+    expect([strict.exitCode, lenient.exitCode]).toEqual([1, 0]);
+  }, 90_000);
+
   test('takes the body character limit from the headmatter and does not count code by default', async () => {
     const { violations } = await runCliJson(fixture('bodyCharacterSettings.md'));
     const content = violations.filter((v) => v.ruleId === 'max-body-characters');
@@ -436,6 +442,19 @@ describe('theme rules', () => {
     ]);
   }, 90_000);
 
+  test('drops the findings a slide ignores and reports an ignore that drops none', async () => {
+    const { exitCode, violations } = await runCliJson(fixture('themeRules/ignores.md'));
+    expect(exitCode).toBe(1);
+    expect(
+      violations
+        .filter((v) => ['fixture-no-marker', 'unused-ignore'].includes(v.ruleId))
+        .map((v) => [v.ruleId, v.severity, v.slide.no, v.message])
+    ).toEqual([
+      ['unused-ignore', 'error', 3, '`slidevCheckIgnore` of `fixture-no-marker` ignores no finding.'],
+      ['fixture-no-marker', 'warn', 4, 'The slide contains `TODO`.'],
+    ]);
+  }, 90_000);
+
   test('applies setting overrides, keeping or merging default options, and runs additional rules', async () => {
     const extra: Rule = {
       id: 'extra',
@@ -472,6 +491,15 @@ describe('check API', () => {
     );
     await expect(check({ entry, ...options, settings: { unknown: 'warn' } })).rejects.toThrow(
       'No rule has the id "unknown"'
+    );
+  }, 90_000);
+
+  test('fails before rendering when a slide ignores a rule that is not suppressible or gives no reason', async () => {
+    await expect(check({ entry: fixture('themeRules/ignoreUnsuppressible.md'), ...options })).rejects.toThrow(
+      'Slide 2 cannot ignore "fixture-unique-titles", which is not suppressible'
+    );
+    await expect(check({ entry: fixture('themeRules/ignoreWithoutReason.md'), ...options })).rejects.toThrow(
+      'slidevCheckIgnore of slide 2 must map rule ids to the reasons'
     );
   }, 90_000);
 });

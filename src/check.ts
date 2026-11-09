@@ -37,10 +37,9 @@ export async function check(options: CheckOptions): Promise<Violation[]> {
 
 export async function checkWithRules(options: CheckOptions): Promise<CheckResult> {
   const deck = await resolveDeck(options);
-  const enabled = enabledRules([...allRules, ...deck.themeRules, ...(options.rules ?? [])], {
-    ...deck.settings,
-    ...options.settings,
-  });
+  const rules = [...allRules, ...deck.themeRules, ...(options.rules ?? [])];
+  const enabled = enabledRules(rules, { ...deck.settings, ...options.settings });
+  validateIgnores(deck, rules);
   const rendered = await renderDeck(deck, options);
   try {
     const violations = await collectViolations(deck, rendered, enabled);
@@ -74,6 +73,18 @@ function resolveSetting(
   return { severity: override[0], options: { ...defaultOptions, ...override[1] } };
 }
 
+function validateIgnores(deck: ResolvedDeck, rules: readonly Rule[]): void {
+  const rulesById = new Map(rules.map((rule) => [rule.id, rule]));
+  for (const { no, ignores } of deck.slides) {
+    for (const id of Object.keys(ignores)) {
+      const rule = rulesById.get(id);
+      if (!rule) throw new Error(`No rule has the id "${id}" that slide ${no} ignores.`);
+      if (!rule.suppressible)
+        throw new Error(`Slide ${no} cannot ignore "${id}", which is not suppressible; fix the slide or the rule.`);
+    }
+  }
+}
+
 /** Runs the rules one at a time, because a rule may change the shared page while it runs. */
 async function collectViolations(
   deck: ResolvedDeck,
@@ -81,21 +92,47 @@ async function collectViolations(
   rules: readonly EnabledRule[]
 ): Promise<Violation[]> {
   const slides = await visibleSlides(deck, rendered);
+  const ignoresByNo = new Map(deck.slides.map(({ no, ignores }) => [no, ignores]));
+  const usedIgnores = new Set<string>();
   const results: { ruleIndex: number; violation: Violation }[] = [];
   for (const [ruleIndex, { rule, severity, options }] of rules.entries()) {
     debug(`rule ${rule.id}`);
     const findings = await rule.check({ page: rendered.page, width: deck.width, height: deck.height, options, slides });
-    for (const { slide, ...finding } of findings)
-      results.push({ ruleIndex, violation: { ruleId: rule.id, severity, slide, ...finding } });
+    for (const { slide, ...finding } of findings) {
+      if (ignoresByNo.get(slide.no)?.[rule.id] === undefined)
+        results.push({ ruleIndex, violation: { ruleId: rule.id, severity, slide, ...finding } });
+      else usedIgnores.add(`${slide.no} ${rule.id}`);
+    }
   }
+  for (const violation of unusedIgnores(slides, ignoresByNo, usedIgnores))
+    results.push({ ruleIndex: rules.length, violation });
   return results
     .toSorted((a, b) => a.violation.slide.no - b.violation.slide.no || a.ruleIndex - b.ruleIndex)
     .map(({ violation }) => violation);
 }
 
+function unusedIgnores(
+  slides: readonly DeckSlide[],
+  ignoresByNo: ReadonlyMap<number, Record<string, string>>,
+  usedIgnores: ReadonlySet<string>
+): Violation[] {
+  return slides.flatMap(({ slide }) =>
+    Object.keys(ignoresByNo.get(slide.no) ?? {})
+      .filter((id) => !usedIgnores.has(`${slide.no} ${id}`))
+      .map((id) => ({
+        ruleId: 'unused-ignore',
+        severity: 'error' as const,
+        slide,
+        message: `\`slidevCheckIgnore\` of \`${id}\` ignores no finding.`,
+        help: 'Consider removing it.',
+      }))
+  );
+}
+
 async function visibleSlides(deck: ResolvedDeck, rendered: RenderedDeck): Promise<DeckSlide[]> {
   const slides = await Promise.all(
-    deck.slides.map(async ({ source, ...slide }) => {
+    deck.slides.map(async ({ no, filepath, line, title, source }) => {
+      const slide = { no, filepath, line, title };
       const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
       const visible = (await rendered.page.locator(containerSelector).count()) > 0;
       return visible ? { slide, source, containerSelector } : undefined;

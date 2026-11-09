@@ -20,6 +20,7 @@ const themeRulesSchema = z.array(
     id: z.string(),
     description: z.string(),
     defaultSetting: z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())])]),
+    suppressible: z.boolean().optional(),
     check: z.custom<Rule['check']>((value) => typeof value === 'function'),
   })
 );
