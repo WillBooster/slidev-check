@@ -17,6 +17,7 @@ Options:
   -t, --theme <name>     Override the theme
   --wait <ms>            Extra time to wait before checking (default: 0)
   --timeout <ms>         Timeout for rendering (default: 30000)
+  --max-warnings <n>     Exit with 1 when more than n warnings are found (default: no limit)
   --fix                  Rewrite the slides with the fixes suggested by rules (e.g. the zoom of optimal-zoom)
   --json                 Print violations as JSON (with --fix: { fixed, violations })
   -h, --help             Show this help
@@ -34,6 +35,7 @@ const { values, positionals } = parseArgs({
     theme: { type: 'string', short: 't' },
     wait: { type: 'string', default: '0' },
     timeout: { type: 'string', default: '30000' },
+    'max-warnings': { type: 'string' },
     fix: { type: 'boolean', default: false },
     json: { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
@@ -41,7 +43,9 @@ const { values, positionals } = parseArgs({
 });
 
 const entry = positionals[0];
-if (values.help || !entry) {
+const maxWarnings = values['max-warnings'] === undefined ? undefined : Number(values['max-warnings']);
+const validMaxWarnings = maxWarnings === undefined || (Number.isInteger(maxWarnings) && maxWarnings >= 0);
+if (values.help || !entry || !validMaxWarnings) {
   process.stdout.write(HELP);
   process.exit(values.help ? 0 : 2);
 }
@@ -80,7 +84,8 @@ try {
   // A clean run prints nothing, except that `--fix --json` always reports the number of fixes.
   if (report && (violations.length > 0 || fixed > 0 || (values.fix && values.json)))
     process.stdout.write(`${report}\n`);
-  process.exit(violations.some((v) => v.severity === 'error') ? 1 : 0);
+  const warnings = violations.filter((v) => v.severity === 'warn').length;
+  process.exit(violations.some((v) => v.severity === 'error') || warnings > (maxWarnings ?? Infinity) ? 1 : 0);
 } catch (error) {
   process.stderr.write(`slidev-check: ${getErrorMessage(error)}\n`);
   process.exit(2);

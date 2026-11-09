@@ -6,6 +6,7 @@ const noMarker: Rule & { documentationUrl: string } = {
   documentationUrl: 'https://example.com/no-marker',
   description: 'Slides must not contain the marker word.',
   defaultSetting: ['warn', { word: 'TODO' }],
+  suppressible: true,
   check: perSlide(({ page, containerSelector, options }) =>
     page.evaluate(findMarker, { containerSelector, word: String(options?.['word']) })
   ),

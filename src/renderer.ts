@@ -20,6 +20,8 @@ export interface RenderOptions {
 export interface RenderedSlide extends SlideLocation {
   /** Markdown source of the slide, starting at `line`. */
   source: string;
+  /** Reasons by rule id from the `slidevCheckIgnore` key of the slide's frontmatter. */
+  ignores: Record<string, string>;
 }
 
 export interface ResolvedDeck {
@@ -43,6 +45,7 @@ const headmatterSettingsSchema = z.record(
   z.string(),
   z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())]).readonly()])
 );
+const ignoresSchema = z.record(z.string(), z.string().trim().min(1, 'Give the reason for ignoring the rule.'));
 
 /** Parses the deck and loads its theme's rules without starting anything. */
 export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck> {
@@ -57,12 +60,22 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
       line: slide.source.start + 1,
       title: slide.title,
       source: slide.source.raw,
+      ignores: parseIgnores(slide.frontmatter['slidevCheckIgnore'], index + 1),
     })),
     width,
     height: Math.round(width / resolved.data.config.aspectRatio),
     themeRules: await loadThemeRules(resolved.themeRoots[0]),
     settings: headmatterSettingsSchema.parse(resolved.data.headmatter['slidevCheck'] ?? {}),
   };
+}
+
+function parseIgnores(value: unknown, no: number): Record<string, string> {
+  const result = ignoresSchema.safeParse(value ?? {});
+  if (!result.success)
+    throw new Error(
+      `slidevCheckIgnore of slide ${no} must map rule ids to the reasons: ${z.prettifyError(result.error)}`
+    );
+  return result.data;
 }
 
 /**
