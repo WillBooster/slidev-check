@@ -104,12 +104,13 @@ function analyzeZoom({
   const pinnedIn = (target: HTMLElement, elements: Element[]): Set<Element> => {
     const topOf = (element: Element): number | undefined => element.getClientRects()[0]?.top;
     const before = elements.map(topOf);
-    const original = target.style.marginTop;
+    const { style } = target;
+    const [value, priority] = [style.getPropertyValue('margin-top'), style.getPropertyPriority('margin-top')];
     // The margin scales with the zoom and collapses with the margin above, so it is made large
-    // enough to move the target at any zoom.
-    target.style.marginTop = '2000px';
+    // enough to move the target at any zoom, and important to override any other margin.
+    style.setProperty('margin-top', '2000px', 'important');
     const after = elements.map(topOf);
-    target.style.marginTop = original;
+    style.setProperty('margin-top', value, priority);
     const shift = (after[0] ?? 0) - (before[0] ?? 0);
     // A target that the margin does not move (an inline one) cannot tell pinned elements apart.
     if (Math.abs(shift) <= 1) return new Set();

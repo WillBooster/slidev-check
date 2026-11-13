@@ -142,3 +142,15 @@ Some short body text.
 <style>
 .zoomed-note { position: absolute; left: 56px; right: 56px; bottom: 8px; zoom: 0.8; }
 </style>
+
+---
+
+# Important margin on the wrapper
+
+<div class="no-margin" style="zoom: 0.5; margin-top: 80px !important">
+<p v-for="i in 12" :key="i">Line {{ i }}</p>
+</div>
+
+<style>
+.no-margin { margin-top: 0 !important; }
+</style>
