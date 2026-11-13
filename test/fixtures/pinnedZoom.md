@@ -154,3 +154,19 @@ Some short body text.
 <style>
 .no-margin { margin-top: 0 !important; }
 </style>
+
+---
+
+# Important zero margin on the wrapper
+
+<div class="mt-0-important" style="zoom: 0.5">
+
+Some short body text.
+
+<div style="position: absolute; left: 3.5rem; right: 3.5rem; bottom: 0.5rem">Pinned note</div>
+
+</div>
+
+<style>
+.mt-0-important { margin-top: 0 !important; }
+</style>
