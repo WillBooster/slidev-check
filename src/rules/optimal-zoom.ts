@@ -692,8 +692,10 @@ function toFinding(
     if (optimal === undefined) return { message: `${zoomed} ${unfit}.`, help: split };
     const suggestion = `zoom: ${formatZoom(optimal)}`;
     return {
+      // The page zoom can make the fit non-monotonic, so the current measurement, not the direction of
+      // the suggestion, tells whether the current zoom keeps the margin.
       message:
-        current < optimal
+        analysis.currentFitsBounds && analysis.currentMargin >= marginLines - 1e-6
           ? `${zoomed} still keeps a margin of ${lines(marginLines)} above ${optimalBottom} at \`${suggestion}\`.`
           : `${zoomed} ${describeExcess(analysis, marginLines)}; \`${suggestion}\` keeps the margin above ${optimalBottom}.`,
       help: `Consider setting \`${suggestion}\` in the slide's frontmatter.`,

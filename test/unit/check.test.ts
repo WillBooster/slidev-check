@@ -607,6 +607,12 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
       ],
+      // A zoom that overflows is reported as such even when a larger one fits a narrower layout.
+      [
+        30,
+        'The slide content with the frontmatter `zoom: 0.5` overflows the slide bottom; `zoom: 1` keeps the margin above the slide bottom.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

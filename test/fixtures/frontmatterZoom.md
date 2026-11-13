@@ -332,3 +332,16 @@ zoom: 0.5
 .slidev-page[data-slidev-no="29"] .card { height: 900px; background: #eee; }
 .slidev-page[data-slidev-no="29"] .footer { position: absolute; bottom: 40px; left: 40px; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="body">Figure</div>
+<div class="footer">Footer</div>
+
+<style>
+.slidev-page[data-slidev-no="30"] .slidev-layout { container-type: inline-size; }
+.slidev-page[data-slidev-no="30"] .body { height: 1200px; background: #eee; }
+@container (max-width: 1000px) { .slidev-page[data-slidev-no="30"] .body { height: 300px; } }
+</style>
