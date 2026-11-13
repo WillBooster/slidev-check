@@ -22,6 +22,8 @@ export interface RenderedSlide extends SlideLocation {
   source: string;
   /** Reasons by rule id from the `slidevCheckIgnore` key of the slide's frontmatter. */
   ignores: Record<string, string>;
+  /** The slide's `zoom` frontmatter, when it sets a positive number. */
+  zoom: number | undefined;
 }
 
 export interface ResolvedDeck {
@@ -45,6 +47,7 @@ const headmatterSettingsSchema = z.record(
   z.string(),
   z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())]).readonly()])
 );
+const defaultsSchema = z.object({ zoom: z.unknown() });
 const ignoresSchema = z.record(z.string(), z.string().trim().min(1, 'Give the reason for ignoring the rule.'));
 
 /** Parses the deck and loads its theme's rules without starting anything. */
@@ -61,12 +64,24 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
       title: slide.title,
       source: slide.source.raw,
       ignores: parseIgnores(slide.frontmatter['slidevCheckIgnore'], index + 1),
+      // Slidev merges the headmatter's `defaults` into each slide's frontmatter when it serves the deck.
+      zoom: parseZoom(
+        // As Slidev spreads the slide's frontmatter over the defaults, a slide's own `zoom: null` clears the default.
+        'zoom' in slide.frontmatter
+          ? slide.frontmatter['zoom']
+          : defaultsSchema.safeParse(resolved.data.headmatter['defaults']).data?.zoom
+      ),
     })),
     width,
     height: Math.round(width / resolved.data.config.aspectRatio),
     themeRules: await loadThemeRules(resolved.themeRoots[0]),
     settings: headmatterSettingsSchema.parse(resolved.data.headmatter['slidevCheck'] ?? {}),
   };
+}
+
+function parseZoom(value: unknown): number | undefined {
+  const zoom = Number(value);
+  return value !== undefined && value !== null && Number.isFinite(zoom) && zoom > 0 ? zoom : undefined;
 }
 
 function parseIgnores(value: unknown, no: number): Record<string, string> {

@@ -1,3 +1,4 @@
+// code-gauge-allow-file fileNcss 437 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
 import { perSlide, type SlideFinding } from '../perSlide.ts';
 import type { Fix, Rule } from '../types.ts';
 
@@ -9,8 +10,12 @@ const ZOOM_STEP = 0.01;
 const MIN_ZOOM = 0.1;
 
 interface ZoomAnalysis {
-  /** `wrapper` for an element with an inline `zoom` style; `slide` for the body of a slide without one. */
-  kind: 'wrapper' | 'slide';
+  /**
+   * `wrapper` for an element with an inline `zoom` style; `frontmatter` for the layout of a slide without one that
+   * Slidev zooms (its page carries the applied zoom, or its frontmatter sets `zoom: 1`); `slide` for the body of a
+   * slide with neither.
+   */
+  kind: 'wrapper' | 'frontmatter' | 'slide';
   description: string;
   /** Position of the wrapper among all elements with an inline `zoom` style on the slide, in DOM order. */
   index: number;
@@ -41,12 +46,15 @@ interface ZoomAnalysis {
 /* oxlint-disable unicorn/consistent-function-scoping */
 function analyzeZoom({
   containerSelector,
+  frontmatterZoom,
   marginLines,
   maxZoom,
   minZoom,
   step,
 }: {
   containerSelector: string;
+  /** The slide's `zoom` frontmatter, if it sets one. */
+  frontmatterZoom: number | undefined;
   marginLines: number;
   maxZoom: number;
   minZoom: number;
@@ -60,13 +68,20 @@ function analyzeZoom({
   const bounds = container.getBoundingClientRect();
 
   const isSvgInternal = (element: Element): boolean => element.tagName !== 'svg' && element.closest('svg') !== null;
+  // Up to the layout, or for a slide layer beside it up to Slidev's always positioned page, which
+  // counts only for itself.
   const isPositioned = (element: Element): boolean => {
     for (let current: Element | null = element; current && current !== layout; current = current.parentElement) {
+      if (current !== element && current.classList.contains('slidev-page')) return false;
       const position = getComputedStyle(current).position;
       if (position === 'absolute' || position === 'fixed') return true;
     }
     return false;
   };
+  // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
+  // shrink boxes past the background threshold.
+  let decorations: Set<Element> | undefined;
+  let frozenIn: Element | undefined;
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
    * border, or image. A positioned box covering the slide is a decoration, not content; a box in
@@ -74,9 +89,19 @@ function analyzeZoom({
    */
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
-    const decoration = paints(element) && isPositioned(element);
+    const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
+    // A frozen decoration's own text is still content; only its box is left out, while it is still a
+    // positioned painted box (a candidate's layout can put it back into the flow).
+    // The frozen classification covers the page's content; the page itself and anything outside it
+    // keep the classification at each zoom.
+    const frozen =
+      decorations !== undefined && frozenIn !== undefined && frozenIn !== element && frozenIn.contains(element);
+    if (frozen && decorations?.has(element) && paints(element) && isPositioned(element)) {
+      return textFragments(element).filter(nonEmpty);
+    }
+    const decoration = !frozen && paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)));
+    return rects.filter((rect) => nonEmpty(rect) && !(decoration && isBackground(rect, bounds)));
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
@@ -118,9 +143,10 @@ function analyzeZoom({
   };
   /**
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
-   * containing block lies outside the target, so that the target's flow does not move it.
+   * containing block lies outside the target, so that the target's flow does not move it. When the
+   * target is the slide's layout (`layoutTarget`), a box anchored to the layout itself counts too.
    */
-  const isPinnedIn = (element: Element, target: Element): boolean => {
+  const isPinnedIn = (element: Element, target: Element, layoutTarget = false): boolean => {
     for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
       // SVG content is laid out by its `<svg>`, and `display: contents` generates no box, whatever their `position`.
       if (isSvgInternal(current)) continue;
@@ -129,7 +155,7 @@ function analyzeZoom({
       const block = containingBlockOf(current);
       // An SVG box counts as content, as before pinned elements were recognized.
       if (block === undefined) continue;
-      if (!block || !target.contains(block)) return true;
+      if (!block || !target.contains(block) || (layoutTarget && block === target)) return true;
     }
     return false;
   };
@@ -186,21 +212,134 @@ function analyzeZoom({
     outside: string | undefined;
   }
 
-  const analyze = (target: HTMLElement, kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
-    const descendants = [target, ...target.querySelectorAll('*')];
+  /** How a candidate zoom is applied: the target's own `zoom` unless a scaler says otherwise. */
+  interface Scaler {
+    current: number;
+    original: string;
+    apply: (zoom: string) => void;
+  }
+  const ownZoom = (target: HTMLElement): Scaler => ({
+    current: resolvedZoom(target),
+    original: target.style.zoom,
+    apply: (zoom) => {
+      target.style.zoom = zoom;
+    },
+  });
+  const analyze = (
+    target: HTMLElement,
+    kind: ZoomAnalysis['kind'],
+    index: number,
+    scaler: Scaler = ownZoom(target)
+  ): ZoomAnalysis | undefined => {
+    // The slide's layout, measured for a frontmatter zoom, paints the whole slide: only its descendants are content.
+    const layoutTarget = target === layout;
+    const descendants = [...(layoutTarget ? [] : [target]), ...target.querySelectorAll('*')];
+    // A frontmatter zoom also scales the layers Slidev renders beside the layout (slide-top.vue,
+    // slide-bottom.vue), so they must stay on the slide too.
+    const layers = layoutTarget
+      ? [...(layout.closest('.slidev-page')?.querySelectorAll('*') ?? [])].filter(
+          (element) => !layout.contains(element)
+        )
+      : [];
+    // When the layout is the target, the layout can hold content at its own bottom edge (a bottom
+    // slot, a footer pushed down by `margin-top: auto`): the zoom scales its distance to the slide
+    // bottom while the flow content moves, so content whose distance divided by the zoom stays the
+    // same at a candidate zoom and at a slightly smaller one is anchored to the bottom in that
+    // candidate's layout and bounds the space like a pinned element.
+    // The distances to the slide bottom of an element's box (whether it paints or not) and of its own
+    // text, which can move apart (a card kept at the bottom around text that moves with the zoom).
+    const gapsAt = (zoom: number): Map<Element, number[]> => {
+      scaler.apply(String(zoom));
+      const gaps = new Map<Element, number[]>();
+      const gapOf = (rects: DOMRect[]): number[] =>
+        rects.length > 0 ? [bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))] : [];
+      for (const element of descendants) {
+        if (!isChecked(element) || isSvgInternal(element)) continue;
+        const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
+        const box = fragments(element).filter(nonEmpty);
+        const elementGaps = [...gapOf(box), ...gapOf(textFragments(element).filter(nonEmpty))];
+        if (elementGaps.length > 0) gaps.set(element, elementGaps);
+      }
+      return gaps;
+    };
+    const bottomAnchoredAt = (zoom: number): Set<Element> => {
+      const anchored = new Set<Element>();
+      if (!layoutTarget) return anchored;
+      const nearbyZoom = zoom * 0.9;
+      const nearby = gapsAt(nearbyZoom);
+      const at = gapsAt(zoom);
+      // Anchored content keeps its distance divided by the zoom, or its distance itself when the theme
+      // keeps it unscaled.
+      const steady = (element: Element): boolean => {
+        const a = at.get(element);
+        const b = nearby.get(element);
+        return (
+          a !== undefined &&
+          b?.length === a.length &&
+          a.every((gap, i) => {
+            const other = b[i] ?? Number.NaN;
+            return Math.abs(gap - other) <= 2 || Math.abs(gap / zoom - other / nearbyZoom) <= 2;
+          })
+        );
+      };
+      // An element is anchored when it and every element laid out within it keep their distances.
+      for (const element of at.keys()) {
+        // A descendant positioned against another box moves on its own and is pinned separately.
+        const insideMoves = (inner: Element): boolean => at.has(inner) && !steady(inner) && !isPinnedIn(inner, element);
+        if (steady(element) && ![...element.querySelectorAll('*')].some(insideMoves)) {
+          anchored.add(element);
+          for (const inner of element.querySelectorAll('*')) anchored.add(inner);
+        }
+      }
+      return anchored;
+    };
     const measure = (zoom: number): Measurement => {
-      target.style.zoom = String(zoom);
+      const bottomAnchored = bottomAnchoredAt(zoom);
+      scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
-      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
+      const pinned = new Set(
+        descendants.filter((element) => bottomAnchored.has(element) || isPinnedIn(element, target, layoutTarget))
+      );
       const flow = descendants.filter((element) => !pinned.has(element));
       // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
-      const anchored = extentOf(pinned);
+      // A box enclosing a pinned or anchored element (a card around its footer) spans that element,
+      // so its own painting stays in the bounds but not in the margin, which keeps its text and the
+      // rest of its flow content.
+      const encloses = (element: Element): boolean =>
+        [...pinned].some((inner) => inner !== element && element.contains(inner));
+      const marginRects = (element: Element): DOMRect[] =>
+        layoutTarget && encloses(element)
+          ? isChecked(element)
+            ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
+            : []
+          : paintedRects(element);
+      const marginFlow = flow.filter((element) => marginRects(element).length > 0);
+      const enclosingExtent = extentOf(layoutTarget ? flow.filter(encloses) : []);
+      const margined = {
+        left: Number.POSITIVE_INFINITY,
+        right: Number.NEGATIVE_INFINITY,
+        bottom: Number.NEGATIVE_INFINITY,
+      };
+      for (const rect of marginFlow.flatMap(marginRects)) {
+        margined.left = Math.min(margined.left, rect.left);
+        margined.right = Math.max(margined.right, rect.right);
+        margined.bottom = Math.max(margined.bottom, rect.bottom);
+      }
+      // A layout whose painted content is all pinned or anchored to its bottom has no flow to keep a
+      // margin under; that content must still stay on the slide (the bounds below).
+      const pinnedExtent = extentOf(pinned);
+      const layersExtent = extentOf(layers);
+      const noFlow =
+        layoutTarget &&
+        margined.right <= margined.left &&
+        (pinnedExtent.right > pinnedExtent.left || layersExtent.right > layersExtent.left);
+      const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
-      let bottom = scaled.bottom;
+      let bottom = margined.bottom;
       let lowest: Element | undefined;
       for (const element of layout.querySelectorAll('*')) {
         if (target.contains(element) || isPositioned(element)) continue;
@@ -215,10 +354,20 @@ function analyzeZoom({
       }
       if (lowest === undefined) {
         // The target itself is the lowest: find which of its elements ends the content.
-        for (const element of flow) {
-          if (paintedRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
+        for (const element of marginFlow) {
+          if (marginRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
+      // Flow content that follows the element in the document and lies under it in its column.
+      const flowBelow = (element: Element, rect: DOMRect): boolean =>
+        marginFlow.some(
+          (other) =>
+            (element.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 &&
+            !element.contains(other) &&
+            marginRects(other).some(
+              (piece) => piece.top >= rect.bottom - 1 && piece.left < rect.right && piece.right > rect.left
+            )
+        );
       let limit = bounds.bottom;
       let limitedBy: Element | undefined;
       for (const element of container.querySelectorAll('*')) {
@@ -227,6 +376,10 @@ function analyzeZoom({
         }
         for (const rect of paintedRects(element)) {
           if (rect.top < scaled.top || beside(rect)) continue;
+          // Content anchored in the layout bounds the content before it from below: flow content after
+          // it and under it in its column shows it is not anchored there (near the top, its distance
+          // changes too little to tell apart).
+          if (layoutTarget && target.contains(element) && flowBelow(element, rect)) continue;
           if (rect.top < limit) {
             limit = rect.top;
             limitedBy = element;
@@ -237,13 +390,15 @@ function analyzeZoom({
       // so that wrappers with different text sizes agree on how much space is left.
       const line = lowest ? lineHeightAt(lowest) : Number.NaN;
       return {
-        measurable: line > 0 && scaled.right > scaled.left,
-        lines: (limit - bottom) / line,
+        measurable: (line > 0 && scaled.right > scaled.left) || noFlow,
+        lines: line > 0 ? (limit - bottom) / line : marginLines,
         fitsBounds:
           Math.min(scaled.left, anchored.left) >= bounds.left - 1 &&
           Math.max(scaled.right, anchored.right) <= bounds.right + 1 &&
           Math.min(scaled.top, anchored.top) >= bounds.top - 1 &&
-          anchored.bottom <= bounds.bottom + 1,
+          anchored.bottom <= bounds.bottom + 1 &&
+          // Boxes enclosing pinned content are left out of the margin but must stay on the slide.
+          enclosingExtent.bottom <= bounds.bottom + 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
         outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };
@@ -251,13 +406,12 @@ function analyzeZoom({
     const fits = (measurement: Measurement): boolean =>
       measurement.measurable && measurement.fitsBounds && measurement.lines >= marginLines - 1e-6;
 
-    const original = target.style.zoom;
-    const current = resolvedZoom(target);
+    const { current, original } = scaler;
     const at = measure(current);
     // The maximum only bounds suggestions: a deliberately larger zoom that still fits is left as it
     // is, so later wrappers are measured against it.
     if (current > maxZoom && fits(at)) {
-      target.style.zoom = original;
+      scaler.apply(original);
       return undefined;
     }
     let optimal: number | undefined;
@@ -265,7 +419,7 @@ function analyzeZoom({
     let blockedBy: string | undefined;
     if (at.measurable) {
       // Content height grows with the zoom (both the scale and the wrapping increase), so the
-      // largest fitting zoom can be found by bisection over hundredths.
+      // largest fitting zoom of a wrapper can be found by bisection over hundredths.
       const hi = Math.floor(maxZoom / step + 1e-9);
       const lo = Math.round(minZoom / step);
       const atHigh = measure(hi * step);
@@ -274,7 +428,19 @@ function analyzeZoom({
         best = atHigh;
       } else {
         const atLow = measure(lo * step);
-        if (fits(atLow)) {
+        if (layoutTarget) {
+          // The page's zoom changes the layout's width, so container queries can make the fit
+          // non-monotonic in the zoom: the hundredths are tried from the top instead of bisected.
+          for (let candidate = hi - 1; candidate >= lo; candidate--) {
+            const measurement = candidate === lo ? atLow : measure(candidate * step);
+            if (fits(measurement)) {
+              optimal = candidate * step;
+              best = measurement;
+              break;
+            }
+          }
+          if (optimal === undefined && atLow.measurable && atLow.fitsBounds) blockedBy = atLow.outside;
+        } else if (fits(atLow)) {
           let good = lo;
           let bad = hi;
           best = atLow;
@@ -290,7 +456,7 @@ function analyzeZoom({
         } else if (atLow.measurable && atLow.fitsBounds) blockedBy = atLow.outside;
       }
     }
-    target.style.zoom = original;
+    scaler.apply(original);
     if (!at.measurable) return undefined;
     return {
       kind,
@@ -321,6 +487,44 @@ function analyzeZoom({
     }
     for (const [i, wrapper] of wrappers.entries()) wrapper.style.zoom = originals[i] ?? '';
     return analyses;
+  }
+
+  // Slidev (52.10 and later) applies the slide's frontmatter `zoom` (also one set through the headmatter's
+  // `defaults`) to its page as this custom property, which it omits for `zoom: 1`; the parsed frontmatter
+  // tells that one apart. Changing the property measures the slide as the author would by editing the
+  // frontmatter, including what a theme keeps unscaled, on the layout itself so that no selector matches
+  // differently. Older Slidev, which scales the page otherwise, and a zoom not written as a number
+  // (`70%`, which Slidev scales without widening the page) keep the analysis of a slide without a zoom.
+  const property = '--slidev-slide-zoom-scale';
+  const page = layout.closest<HTMLElement>('.slidev-page');
+  const usesProperty = page !== null && getComputedStyle(page).getPropertyValue(property).trim() !== '';
+  const inline = page?.style.getPropertyValue(property).trim() ?? '';
+  const pageZoom = inline === '' ? frontmatterZoom : /^\d*\.?\d+$/.test(inline) ? Number(inline) : undefined;
+  // The zoom also scales elements excluded with `data-slidev-check-ignore`, which are not measured,
+  // so a slide that holds one keeps the analysis of a slide without a zoom.
+  const unmeasured = page !== null && page.querySelector('[data-slidev-check-ignore]') !== null;
+  if (usesProperty && !unmeasured && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
+    const attribute = page.getAttribute('style');
+    frozenIn = page;
+    decorations = new Set(
+      [...page.querySelectorAll('*')].filter(
+        (element) =>
+          paints(element) && isPositioned(element) && fragments(element).some((rect) => isBackground(rect, bounds))
+      )
+    );
+    const analysis = analyze(layout, 'frontmatter', -1, {
+      current: pageZoom,
+      original: String(pageZoom),
+      apply: (zoom) => page.style.setProperty(property, zoom === '1' ? '' : zoom),
+    });
+    decorations = undefined;
+    frozenIn = undefined;
+    if (attribute === null) page.removeAttribute('style');
+    else page.setAttribute('style', attribute);
+    if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
+      return [];
+    }
+    return [analysis];
   }
 
   // Without a wrapper, the body below the heading is what a wrapper would zoom: it is wrapped
@@ -502,6 +706,21 @@ function toFinding(
   const unfit = blockedBy
     ? `cannot keep a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}, because \`${blockedBy}\` outside it already reaches that far`
     : `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
+  if (kind === 'frontmatter') {
+    // The value as written, so that the message names the slide's own frontmatter.
+    const zoomed = `The slide content with the frontmatter \`zoom: ${String(current)}\``;
+    if (optimal === undefined) return { message: `${zoomed} ${unfit}.`, help: split };
+    const suggestion = `zoom: ${formatZoom(optimal)}`;
+    return {
+      // The page zoom can make the fit non-monotonic, so the current measurement, not the direction of
+      // the suggestion, tells whether the current zoom keeps the margin.
+      message:
+        analysis.currentFitsBounds && analysis.currentMargin >= marginLines - 1e-6
+          ? `${zoomed} still keeps a margin of ${lines(marginLines)} above ${optimalBottom} at \`${suggestion}\`.`
+          : `${zoomed} ${describeExcess(analysis, marginLines)}; \`${suggestion}\` keeps the margin above ${optimalBottom}.`,
+      help: `Consider setting \`${suggestion}\` in the slide's frontmatter.`,
+    };
+  }
   if (kind === 'slide') {
     if (optimal === undefined) return { message: `The slide content ${unfit}.`, help: split };
     const wrapper = `<div style="zoom: ${formatZoom(optimal)}">`;
@@ -529,13 +748,14 @@ export const optimalZoom: Rule = {
   defaultSetting: ['warn', { marginLines: DEFAULT_MARGIN_LINES, maxZoom: DEFAULT_MAX_ZOOM }],
   description:
     'A zoomed slide must use the largest zoom up to the maximum that keeps a margin above the slide bottom, unless a larger zoom still keeps it.',
-  check: perSlide(async ({ page, containerSelector, options, source, slide }) => {
+  check: perSlide(async ({ page, containerSelector, options, source, slide, zoom }) => {
     const settings = {
       marginLines: Number(options?.['marginLines'] ?? DEFAULT_MARGIN_LINES),
       maxZoom: Number(options?.['maxZoom'] ?? DEFAULT_MAX_ZOOM),
     };
     const analyses = await page.evaluate(analyzeZoom, {
       containerSelector,
+      frontmatterZoom: zoom,
       ...settings,
       minZoom: MIN_ZOOM,
       step: ZOOM_STEP,

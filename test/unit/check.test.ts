@@ -428,6 +428,296 @@ describe('optimal-zoom', () => {
     ]);
   }, 90_000);
 
+  test("suggests the largest frontmatter zoom that keeps the margin, whether the slide's zoom is too small or too large", async () => {
+    const { violations } = await runCliJson(fixture('frontmatterZoom.md'));
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message, v.help])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      [
+        3,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.9` overflows the slide bottom; `zoom: 0\.(\d+)` keeps the margin above the slide bottom\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      [
+        4,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.\d+`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      // Slide 5 holds an ignored element the zoom would also scale, so it gets no suggestion. Slide 6
+      // is measured on its own layout, so its direct-child selector still applies (zoom 1 would overflow).
+      [
+        6,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d?`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      // Slidev sets no page property for `zoom: 1`, but the frontmatter value is still the one to change.
+      [
+        7,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 1` overflows the slide bottom; `zoom: 0\.\d+` keeps the margin above the slide bottom\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      // A slide holding an ignored element, which the zoom would also scale, keeps the analysis of a slide without a zoom.
+      [
+        8,
+        expect.stringMatching(
+          /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.\d+">` keeps the margin\.$/
+        ),
+        expect.stringMatching(/^Consider wrapping the content below the heading in `<div style="zoom: 0\.\d+">`\.$/),
+      ],
+      // The frontmatter zoom scales the heading too, so it must stay on the slide.
+      [
+        9,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` sticks out of the slide; `zoom: 0\.\d+` keeps the margin above the slide bottom\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      // A layout whose headings sit in its columns is measured as a whole.
+      [
+        10,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // Content the layout keeps at its bottom edge (a bottom slot, a footer pushed down) bounds the space.
+      [
+        11,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above `<p>A footnote at th…` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      [
+        12,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // The smallest zoom is still compared with a different one to find content anchored to the bottom.
+      [
+        14,
+        'The slide content with the frontmatter `zoom: 0.1` does not fit on the slide with a margin of 1 line above the slide bottom at any zoom down to 0.1.',
+        'Consider splitting the content into multiple slides.',
+      ],
+      // Content that is all anchored to the bottom still gets a value that keeps it on the slide.
+      [
+        15,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A footer anchored to the bottom only in a wide container is flow at the larger zooms that narrow it.
+      [
+        16,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
+      // Content that is all positioned is measured by its bounds. Slides 13 (`zoom: 70%`, which Slidev scales
+      // without widening the page) and 18 (whose box covers the slide and so counts as a decoration) get no report, as before.
+      [
+        17,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A breakpoint between the current and the best zoom that does not fit does not hide the best one.
+      [
+        19,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
+      // Nor does a breakpoint that makes the smallest zoom fail.
+      [
+        20,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
+      // A painted card around a footer kept at its bottom does not count against the margin above the footer.
+      [
+        21,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // Text directly inside such a card moves with the zoom, so the card is not anchored with its footer.
+      [
+        22,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above `<div\.footer>Footer` at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
+      // Hidden text inside a footer kept at the bottom does not keep the footer from bounding the space.
+      [
+        23,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>FooterHidden hov…` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A footer whose background appears only in a narrow layout stays anchored to the bottom.
+      [
+        24,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A box that is content at the current zoom stays content at the candidates that enlarge it.
+      [
+        25,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-6]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-6]\d` in the slide's frontmatter\.$/),
+      ],
+      // A badge inside the footer but positioned against the layout does not keep the footer from being anchored.
+      [
+        26,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<span>Visible badge` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A full-slide background stays out of the measurement, but the text it holds directly does not.
+      [
+        27,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
+      ],
+      // A background that a candidate's layout puts back into the flow is content at that candidate.
+      [
+        28,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
+      ],
+      // A painted card around a footer pinned to the layout must stay on the slide.
+      [
+        29,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above `<div\.footer>Footer` at `zoom: 0\.[5-9]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
+      ],
+      // A zoom that overflows is reported as such even when a larger one fits a narrower layout.
+      [
+        30,
+        'The slide content with the frontmatter `zoom: 0.5` overflows the slide bottom; `zoom: 1` keeps the margin above the slide bottom.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A short first line near the top of a column is flow, not content anchored to the bottom.
+      [
+        31,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-6]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-6]\d` in the slide's frontmatter\.$/),
+      ],
+      // A footer kept at the bottom of a container above the slide's middle still bounds the content before it.
+      [
+        32,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` overlaps `<p>Mid-slide footer`; `zoom: 0\.\d+` keeps the margin above `<p>Mid-slide footer`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      // The message names the frontmatter value as written.
+      [
+        33,
+        'The slide content with the frontmatter `zoom: 0.995` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+    ]);
+    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
+    const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
+    expect(zoomViolations(defaultsOne.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 1` sticks out of the slide; `zoom: 0\.\d+` keeps the margin above the slide bottom\.$/
+        ),
+      ],
+    ]);
+    // A slide that clears the default with `zoom: null` (slide 3) is unzoomed.
+    const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));
+    expect(zoomViolations(defaults.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+      ],
+    ]);
+  }, 90_000);
+
+  test('keeps the layers beside the layout on the slide when suggesting a frontmatter zoom', async () => {
+    const { violations } = await runCliJson(fixture('slideLayer/slides.md'));
+    // The 1200px banner of slide-top.vue also scales with the frontmatter zoom: zoom 1 would push it off the slide.
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-8]\d?`\.$/
+        ),
+      ],
+      // A slide whose only painted content is the banner gets the value that keeps the banner on the slide.
+      [
+        3,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 1` sticks out of the slide; `zoom: 0\.[5-8]\d?` keeps the margin above the slide bottom\.$/
+        ),
+      ],
+    ]);
+    // A full-slide layer that a candidate's layout puts back into the flow is content at that candidate.
+    const layerFlow = await runCliJson(fixture('layerFlow/slides.md'));
+    expect(zoomViolations(layerFlow.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
+        ),
+      ],
+    ]);
+    // A background painted on the page itself does not bound the content it covers.
+    const pageBackground = await runCliJson(fixture('pageBackground/slides.md'));
+    expect(zoomViolations(pageBackground.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+      ],
+    ]);
+    // The same banner excluded with data-slidev-check-ignore is not measured, so no larger value is suggested.
+    const ignored = await runCliJson(fixture('slideLayerIgnored/slides.md'));
+    expect(zoomViolations(ignored.violations)).toEqual([]);
+  }, 90_000);
+
+  test('measures a wrapper holding a positioned badge by its own box and text, and a footer a theme keeps unscaled as a bound', async () => {
+    const wrapper = await runCliJson(fixture('wrapperBadge.md'));
+    expect(zoomViolations(wrapper.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^Element `<div>Line 1 of direct…` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.[78]\d\.$/
+        ),
+      ],
+    ]);
+    const unscaled = await runCliJson(fixture('unscaledFooter/slides.md'));
+    expect(zoomViolations(unscaled.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above `<div\.footer>A footer the the…` at `zoom: (1|0\.\d+)`\.$/
+        ),
+      ],
+    ]);
+  }, 90_000);
+
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
     const copy = fixture(`zoom-fixed-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);
