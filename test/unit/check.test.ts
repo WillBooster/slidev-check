@@ -537,6 +537,14 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
       ],
+      // A breakpoint between the current and the best zoom that does not fit does not hide the best one.
+      [
+        19,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too.
     const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));

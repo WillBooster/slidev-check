@@ -187,3 +187,21 @@ zoom: 1
 ---
 
 <div style="position: absolute; top: 40px; left: 40px; width: 800px; height: 900px; background: #eee">A diagram</div>
+
+---
+zoom: 0.5
+---
+
+<h1>Diagram</h1>
+<div class="body">A fixed-height diagram</div>
+<div class="footer">Footer</div>
+
+<style>
+.slidev-page[data-slidev-no="19"] .slidev-layout { display: flex; flex-direction: column; padding: 40px; height: 100%; container-type: inline-size; }
+.slidev-page[data-slidev-no="19"] .slidev-layout > * { flex-shrink: 0; }
+.slidev-page[data-slidev-no="19"] .slidev-layout h1 { font-size: 32px; line-height: 40px; height: 40px; margin: 0; }
+.slidev-page[data-slidev-no="19"] .body { height: 400px; background: #eee; }
+.slidev-page[data-slidev-no="19"] .footer { margin-top: auto; height: 30px; background: #ddd; }
+@container (max-width: 1400px) { .slidev-page[data-slidev-no="19"] .footer { margin-top: 250px; } }
+@container (max-width: 1150px) { .slidev-page[data-slidev-no="19"] .footer { margin-top: 32px; } }
+</style>

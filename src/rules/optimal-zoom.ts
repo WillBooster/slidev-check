@@ -346,7 +346,7 @@ function analyzeZoom({
     let blockedBy: string | undefined;
     if (at.measurable) {
       // Content height grows with the zoom (both the scale and the wrapping increase), so the
-      // largest fitting zoom can be found by bisection over hundredths.
+      // largest fitting zoom of a wrapper can be found by bisection over hundredths.
       const hi = Math.floor(maxZoom / step + 1e-9);
       const lo = Math.round(minZoom / step);
       const atHigh = measure(hi * step);
@@ -355,7 +355,18 @@ function analyzeZoom({
         best = atHigh;
       } else {
         const atLow = measure(lo * step);
-        if (fits(atLow)) {
+        if (fits(atLow) && layoutTarget) {
+          // The page's zoom changes the layout's width, so container queries can make the fit
+          // non-monotonic in the zoom: the hundredths are tried from the top instead of bisected.
+          for (let candidate = hi - 1; candidate >= lo; candidate--) {
+            const measurement = candidate === lo ? atLow : measure(candidate * step);
+            if (fits(measurement)) {
+              optimal = candidate * step;
+              best = measurement;
+              break;
+            }
+          }
+        } else if (fits(atLow)) {
           let good = lo;
           let bad = hi;
           best = atLow;
