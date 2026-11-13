@@ -263,3 +263,16 @@ zoom: 0.5
 .slidev-page[data-slidev-no="23"] .slidev-layout { display: flex; flex-direction: column; position: relative; height: 100%; padding: 10px !important; }
 .slidev-page[data-slidev-no="23"] .footer { margin-top: auto; height: 60px; line-height: 48px; font-size: 24px; flex-shrink: 0; background: #ddd; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<p>A short body</p>
+<div class="footer">Footer</div>
+
+<style>
+.slidev-page[data-slidev-no="24"] .slidev-layout { display: flex; flex-direction: column; height: 100%; padding: 10px !important; container-type: inline-size; }
+.slidev-page[data-slidev-no="24"] .footer { margin-top: auto; height: 40px; line-height: 24px; flex-shrink: 0; }
+@container (max-width: 1040px) { .slidev-page[data-slidev-no="24"] .footer { background: #ddd; } }
+</style>

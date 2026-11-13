@@ -563,6 +563,12 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>FooterHidden hov…` at `zoom: 1`.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // A footer whose background appears only in a narrow layout stays anchored to the bottom.
+      [
+        24,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

@@ -237,10 +237,11 @@ function analyzeZoom({
       const gapOf = (rects: DOMRect[]): number[] =>
         rects.length > 0 ? [bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))] : [];
       for (const element of descendants) {
-        const own = isChecked(element)
-          ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
-          : [];
-        const elementGaps = [...gapOf(paintedRects(element)), ...gapOf(own)];
+        if (!isChecked(element) || isSvgInternal(element)) continue;
+        const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
+        // The box whether it paints or not, so that paint changing at a breakpoint does not change what is compared.
+        const box = fragments(element).filter(nonEmpty);
+        const elementGaps = [...gapOf(box), ...gapOf(textFragments(element).filter(nonEmpty))];
         if (elementGaps.length > 0) gaps.set(element, elementGaps);
       }
       return gaps;
