@@ -490,6 +490,19 @@ describe('optimal-zoom', () => {
     ]);
   }, 90_000);
 
+  test('keeps the layers beside the layout on the slide when suggesting a frontmatter zoom', async () => {
+    const { violations } = await runCliJson(fixture('slideLayer/slides.md'));
+    // The 1200px banner of slide-top.vue also scales with the frontmatter zoom: zoom 1 would push it off the slide.
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-8]\d?`\.$/
+        ),
+      ],
+    ]);
+  }, 90_000);
+
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
     const copy = fixture(`zoom-fixed-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);

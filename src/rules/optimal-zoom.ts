@@ -218,6 +218,13 @@ function analyzeZoom({
     // The slide's layout, measured for a frontmatter zoom, paints the whole slide: only its descendants are content.
     const layoutTarget = target === layout;
     const descendants = [...(layoutTarget ? [] : [target]), ...target.querySelectorAll('*')];
+    // A frontmatter zoom also scales the layers Slidev renders beside the layout (slide-top.vue,
+    // slide-bottom.vue), so they must stay on the slide too.
+    const layers = layoutTarget
+      ? [...(layout.closest('.slidev-page')?.querySelectorAll('*') ?? [])].filter(
+          (element) => !layout.contains(element)
+        )
+      : [];
     const measure = (zoom: number): Measurement => {
       scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
@@ -227,7 +234,7 @@ function analyzeZoom({
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
-      const anchored = extentOf(pinned);
+      const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
       let bottom = scaled.bottom;
