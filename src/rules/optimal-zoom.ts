@@ -270,9 +270,11 @@ function analyzeZoom({
       const steady = (element: Element): boolean => {
         const a = at.get(element);
         const b = nearby.get(element);
+        // Content anchored to the bottom sits near it: near the top, distances change too little to tell.
         return (
           a !== undefined &&
           b?.length === a.length &&
+          a.every((gap) => gap <= bounds.height / 2) &&
           a.every((gap, i) => {
             const other = b[i] ?? Number.NaN;
             return Math.abs(gap - other) <= 2 || Math.abs(gap / zoom - other / nearbyZoom) <= 2;

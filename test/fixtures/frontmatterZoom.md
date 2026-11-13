@@ -345,3 +345,20 @@ zoom: 0.5
 .slidev-page[data-slidev-no="30"] .body { height: 1200px; background: #eee; }
 @container (max-width: 1000px) { .slidev-page[data-slidev-no="30"] .body { height: 300px; } }
 </style>
+
+---
+zoom: 0.5
+---
+
+<style>
+.slidev-page[data-slidev-no="31"] .slidev-layout { padding: 0 !important; display: flex; gap: 40px; height: 100%; }
+</style>
+
+<div style="width: 460px">
+  <p style="font-size: 5px; line-height: 6px; margin: 0">tag</p>
+  <p v-for="i in 33" :key="i" style="margin: 0; line-height: 24px">Left {{ i }}</p>
+</div>
+<div style="width: 460px">
+  <div style="height: 100px; background: #eee"></div>
+  <p v-for="i in 34" :key="i" style="margin: 0; line-height: 24px">Right {{ i }}</p>
+</div>

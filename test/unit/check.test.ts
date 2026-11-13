@@ -613,6 +613,14 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.5` overflows the slide bottom; `zoom: 1` keeps the margin above the slide bottom.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // A short first line near the top of a column is flow, not content anchored to the bottom.
+      [
+        31,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-6]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-6]\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
