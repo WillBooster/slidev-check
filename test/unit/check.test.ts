@@ -591,6 +591,14 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
       ],
+      // A background that a candidate's layout puts back into the flow is content at that candidate.
+      [
+        28,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

@@ -305,3 +305,15 @@ zoom: 0.5
 .slidev-page[data-slidev-no="27"] .slidev-layout { display: flow-root; position: relative; height: 100%; }
 .slidev-page[data-slidev-no="27"] .coverbox { position: absolute; inset: 0; background: #eee; white-space: nowrap; font-size: 64px; line-height: 1.2; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="stage">A responsive diagram</div>
+
+<style>
+.slidev-page[data-slidev-no="28"] .slidev-layout { position: relative; height: 100%; padding: 40px; container-type: inline-size; }
+.slidev-page[data-slidev-no="28"] .stage { position: absolute; inset: 0; background: #ddd; }
+@container (max-width: 1200px) { .slidev-page[data-slidev-no="28"] .stage { position: static; inset: auto; width: 800px; height: 900px; } }
+</style>

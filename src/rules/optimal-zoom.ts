@@ -86,8 +86,11 @@ function analyzeZoom({
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
-    // A frozen decoration's own text is still content; only its box is left out.
-    if (decorations?.has(element)) return textFragments(element).filter(nonEmpty);
+    // A frozen decoration's own text is still content; only its box is left out, while it is still a
+    // positioned painted box (a candidate's layout can put it back into the flow).
+    if (decorations?.has(element) && paints(element) && isPositioned(element)) {
+      return textFragments(element).filter(nonEmpty);
+    }
     const decoration = !decorations && paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
     return rects.filter((rect) => nonEmpty(rect) && !(decoration && isBackground(rect, bounds)));
