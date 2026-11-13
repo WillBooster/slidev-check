@@ -96,16 +96,33 @@ function analyzeZoom({
     const sameRow = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
     return sameRow && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
+  /** Whether the element is the containing block of a descendant with the given `position` (absolute or fixed). */
+  const establishesContainingBlock = (element: Element, position: string): boolean => {
+    const style = getComputedStyle(element);
+    if (position === 'absolute' && style.position !== 'static') return true;
+    return (
+      [style.transform, style.translate, style.rotate, style.scale, style.perspective].some((v) => v !== 'none') ||
+      [style.filter, style.backdropFilter].some((v) => v !== 'none') ||
+      /\b(?:layout|paint|strict|content)\b/.test(style.contain) ||
+      /size/.test(style.containerType) ||
+      /\b(?:transform|translate|rotate|scale|perspective|filter)\b/.test(style.willChange)
+    );
+  };
   /**
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
    * containing block lies outside the target, so that the target's flow does not move it.
    */
   const isPinnedIn = (element: Element, target: Element): boolean => {
     for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
-      const position = getComputedStyle(current).position;
+      // SVG content is laid out by its `<svg>`, whatever its `position`.
+      if (isSvgInternal(current)) continue;
+      const { position } = getComputedStyle(current);
       if (position !== 'absolute' && position !== 'fixed') continue;
-      const containingBlock = current instanceof HTMLElement ? current.offsetParent : undefined;
-      if (!containingBlock || !target.contains(containingBlock)) return true;
+      let ancestor = current.parentElement;
+      while (ancestor && !establishesContainingBlock(ancestor, position)) {
+        if (ancestor === target) return true;
+        ancestor = ancestor.parentElement;
+      }
     }
     return false;
   };
