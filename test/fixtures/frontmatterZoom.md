@@ -251,3 +251,15 @@ zoom: 0.5
 .slidev-page[data-slidev-no="22"] .card { display: flex; flex-direction: column; height: 100%; background: #eee; white-space: pre-line; font-size: 16px; line-height: 24px; }
 .slidev-page[data-slidev-no="22"] .footer { margin-top: auto; height: 40px; flex-shrink: 0; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<p>A short body</p>
+<div class="footer">Footer<span style="position: absolute; top: 0; left: 0; visibility: hidden">Hidden hover label</span></div>
+
+<style>
+.slidev-page[data-slidev-no="23"] .slidev-layout { display: flex; flex-direction: column; position: relative; height: 100%; padding: 10px !important; }
+.slidev-page[data-slidev-no="23"] .footer { margin-top: auto; height: 60px; line-height: 48px; font-size: 24px; flex-shrink: 0; background: #ddd; }
+</style>

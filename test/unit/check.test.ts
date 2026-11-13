@@ -557,6 +557,12 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
       ],
+      // Hidden text inside a footer kept at the bottom does not keep the footer from bounding the space.
+      [
+        23,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>FooterHidden hov…` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

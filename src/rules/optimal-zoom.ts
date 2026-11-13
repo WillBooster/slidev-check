@@ -237,7 +237,9 @@ function analyzeZoom({
       const gapOf = (rects: DOMRect[]): number[] =>
         rects.length > 0 ? [bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))] : [];
       for (const element of descendants) {
-        const own = textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0);
+        const own = isChecked(element)
+          ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
+          : [];
         const elementGaps = [...gapOf(paintedRects(element)), ...gapOf(own)];
         if (elementGaps.length > 0) gaps.set(element, elementGaps);
       }
@@ -291,7 +293,9 @@ function analyzeZoom({
         [...pinned].some((inner) => inner !== element && element.contains(inner));
       const marginRects = (element: Element): DOMRect[] =>
         layoutTarget && encloses(element)
-          ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
+          ? isChecked(element)
+            ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
+            : []
           : paintedRects(element);
       const marginFlow = flow.filter((element) => marginRects(element).length > 0);
       const margined = {
