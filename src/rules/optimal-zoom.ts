@@ -269,18 +269,24 @@ function analyzeZoom({
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
+      // A box enclosing a pinned or anchored element (a card around its footer) spans that element,
+      // so its own painting stays in the bounds but not in the margin, which its flow content keeps.
+      const marginFlow = flow.filter(
+        (element) => ![...pinned].some((inner) => inner !== element && element.contains(inner))
+      );
+      const margined = extentOf(marginFlow);
       // A layout whose painted content is all pinned or anchored to its bottom has no flow to keep a
       // margin under; that content must still stay on the slide (the bounds below).
       const pinnedExtent = extentOf(pinned);
       const layersExtent = extentOf(layers);
       const noFlow =
         layoutTarget &&
-        scaled.right <= scaled.left &&
+        margined.right <= margined.left &&
         (pinnedExtent.right > pinnedExtent.left || layersExtent.right > layersExtent.left);
       const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
-      let bottom = scaled.bottom;
+      let bottom = margined.bottom;
       let lowest: Element | undefined;
       for (const element of layout.querySelectorAll('*')) {
         if (target.contains(element) || isPositioned(element)) continue;
@@ -295,7 +301,7 @@ function analyzeZoom({
       }
       if (lowest === undefined) {
         // The target itself is the lowest: find which of its elements ends the content.
-        for (const element of flow) {
+        for (const element of marginFlow) {
           if (paintedRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }

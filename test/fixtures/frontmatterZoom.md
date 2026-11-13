@@ -224,3 +224,18 @@ zoom: 0.5
 @container (max-width: 1150px) { .slidev-page[data-slidev-no="20"] .footer { margin-top: 32px; } }
 @container (min-width: 3000px) { .slidev-page[data-slidev-no="20"] .body { height: 100cqw; } }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="card">
+<p>A short body inside a card</p>
+<div class="footer">Footer</div>
+</div>
+
+<style>
+.slidev-page[data-slidev-no="21"] .slidev-layout { padding: 40px; height: 100%; }
+.slidev-page[data-slidev-no="21"] .card { display: flex; flex-direction: column; height: 100%; background: #eee; }
+.slidev-page[data-slidev-no="21"] .footer { margin-top: auto; height: 40px; flex-shrink: 0; }
+</style>
