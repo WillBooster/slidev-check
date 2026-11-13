@@ -89,3 +89,20 @@ Some short text.
 <div style="position: absolute; right: 0; top: 0; background: #def">Badge</div>
 </div>
 </div>
+
+---
+
+# Takeaway positioned only in wide containers
+
+<div style="zoom: 0.5">
+<div style="container-type: inline-size">
+<p>Some short body text.</p>
+<div class="responsive-note">Takeaway note</div>
+</div>
+</div>
+
+<style>
+@container (min-width: 1000px) {
+  .responsive-note { position: absolute; left: 56px; right: 56px; bottom: 80px; }
+}
+</style>

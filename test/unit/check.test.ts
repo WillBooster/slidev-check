@@ -378,6 +378,8 @@ describe('optimal-zoom', () => {
           /^Element `<div>onetwoPinned[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above `<div>Pinned note` at zoom: 1\.$/
         ),
       ],
+      // The note is positioned only while the zoom keeps its container wide, so zoom 1 measures it as flow.
+      [9, expect.stringMatching(/still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/)],
     ]);
   }, 90_000);
 

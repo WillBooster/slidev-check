@@ -180,10 +180,11 @@ function analyzeZoom({
 
   const analyze = (target: HTMLElement, kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
     const descendants = [target, ...target.querySelectorAll('*')];
-    const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
-    const flow = descendants.filter((element) => !pinned.has(element));
     const measure = (zoom: number): Measurement => {
       target.style.zoom = String(zoom);
+      // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
+      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
+      const flow = descendants.filter((element) => !pinned.has(element));
       // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
