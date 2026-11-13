@@ -95,3 +95,41 @@ zoom: 0.5
 
 - Three
 - Four
+
+---
+layout: two-cols-header
+zoom: 0.7
+---
+
+# Two cols header
+
+Some intro text.
+
+::left::
+
+- one
+- two
+
+::right::
+
+- three
+- four
+
+::bottom::
+
+A footnote at the bottom.
+
+---
+zoom: 0.7
+---
+
+<style>
+.slidev-page[data-slidev-no="12"] .slidev-layout { display: flex; flex-direction: column; height: 100%; }
+.slidev-page[data-slidev-no="12"] .footer { margin-top: auto; }
+</style>
+
+# Body with a footer at the bottom
+
+<p>Some body text.</p>
+
+<div class="footer">Footer</div>

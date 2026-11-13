@@ -222,10 +222,46 @@ function analyzeZoom({
           (element) => !layout.contains(element)
         )
       : [];
+    // When the layout is the target, the layout can hold content at its own bottom edge (a bottom
+    // slot, a footer pushed down by `margin-top: auto`): the zoom scales its distance to the slide
+    // bottom while the flow content moves, so content whose distance divided by the zoom stays the
+    // same at two zooms is anchored to the bottom and bounds the space like a pinned element.
+    const gapsAt = (zoom: number): Map<Element, number> => {
+      scaler.apply(String(zoom));
+      const gaps = new Map<Element, number>();
+      for (const element of descendants) {
+        const rects = paintedRects(element);
+        if (rects.length > 0) gaps.set(element, (bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))) / zoom);
+      }
+      return gaps;
+    };
+    const bottomAnchored = new Set<Element>();
+    if (layoutTarget) {
+      const atCurrent = gapsAt(scaler.current);
+      const atHalf = gapsAt(Math.max(minZoom, scaler.current / 2));
+      const steady = (element: Element): boolean => {
+        const a = atCurrent.get(element);
+        const b = atHalf.get(element);
+        return a !== undefined && b !== undefined && Math.abs(a - b) <= 2;
+      };
+      // An element is anchored when it and every painted element inside it keep their distance.
+      for (const element of atCurrent.keys()) {
+        if (
+          steady(element) &&
+          [...element.querySelectorAll('*')].every((inner) => !atCurrent.has(inner) || steady(inner))
+        ) {
+          bottomAnchored.add(element);
+          for (const inner of element.querySelectorAll('*')) bottomAnchored.add(inner);
+        }
+      }
+      scaler.apply(scaler.original);
+    }
     const measure = (zoom: number): Measurement => {
       scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
-      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target, layoutTarget)));
+      const pinned = new Set(
+        descendants.filter((element) => bottomAnchored.has(element) || isPinnedIn(element, target, layoutTarget))
+      );
       const flow = descendants.filter((element) => !pinned.has(element));
       // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
       // elements anchored outside the target do not move with the flow and bound the space

@@ -487,6 +487,17 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // Content the layout keeps at its bottom edge (a bottom slot, a footer pushed down) bounds the space.
+      [
+        11,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above `<p>A footnote at th…` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      [
+        12,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
     ]);
   }, 90_000);
 
