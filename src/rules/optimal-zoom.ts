@@ -10,8 +10,9 @@ const MIN_ZOOM = 0.1;
 
 interface ZoomAnalysis {
   /**
-   * `wrapper` for an element with an inline `zoom` style; `frontmatter` for the body of a slide without one whose
-   * frontmatter sets `zoom`; `slide` for the body of a slide with neither.
+   * `wrapper` for an element with an inline `zoom` style; `frontmatter` for the layout of a slide without one that
+   * Slidev zooms (its page carries the applied zoom, or its frontmatter sets `zoom: 1`); `slide` for the body of a
+   * slide with neither.
    */
   kind: 'wrapper' | 'frontmatter' | 'slide';
   description: string;
