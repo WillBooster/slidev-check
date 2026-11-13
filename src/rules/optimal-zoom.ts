@@ -229,8 +229,8 @@ function analyzeZoom({
     // bottom while the flow content moves, so content whose distance divided by the zoom stays the
     // same at a candidate zoom and at a slightly smaller one is anchored to the bottom in that
     // candidate's layout and bounds the space like a pinned element.
-    // The distances of an element's painting and of its own text, which can move apart (a card kept
-    // at the bottom around text that moves with the zoom).
+    // The distances to the slide bottom of an element's box (whether it paints or not) and of its own
+    // text, which can move apart (a card kept at the bottom around text that moves with the zoom).
     const gapsAt = (zoom: number): Map<Element, number[]> => {
       scaler.apply(String(zoom));
       const gaps = new Map<Element, number[]>();
@@ -239,7 +239,6 @@ function analyzeZoom({
       for (const element of descendants) {
         if (!isChecked(element) || isSvgInternal(element)) continue;
         const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
-        // The box whether it paints or not, so that paint changing at a breakpoint does not change what is compared.
         const box = fragments(element).filter(nonEmpty);
         const elementGaps = [...gapOf(box), ...gapOf(textFragments(element).filter(nonEmpty))];
         if (elementGaps.length > 0) gaps.set(element, elementGaps);
@@ -266,7 +265,7 @@ function analyzeZoom({
           })
         );
       };
-      // An element is anchored when it and every painted element inside it keep their distance.
+      // An element is anchored when it and every element inside it with a measured distance keep their distances.
       for (const element of at.keys()) {
         if (steady(element) && [...element.querySelectorAll('*')].every((inner) => !at.has(inner) || steady(inner))) {
           anchored.add(element);
