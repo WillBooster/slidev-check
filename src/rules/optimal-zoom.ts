@@ -398,11 +398,30 @@ function analyzeZoom({
   const property = '--slidev-slide-zoom-scale';
   const page = layout.closest<HTMLElement>('.slidev-page');
   if (frontmatterZoom !== undefined && page && layout instanceof HTMLElement) {
+    // Slidev before 52.10 scaled the page with inline `width`, `height`, and `transform` instead of
+    // the property, so the mechanism is told apart by whether the property moves the page's `scale`.
+    const attribute = page.getAttribute('style');
+    page.style.setProperty(property, '0.5');
+    const byProperty = getComputedStyle(page).scale === '0.5';
+    if (attribute === null) page.removeAttribute('style');
+    else page.setAttribute('style', attribute);
     const analysis = analyze(layout, 'frontmatter', -1, {
       current: frontmatterZoom,
-      original: page.style.getPropertyValue(property),
-      apply: (zoom) => page.style.setProperty(property, zoom),
+      original: String(frontmatterZoom),
+      apply: (zoom) => {
+        if (byProperty) {
+          page.style.setProperty(property, zoom === '1' ? '' : zoom);
+          return;
+        }
+        const scale = Number(zoom);
+        page.style.width = scale === 1 ? '' : `${100 / scale}%`;
+        page.style.height = scale === 1 ? '' : `${100 / scale}%`;
+        page.style.transformOrigin = scale === 1 ? '' : 'top left';
+        page.style.transform = scale === 1 ? '' : `scale(${scale})`;
+      },
     });
+    if (attribute === null) page.removeAttribute('style');
+    else page.setAttribute('style', attribute);
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
       return [];
     }
