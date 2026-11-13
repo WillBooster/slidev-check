@@ -76,21 +76,14 @@ function analyzeZoom({
   };
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
-   * border, or image. A positioned box covering the slide within its edges is a decoration, not
-   * content; a box in the flow (a large image) is content whatever its size.
+   * border, or image. A positioned box covering the slide is a decoration, not content; a box in
+   * the flow (a large image) is content whatever its size.
    */
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     const decoration = paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    const within = (rect: DOMRect): boolean =>
-      rect.left >= bounds.left - 1 &&
-      rect.top >= bounds.top - 1 &&
-      rect.right <= bounds.right + 1 &&
-      rect.bottom <= bounds.bottom + 1;
-    return rects.filter(
-      (rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds) && within(rect))
-    );
+    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)));
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
@@ -278,7 +271,11 @@ function analyzeZoom({
       // A layout whose painted content is all pinned or anchored to its bottom has no flow to keep a
       // margin under; that content must still stay on the slide (the bounds below).
       const pinnedExtent = extentOf(pinned);
-      const noFlow = layoutTarget && scaled.right <= scaled.left && pinnedExtent.right > pinnedExtent.left;
+      const layersExtent = extentOf(layers);
+      const noFlow =
+        layoutTarget &&
+        scaled.right <= scaled.left &&
+        (pinnedExtent.right > pinnedExtent.left || layersExtent.right > layersExtent.left);
       const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
@@ -415,38 +412,23 @@ function analyzeZoom({
     return analyses;
   }
 
-  // Slidev applies the slide's frontmatter `zoom` (also one set through the headmatter's `defaults`, or
-  // as a percentage) to its page: as this custom property since Slidev 52.10, and as an inline
-  // `transform: scale(…)` with a widened `width` and `height` before. Both leave no trace for
-  // `zoom: 1`, which the parsed frontmatter tells apart. Changing the page's zoom the same way
-  // measures the slide as the author would by editing the frontmatter, including what a theme
-  // keeps unscaled, on the layout itself so that no selector matches differently.
+  // Slidev (52.10 and later) applies the slide's frontmatter `zoom` (also one set through the headmatter's
+  // `defaults`) to its page as this custom property, which it omits for `zoom: 1`; the parsed frontmatter
+  // tells that one apart. Changing the property measures the slide as the author would by editing the
+  // frontmatter, including what a theme keeps unscaled, on the layout itself so that no selector matches
+  // differently. Older Slidev, which scales the page otherwise, and a zoom not written as a number
+  // (`70%`, which Slidev scales without widening the page) keep the analysis of a slide without a zoom.
   const property = '--slidev-slide-zoom-scale';
   const page = layout.closest<HTMLElement>('.slidev-page');
-  const parseZoom = (value: string | undefined): number | undefined => {
-    const match = /^\s*(\d*\.?\d+)(%?)\s*$/.exec(value ?? '');
-    if (!match) return undefined;
-    const zoom = Number(match[1]) / (match[2] ? 100 : 1);
-    return zoom > 0 ? zoom : undefined;
-  };
-  const byTransform = parseZoom(/scale\(([^)]*)\)/.exec(page?.style.transform ?? '')?.[1]);
-  const pageZoom = parseZoom(page?.style.getPropertyValue(property)) ?? byTransform ?? frontmatterZoom;
-  if (pageZoom !== undefined && page && layout instanceof HTMLElement) {
+  const usesProperty = page !== null && getComputedStyle(page).getPropertyValue(property).trim() !== '';
+  const inline = page?.style.getPropertyValue(property).trim() ?? '';
+  const pageZoom = inline === '' ? frontmatterZoom : /^\d*\.?\d+$/.test(inline) ? Number(inline) : undefined;
+  if (usesProperty && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
     const attribute = page.getAttribute('style');
     const analysis = analyze(layout, 'frontmatter', -1, {
       current: pageZoom,
       original: String(pageZoom),
-      apply: (zoom) => {
-        if (byTransform === undefined) {
-          page.style.setProperty(property, zoom === '1' ? '' : zoom);
-          return;
-        }
-        const scale = Number(zoom);
-        page.style.width = scale === 1 ? '' : `${100 / scale}%`;
-        page.style.height = scale === 1 ? '' : `${100 / scale}%`;
-        page.style.transformOrigin = scale === 1 ? '' : 'top left';
-        page.style.transform = scale === 1 ? '' : `scale(${scale})`;
-      },
+      apply: (zoom) => page.style.setProperty(property, zoom === '1' ? '' : zoom),
     });
     if (attribute === null) page.removeAttribute('style');
     else page.setAttribute('style', attribute);
