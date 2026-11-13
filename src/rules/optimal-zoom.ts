@@ -9,8 +9,11 @@ const ZOOM_STEP = 0.01;
 const MIN_ZOOM = 0.1;
 
 interface ZoomAnalysis {
-  /** `wrapper` for an element with an inline `zoom` style; `slide` for the body of a slide without one. */
-  kind: 'wrapper' | 'slide';
+  /**
+   * `wrapper` for an element with an inline `zoom` style; `frontmatter` for the body of a slide without one whose
+   * frontmatter sets `zoom`; `slide` for the body of a slide with neither.
+   */
+  kind: 'wrapper' | 'frontmatter' | 'slide';
   description: string;
   /** Position of the wrapper among all elements with an inline `zoom` style on the slide, in DOM order. */
   index: number;
@@ -32,7 +35,7 @@ interface ZoomAnalysis {
   optimalBottom: string;
   /** Content outside the target that already takes the margin at the smallest zoom, when nothing fits. */
   blockedBy: string | undefined;
-  /** For the `slide` kind: whether a heading precedes the body that would be wrapped. */
+  /** For the `slide` and `frontmatter` kinds: whether a heading precedes the body. */
   belowHeading?: boolean;
 }
 
@@ -186,10 +189,28 @@ function analyzeZoom({
     outside: string | undefined;
   }
 
-  const analyze = (target: HTMLElement, kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
+  /** How a candidate zoom is applied: the target's own `zoom` unless a scaler says otherwise. */
+  interface Scaler {
+    current: number;
+    original: string;
+    apply: (zoom: string) => void;
+  }
+  const ownZoom = (target: HTMLElement): Scaler => ({
+    current: resolvedZoom(target),
+    original: target.style.zoom,
+    apply: (zoom) => {
+      target.style.zoom = zoom;
+    },
+  });
+  const analyze = (
+    target: HTMLElement,
+    kind: ZoomAnalysis['kind'],
+    index: number,
+    scaler: Scaler = ownZoom(target)
+  ): ZoomAnalysis | undefined => {
     const descendants = [target, ...target.querySelectorAll('*')];
     const measure = (zoom: number): Measurement => {
-      target.style.zoom = String(zoom);
+      scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
       const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
       const flow = descendants.filter((element) => !pinned.has(element));
@@ -251,13 +272,12 @@ function analyzeZoom({
     const fits = (measurement: Measurement): boolean =>
       measurement.measurable && measurement.fitsBounds && measurement.lines >= marginLines - 1e-6;
 
-    const original = target.style.zoom;
-    const current = resolvedZoom(target);
+    const { current, original } = scaler;
     const at = measure(current);
     // The maximum only bounds suggestions: a deliberately larger zoom that still fits is left as it
     // is, so later wrappers are measured against it.
     if (current > maxZoom && fits(at)) {
-      target.style.zoom = original;
+      scaler.apply(original);
       return undefined;
     }
     let optimal: number | undefined;
@@ -290,7 +310,7 @@ function analyzeZoom({
         } else if (atLow.measurable && atLow.fitsBounds) blockedBy = atLow.outside;
       }
     }
-    target.style.zoom = original;
+    scaler.apply(original);
     if (!at.measurable) return undefined;
     return {
       kind,
@@ -336,10 +356,33 @@ function analyzeZoom({
   const wrapper = document.createElement('div');
   body[0]?.before(wrapper);
   wrapper.append(...body);
-  wrapper.style.zoom = '1';
-  const analysis = analyze(wrapper, 'slide', -1);
+  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page; setting it
+  // measures the slide as the author would by editing the frontmatter, including what a theme
+  // keeps unscaled.
+  const property = '--slidev-slide-zoom-scale';
+  const page = layout.closest<HTMLElement>(`[style*="${property}"]`);
+  const frontmatter = page ? Number.parseFloat(page.style.getPropertyValue(property)) : Number.NaN;
+  let analysis: ZoomAnalysis | undefined;
+  if (page && Number.isFinite(frontmatter) && frontmatter > 0) {
+    analysis = analyze(wrapper, 'frontmatter', -1, {
+      current: frontmatter,
+      original: page.style.getPropertyValue(property),
+      apply: (zoom) => page.style.setProperty(property, zoom),
+    });
+  } else {
+    wrapper.style.zoom = '1';
+    analysis = analyze(wrapper, 'slide', -1);
+  }
   wrapper.replaceWith(...wrapper.childNodes);
-  if (!analysis || (analysis.optimal !== undefined && analysis.optimal > analysis.current - step / 2)) return [];
+  if (!analysis) return [];
+  const { kind, optimal, current } = analysis;
+  // A body without a zoom is only reported when it needs one; a frontmatter zoom also when a larger one fits.
+  if (
+    optimal !== undefined &&
+    (kind === 'slide' ? optimal > current - step / 2 : Math.abs(optimal - current) < step / 2)
+  ) {
+    return [];
+  }
   return [{ ...analysis, belowHeading: heading !== null }];
 }
 
@@ -502,6 +545,18 @@ function toFinding(
   const unfit = blockedBy
     ? `cannot keep a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}, because \`${blockedBy}\` outside it already reaches that far`
     : `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
+  if (kind === 'frontmatter') {
+    const zoomed = `The slide content with the frontmatter \`zoom: ${formatZoom(current)}\``;
+    if (optimal === undefined) return { message: `${zoomed} ${unfit}.`, help: split };
+    const suggestion = `zoom: ${formatZoom(optimal)}`;
+    return {
+      message:
+        current < optimal
+          ? `${zoomed} still keeps a margin of ${lines(marginLines)} above ${optimalBottom} at \`${suggestion}\`.`
+          : `${zoomed} ${describeExcess(analysis, marginLines)}; \`${suggestion}\` keeps the margin above ${optimalBottom}.`,
+      help: `Consider setting \`${suggestion}\` in the slide's frontmatter.`,
+    };
+  }
   if (kind === 'slide') {
     if (optimal === undefined) return { message: `The slide content ${unfit}.`, help: split };
     const wrapper = `<div style="zoom: ${formatZoom(optimal)}">`;

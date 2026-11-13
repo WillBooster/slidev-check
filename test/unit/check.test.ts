@@ -428,6 +428,31 @@ describe('optimal-zoom', () => {
     ]);
   }, 90_000);
 
+  test("suggests the largest frontmatter zoom that keeps the margin, whether the slide's zoom is too small or too large", async () => {
+    const { violations } = await runCliJson(fixture('frontmatterZoom.md'));
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message, v.help])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      [
+        3,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.9` overflows the slide bottom; `zoom: 0\.(\d+)` keeps the margin above the slide bottom\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+      [
+        4,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.\d+`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
+    ]);
+  }, 90_000);
+
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
     const copy = fixture(`zoom-fixed-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);
