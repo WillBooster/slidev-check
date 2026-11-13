@@ -425,6 +425,13 @@ describe('optimal-zoom', () => {
           /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
         ),
       ]),
+      // A structural selector that only colors an SVG note keeps it pinned to the slide.
+      ...[23, 24].map((no) => [
+        no,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above `<svg\.svg-colored-note[^`]*` at zoom: 1\.$/
+        ),
+      ]),
     ]);
   }, 90_000);
 

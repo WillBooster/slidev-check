@@ -100,7 +100,7 @@ function analyzeZoom({
    * The containing block of an absolutely positioned or fixed element as the browser lays it out,
    * or `null` for the viewport, read from `offsetParent` with as little change to the page as
    * possible, since any change can alter which rules match; `undefined` when it cannot be read
-   * without restyling the page.
+   * without moving a box.
    */
   const containingBlockOf = (element: Element, position: string): Element | null | undefined => {
     if (element instanceof HTMLElement) {
@@ -115,22 +115,23 @@ function analyzeZoom({
       return block;
     }
     // SVG elements have no `offsetParent`: an out-of-flow HTML probe beside one shares its containing block.
-    // Inserting it can change which structural selectors (`:first-child`, `:has(> …)`) match, so the
-    // answer is kept only when the element and its ancestors are styled as they were without it.
-    const styled = (): string[] => {
-      const styles: string[] = [];
+    // Inserting it can change which structural selectors (`:first-child`, `:has(> …)`) match. A change
+    // that alters the containing block moves the element or an ancestor, so the answer is kept only
+    // when they are laid out where they were without the probe; restyling alone (e.g. a color) is kept.
+    const placed = (): string => {
+      const rects: string[] = [];
       for (let current: Element | null = element; current; current = current.parentElement) {
-        const style = getComputedStyle(current);
-        styles.push([...style].map((property) => style.getPropertyValue(property)).join(';'));
+        const { left, top, width, height } = current.getBoundingClientRect();
+        rects.push(`${left},${top},${width},${height}`);
       }
-      return styles;
+      return rects.join(';');
     };
-    const before = styled().join('\n');
+    const before = placed();
     const probe = document.createElement('div');
     probe.style.cssText = `position: ${position} !important; display: block !important; zoom: 1 !important`;
     element.before(probe);
     const block = probe.offsetParent;
-    const unchanged = styled().join('\n') === before;
+    const unchanged = placed() === before;
     probe.remove();
     return unchanged ? block : undefined;
   };

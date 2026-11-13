@@ -266,3 +266,29 @@ Some short body text.
 .svg-structural-card-nth:has(> .svg-structural-badge-nth:nth-child(1)) { position: relative; height: 200px; background: #cde; }
 .svg-structural-badge-nth { position: absolute; right: 0; bottom: 0; }
 </style>
+
+---
+
+# SVG note pinned to the slide, colored by a structural selector (:first-child)
+
+<div style="zoom: 0.5">
+<svg class="svg-colored-note" width="40" height="40" style="position: absolute; left: 56px; bottom: 8px"><rect width="40" height="40" fill="currentColor" /></svg>
+<p>Short body</p>
+</div>
+
+<style>
+.svg-colored-note:first-child { color: red; }
+</style>
+
+---
+
+# SVG note pinned to the slide, colored by a structural selector (:nth-child(1))
+
+<div style="zoom: 0.5">
+<svg class="svg-colored-note-nth" width="40" height="40" style="position: absolute; left: 56px; bottom: 8px"><rect width="40" height="40" fill="currentColor" /></svg>
+<p>Short body</p>
+</div>
+
+<style>
+.svg-colored-note-nth:nth-child(1) { color: red; }
+</style>
