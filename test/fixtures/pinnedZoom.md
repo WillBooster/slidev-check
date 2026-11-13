@@ -48,3 +48,20 @@ Card text with an icon badge
 <div style="position: absolute; bottom: 0; right: 0">badge</div>
 Card text in a transformed box
 </div>
+
+---
+
+# Short body in size query containers
+
+<div style="container-type: inline-size">
+
+- one
+- two
+
+<div style="position: absolute; left: 3.5rem; right: 3.5rem; bottom: 0.5rem">Pinned note</div>
+
+</div>
+
+<div style="container-type: size; height: 3rem">
+<div style="position: absolute; left: 3.5rem; right: 3.5rem; bottom: 3rem">Second pinned note</div>
+</div>

@@ -362,7 +362,8 @@ describe('optimal-zoom', () => {
 
   test('measures the flow content against an element pinned to the slide bottom instead of counting it as content', async () => {
     const { violations } = await runCliJson(fixture('pinnedZoom.md'));
-    // Slide 5's badges are anchored to boxes inside the body, so they are content and leave the slide silent.
+    // Slide 5's badges are anchored to boxes inside the body, so they are content; slide 6's size query containers
+    // anchor nothing, so its notes stay pinned to the slide. Both slides stay silent.
     expect(zoomViolations(violations).map((v) => [v.slide.no, v.message])).toEqual([
       [
         3,
