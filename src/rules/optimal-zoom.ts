@@ -235,7 +235,7 @@ function analyzeZoom({
       scaler.apply(String(zoom));
       const gaps = new Map<Element, number[]>();
       const gapOf = (rects: DOMRect[]): number[] =>
-        rects.length > 0 ? [(bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))) / zoom] : [];
+        rects.length > 0 ? [bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))] : [];
       for (const element of descendants) {
         const own = textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0);
         const elementGaps = [...gapOf(paintedRects(element)), ...gapOf(own)];
@@ -246,13 +246,21 @@ function analyzeZoom({
     const bottomAnchoredAt = (zoom: number): Set<Element> => {
       const anchored = new Set<Element>();
       if (!layoutTarget) return anchored;
-      const nearby = gapsAt(zoom * 0.9);
+      const nearbyZoom = zoom * 0.9;
+      const nearby = gapsAt(nearbyZoom);
       const at = gapsAt(zoom);
+      // Anchored content keeps its distance divided by the zoom, or its distance itself when the theme
+      // keeps it unscaled.
       const steady = (element: Element): boolean => {
         const a = at.get(element);
         const b = nearby.get(element);
         return (
-          a !== undefined && b?.length === a.length && a.every((gap, i) => Math.abs(gap - (b[i] ?? Number.NaN)) <= 2)
+          a !== undefined &&
+          b?.length === a.length &&
+          a.every((gap, i) => {
+            const other = b[i] ?? Number.NaN;
+            return Math.abs(gap - other) <= 2 || Math.abs(gap / zoom - other / nearbyZoom) <= 2;
+          })
         );
       };
       // An element is anchored when it and every painted element inside it keep their distance.
@@ -282,7 +290,7 @@ function analyzeZoom({
       const encloses = (element: Element): boolean =>
         [...pinned].some((inner) => inner !== element && element.contains(inner));
       const marginRects = (element: Element): DOMRect[] =>
-        encloses(element)
+        layoutTarget && encloses(element)
           ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
           : paintedRects(element);
       const marginFlow = flow.filter((element) => marginRects(element).length > 0);

@@ -600,6 +600,27 @@ describe('optimal-zoom', () => {
     expect(zoomViolations(ignored.violations)).toEqual([]);
   }, 90_000);
 
+  test('measures a wrapper holding a positioned badge by its own box and text, and a footer a theme keeps unscaled as a bound', async () => {
+    const wrapper = await runCliJson(fixture('wrapperBadge.md'));
+    expect(zoomViolations(wrapper.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^Element `<div>Line 1 of direct…` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.[78]\d\.$/
+        ),
+      ],
+    ]);
+    const unscaled = await runCliJson(fixture('unscaledFooter/slides.md'));
+    expect(zoomViolations(unscaled.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above `<div\.footer>A footer the the…` at `zoom: (1|0\.\d+)`\.$/
+        ),
+      ],
+    ]);
+  }, 90_000);
+
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
     const copy = fixture(`zoom-fixed-${randomUUID()}.md`);
     fs.copyFileSync(fixture('zoom.md'), copy);
