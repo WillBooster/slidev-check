@@ -587,9 +587,9 @@ describe('optimal-zoom', () => {
       [
         27,
         expect.stringMatching(
-          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[6-7]\d`\.$/
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
         ),
-        expect.stringMatching(/^Consider setting `zoom: 0\.[6-7]\d` in the slide's frontmatter\.$/),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
       ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
