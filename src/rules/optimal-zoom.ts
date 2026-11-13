@@ -97,33 +97,28 @@ function analyzeZoom({
     return sameRow && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
   /**
-   * The containing block of an absolutely positioned or fixed element as the browser lays it out,
-   * or `null` for the viewport.
+   * The target's elements that its flow does not move: those laid out by a positioned box anchored
+   * outside the target. They are found by moving the target down and seeing which elements stay,
+   * so that the browser's own layout decides it (containing blocks, zoom, container queries, ...).
    */
-  const containingBlockOf = (element: Element, position: string): Element | null => {
-    if (element instanceof HTMLElement) return element.offsetParent;
-    // Only HTML elements have `offsetParent`: an HTML probe in the same place shares the containing block.
-    const probe = document.createElement('div');
-    probe.style.position = position;
-    element.before(probe);
-    const block = probe.offsetParent;
-    probe.remove();
-    return block;
-  };
-  /**
-   * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
-   * containing block lies outside the target, so that the target's flow does not move it.
-   */
-  const isPinnedIn = (element: Element, target: Element): boolean => {
-    for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
-      // SVG content is laid out by its `<svg>`, and `display: contents` generates no box, whatever their `position`.
-      if (isSvgInternal(current)) continue;
-      const { display, position } = getComputedStyle(current);
-      if (display === 'contents' || (position !== 'absolute' && position !== 'fixed')) continue;
-      const block = containingBlockOf(current, position);
-      if (!block || !target.contains(block)) return true;
-    }
-    return false;
+  const pinnedIn = (target: HTMLElement, elements: Element[]): Set<Element> => {
+    const topOf = (element: Element): number | undefined => element.getClientRects()[0]?.top;
+    const before = elements.map(topOf);
+    const original = target.style.marginTop;
+    // The margin scales with the zoom and collapses with the margin above, so it is made large
+    // enough to move the target at any zoom.
+    target.style.marginTop = '2000px';
+    const after = elements.map(topOf);
+    target.style.marginTop = original;
+    const shift = (after[0] ?? 0) - (before[0] ?? 0);
+    // A target that the margin does not move (an inline one) cannot tell pinned elements apart.
+    if (Math.abs(shift) <= 1) return new Set();
+    return new Set(
+      elements.filter((_, i) => {
+        const [top, moved] = [before[i], after[i]];
+        return top !== undefined && moved !== undefined && (moved - top) / shift < 0.5;
+      })
+    );
   };
   const extentOf = (elements: Iterable<Element>): { top: number; left: number; right: number; bottom: number } => {
     const extent = {
@@ -183,7 +178,7 @@ function analyzeZoom({
     const measure = (zoom: number): Measurement => {
       target.style.zoom = String(zoom);
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
-      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
+      const pinned = pinnedIn(target, descendants);
       const flow = descendants.filter((element) => !pinned.has(element));
       // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
       // elements anchored outside the target do not move with the flow and bound the space

@@ -126,3 +126,19 @@ Some short text.
 <p v-for="i in 12" :key="i">Line {{ i }}</p>
 </div>
 </div>
+
+---
+
+# Pinned note with its own zoom
+
+<div style="zoom: 0.5">
+
+Some short body text.
+
+<div class="zoomed-note">Pinned note</div>
+
+</div>
+
+<style>
+.zoomed-note { position: absolute; left: 56px; right: 56px; bottom: 8px; zoom: 0.8; }
+</style>

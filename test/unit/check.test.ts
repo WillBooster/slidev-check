@@ -393,6 +393,8 @@ describe('optimal-zoom', () => {
           /^Element `<div>Line 1[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.9\d\.$/
         ),
       ],
+      // A note with a zoom of its own stays pinned to the slide.
+      [12, expect.stringMatching(/still keeps a margin of 1 line above `<div\.zoomed-note>Pinned note` at zoom: 1\.$/)],
     ]);
   }, 90_000);
 
