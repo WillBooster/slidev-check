@@ -98,11 +98,22 @@ function analyzeZoom({
   };
   /**
    * The containing block of an absolutely positioned or fixed element as the browser lays it out,
-   * or `null` for the viewport. It is read from an out-of-flow HTML probe placed beside the element,
-   * which changes no layout: SVG elements have no `offsetParent`, and an element's own `zoom`
-   * would stop `offsetParent` at its parent.
+   * or `null` for the viewport, read from `offsetParent` with as little change to the page as
+   * possible, since any change can alter which rules match.
    */
   const containingBlockOf = (element: Element, position: string): Element | null => {
+    if (element instanceof HTMLElement) {
+      if (getComputedStyle(element).zoom === '1') return element.offsetParent;
+      // An element's own zoom stops `offsetParent` at its parent; the box is out of flow, so
+      // resetting its zoom moves nothing else, and its inline style is restored verbatim.
+      const attribute = element.getAttribute('style');
+      element.style.setProperty('zoom', '1', 'important');
+      const block = element.offsetParent;
+      if (attribute === null) element.removeAttribute('style');
+      else element.setAttribute('style', attribute);
+      return block;
+    }
+    // SVG elements have no `offsetParent`: an out-of-flow HTML probe beside one shares its containing block.
     const probe = document.createElement('div');
     probe.style.cssText = `position: ${position} !important; display: block !important; zoom: 1 !important`;
     element.before(probe);

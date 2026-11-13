@@ -210,3 +210,31 @@ Some short body text.
 <p>Some short body text that wraps around the image.</p>
 <p>Footer</p>
 </div>
+
+---
+
+# Card positioned by a structural selector (:first-child)
+
+<div class="structural-card" style="zoom: 0.5">
+<div class="structural-badge">Badge</div>
+<p v-for="i in 3" :key="i">Card line {{ i }}</p>
+</div>
+
+<style>
+.structural-card:has(> .structural-badge:first-child) { position: relative; height: 200px; background: #cde; }
+.structural-badge { position: absolute; right: 0; bottom: 0; }
+</style>
+
+---
+
+# Card positioned by a structural selector (:nth-child(1))
+
+<div class="structural-card" style="zoom: 0.5">
+<div class="structural-badge">Badge</div>
+<p v-for="i in 3" :key="i">Card line {{ i }}</p>
+</div>
+
+<style>
+.structural-card:has(> .structural-badge:nth-child(1)) { position: relative; height: 200px; background: #cde; }
+.structural-badge { position: absolute; right: 0; bottom: 0; }
+</style>

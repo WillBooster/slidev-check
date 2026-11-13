@@ -418,6 +418,13 @@ describe('optimal-zoom', () => {
           /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.\d+\.$/
         ),
       ]),
+      // Classifying the badge does not change which structural selectors position its card.
+      ...[19, 20].map((no) => [
+        no,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
+        ),
+      ]),
     ]);
   }, 90_000);
 
