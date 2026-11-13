@@ -276,3 +276,9 @@ zoom: 0.5
 .slidev-page[data-slidev-no="24"] .footer { margin-top: auto; height: 40px; line-height: 24px; flex-shrink: 0; }
 @container (max-width: 1040px) { .slidev-page[data-slidev-no="24"] .footer { background: #ddd; } }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div style="position: absolute; top: 40px; left: 40px; width: 800px; height: 900px; background: #eee">A diagram</div>

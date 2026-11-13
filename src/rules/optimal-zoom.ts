@@ -80,11 +80,15 @@ function analyzeZoom({
    * border, or image. A positioned box covering the slide is a decoration, not content; a box in
    * the flow (a large image) is content whatever its size.
    */
+  // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
+  // shrink boxes past the background threshold.
+  let decorations: Set<Element> | undefined;
+  const isDecoration = (element: Element, rect: DOMRect): boolean =>
+    decorations ? decorations.has(element) : paints(element) && isPositioned(element) && isBackground(rect, bounds);
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
-    const decoration = paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)));
+    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !isDecoration(element, rect));
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
@@ -469,11 +473,18 @@ function analyzeZoom({
   const unmeasured = page !== null && page.querySelector('[data-slidev-check-ignore]') !== null;
   if (usesProperty && !unmeasured && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
     const attribute = page.getAttribute('style');
+    decorations = new Set(
+      [...page.querySelectorAll('*')].filter(
+        (element) =>
+          paints(element) && isPositioned(element) && fragments(element).some((rect) => isBackground(rect, bounds))
+      )
+    );
     const analysis = analyze(layout, 'frontmatter', -1, {
       current: pageZoom,
       original: String(pageZoom),
       apply: (zoom) => page.style.setProperty(property, zoom === '1' ? '' : zoom),
     });
+    decorations = undefined;
     if (attribute === null) page.removeAttribute('style');
     else page.setAttribute('style', attribute);
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {

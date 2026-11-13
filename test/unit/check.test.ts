@@ -569,6 +569,14 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // A box that is content at the current zoom stays content at the candidates that enlarge it.
+      [
+        25,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-6]\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.[5-6]\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
