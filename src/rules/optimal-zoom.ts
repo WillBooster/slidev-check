@@ -19,7 +19,10 @@ interface ZoomAnalysis {
   current: number;
   /** Lines of margin left above the bottom limit at the current zoom. */
   currentMargin: number;
-  /** Whether the zoomed content stays within the left, right, and top edges of the slide at the current zoom. */
+  /**
+   * Whether the zoomed content stays within the left, right, and top edges of the slide at the current zoom, and its
+   * positioned elements within the bottom edge too.
+   */
   currentFitsBounds: boolean;
   /** What bounds the content from below at the current zoom: the slide bottom or a fixed element above it. */
   bottom: string;
@@ -93,6 +96,36 @@ function analyzeZoom({
     const sameRow = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
     return sameRow && (a.right <= b.left + 1 || a.left >= b.right - 1);
   };
+  /**
+   * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
+   * containing block lies outside the target, so that the target's flow does not move it.
+   */
+  const isPinnedIn = (element: Element, target: Element): boolean => {
+    for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
+      const position = getComputedStyle(current).position;
+      if (position !== 'absolute' && position !== 'fixed') continue;
+      const containingBlock = current instanceof HTMLElement ? current.offsetParent : undefined;
+      if (!containingBlock || !target.contains(containingBlock)) return true;
+    }
+    return false;
+  };
+  const extentOf = (elements: Iterable<Element>): { top: number; left: number; right: number; bottom: number } => {
+    const extent = {
+      top: Number.POSITIVE_INFINITY,
+      left: Number.POSITIVE_INFINITY,
+      right: Number.NEGATIVE_INFINITY,
+      bottom: Number.NEGATIVE_INFINITY,
+    };
+    for (const element of elements) {
+      for (const rect of paintedRects(element)) {
+        extent.top = Math.min(extent.top, rect.top);
+        extent.left = Math.min(extent.left, rect.left);
+        extent.right = Math.max(extent.right, rect.right);
+        extent.bottom = Math.max(extent.bottom, rect.bottom);
+      }
+    }
+    return extent;
+  };
   const resolvedZoom = (element: Element): number => {
     const zoom = Number.parseFloat(getComputedStyle(element).zoom);
     return Number.isFinite(zoom) ? zoom : 1;
@@ -130,24 +163,16 @@ function analyzeZoom({
   }
 
   const analyze = (target: HTMLElement, kind: ZoomAnalysis['kind'], index: number): ZoomAnalysis | undefined => {
+    const descendants = [target, ...target.querySelectorAll('*')];
+    const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
+    const flow = descendants.filter((element) => !pinned.has(element));
     const measure = (zoom: number): Measurement => {
       target.style.zoom = String(zoom);
-      // The target scales with the zoom, and the rest of the flow moves with it; positioned
-      // elements outside the target stay where they are and bound the space instead.
-      const scaled = {
-        top: Number.POSITIVE_INFINITY,
-        left: Number.POSITIVE_INFINITY,
-        right: Number.NEGATIVE_INFINITY,
-        bottom: Number.NEGATIVE_INFINITY,
-      };
-      for (const element of [target, ...target.querySelectorAll('*')]) {
-        for (const rect of paintedRects(element)) {
-          scaled.top = Math.min(scaled.top, rect.top);
-          scaled.left = Math.min(scaled.left, rect.left);
-          scaled.right = Math.max(scaled.right, rect.right);
-          scaled.bottom = Math.max(scaled.bottom, rect.bottom);
-        }
-      }
+      // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
+      // elements anchored outside the target do not move with the flow and bound the space
+      // instead; those inside the target still scale with it and must stay on the slide.
+      const scaled = extentOf(flow);
+      const anchored = extentOf(pinned);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
       let bottom = scaled.bottom;
@@ -165,14 +190,16 @@ function analyzeZoom({
       }
       if (lowest === undefined) {
         // The target itself is the lowest: find which of its elements ends the content.
-        for (const element of [target, ...target.querySelectorAll('*')]) {
+        for (const element of flow) {
           if (paintedRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
       let limit = bounds.bottom;
       let limitedBy: Element | undefined;
       for (const element of container.querySelectorAll('*')) {
-        if (target.contains(element) || (layout.contains(element) && !isPositioned(element))) continue;
+        if (target.contains(element) ? !pinned.has(element) : layout.contains(element) && !isPositioned(element)) {
+          continue;
+        }
         for (const rect of paintedRects(element)) {
           if (rect.top < scaled.top || beside(rect)) continue;
           if (rect.top < limit) {
@@ -187,7 +214,11 @@ function analyzeZoom({
       return {
         measurable: line > 0 && scaled.right > scaled.left,
         lines: (limit - bottom) / line,
-        fitsBounds: scaled.left >= bounds.left - 1 && scaled.right <= bounds.right + 1 && scaled.top >= bounds.top - 1,
+        fitsBounds:
+          Math.min(scaled.left, anchored.left) >= bounds.left - 1 &&
+          Math.max(scaled.right, anchored.right) <= bounds.right + 1 &&
+          Math.min(scaled.top, anchored.top) >= bounds.top - 1 &&
+          anchored.bottom <= bounds.bottom + 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
         outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };

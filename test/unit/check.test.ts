@@ -324,7 +324,8 @@ describe('optimal-zoom', () => {
     expect(right?.fix).toEqual({ line: 89, column: 45, from: 'zoom: 0.5', to: 'zoom: 1' });
     // `zoom:` inside code does not disturb the mapping to the wrapper's declaration.
     expect(code?.fix).toEqual({ line: 95, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
-    // Positioned content inside the wrapper scales with it and bounds the zoom.
+    // Positioned content inside the wrapper scales with it, bounds the space from below, and must stay on the slide.
+    expect(positioned?.message).toMatch(/keeps a margin of 1 line above `<div>Tall box` at zoom: 0\.\d+\.$/);
     expect(positioned?.fix).toMatchObject({ line: 109, column: 12, from: 'zoom: 0.5' });
     expect(Number.parseFloat(positioned?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(1);
     // A box at the bottom hosts no text, so the line height is taken from its ancestor.
@@ -357,6 +358,24 @@ describe('optimal-zoom', () => {
     expect(stacked?.message).toMatch(/because `<p>Below line 13[^`]*` outside it already reaches that far\.$/);
     // A flex item wrapped onto the next row is below the wrapper even when it starts to its right.
     expect(wrapped?.message).toMatch(/because `<p>Wrapped line 13` outside it already reaches that far\.$/);
+  }, 90_000);
+
+  test('measures the flow content against an element pinned to the slide bottom instead of counting it as content', async () => {
+    const { violations } = await runCliJson(fixture('pinnedZoom.md'));
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        3,
+        expect.stringMatching(
+          /^The slide content overlaps `<div>Pinned note`; wrapping it in `<div style="zoom: 0\.\d+">`/
+        ),
+      ],
+      [
+        4,
+        expect.stringMatching(
+          /^Element `<div>onetwoPinned[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above `<div>Pinned note` at zoom: 1\.$/
+        ),
+      ],
+    ]);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
