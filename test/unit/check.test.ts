@@ -324,7 +324,8 @@ describe('optimal-zoom', () => {
     expect(right?.fix).toEqual({ line: 89, column: 45, from: 'zoom: 0.5', to: 'zoom: 1' });
     // `zoom:` inside code does not disturb the mapping to the wrapper's declaration.
     expect(code?.fix).toEqual({ line: 95, column: 12, from: 'zoom: 0.5', to: 'zoom: 1' });
-    // Positioned content inside the wrapper scales with it and bounds the zoom.
+    // Positioned content inside the wrapper scales with it, bounds the space from below, and must stay on the slide.
+    expect(positioned?.message).toMatch(/keeps a margin of 1 line above `<div>Tall box` at zoom: 0\.\d+\.$/);
     expect(positioned?.fix).toMatchObject({ line: 109, column: 12, from: 'zoom: 0.5' });
     expect(Number.parseFloat(positioned?.fix?.to.replace('zoom: ', '') ?? '')).toBeLessThan(1);
     // A box at the bottom hosts no text, so the line height is taken from its ancestor.
@@ -357,6 +358,74 @@ describe('optimal-zoom', () => {
     expect(stacked?.message).toMatch(/because `<p>Below line 13[^`]*` outside it already reaches that far\.$/);
     // A flex item wrapped onto the next row is below the wrapper even when it starts to its right.
     expect(wrapped?.message).toMatch(/because `<p>Wrapped line 13` outside it already reaches that far\.$/);
+  }, 90_000);
+
+  test('measures the flow content against an element pinned to the slide bottom instead of counting it as content', async () => {
+    const { violations } = await runCliJson(fixture('pinnedZoom.md'));
+    // Slides 5 and 8 anchor their badges to boxes inside the body, so the badges are content; the size query
+    // containers of slide 6 and the boxless wrapper of slide 7 anchor nothing, so their notes stay pinned to the
+    // slide. All of them stay silent.
+    expect(zoomViolations(violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        3,
+        expect.stringMatching(
+          /^The slide content overlaps `<div>Pinned note`; wrapping it in `<div style="zoom: 0\.\d+">`/
+        ),
+      ],
+      [
+        4,
+        expect.stringMatching(
+          /^Element `<div>onetwoPinned[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above `<div>Pinned note` at zoom: 1\.$/
+        ),
+      ],
+      // The note is positioned only while the zoom keeps its container wide, so zoom 1 measures it as flow.
+      [9, expect.stringMatching(/still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/)],
+      // A `display: contents` wrapper generates no box, so its positioning leaves its children in the flow.
+      [
+        10,
+        expect.stringMatching(
+          /^Element `<div>Line 1[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.9\d\.$/
+        ),
+      ],
+      [
+        11,
+        expect.stringMatching(
+          /^Element `<div>Line 1[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.9\d\.$/
+        ),
+      ],
+      // A note with a zoom of its own stays pinned to the slide.
+      [12, expect.stringMatching(/still keeps a margin of 1 line above `<div\.zoomed-note>Pinned note` at zoom: 1\.$/)],
+      // Measuring keeps the wrapper's important margin in effect: zoom 0.9 or more would overflow.
+      [
+        13,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.8\d\.$/
+        ),
+      ],
+      // An important stylesheet margin does not keep the measurement from telling the pinned note apart.
+      [14, expect.stringMatching(/still keeps a margin of 1 line above `<div>Pinned note` at zoom: 1\.$/)],
+      // Measuring keeps the order of the wrapper's inline margins, so the later logical margin still wins.
+      [
+        15,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.8\d\.$/
+        ),
+      ],
+      // A footer aligned to the bottom of a flexible card or below text beside a float is content.
+      ...[16, 17, 18].map((no) => [
+        no,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.\d+\.$/
+        ),
+      ]),
+      // Classifying the badge does not change which structural selectors position its card; an SVG badge is content.
+      ...[19, 20, 21, 22].map((no) => [
+        no,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
+        ),
+      ]),
+    ]);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
