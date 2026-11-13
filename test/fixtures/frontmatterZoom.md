@@ -317,3 +317,18 @@ zoom: 0.5
 .slidev-page[data-slidev-no="28"] .stage { position: absolute; inset: 0; background: #ddd; }
 @container (max-width: 1200px) { .slidev-page[data-slidev-no="28"] .stage { position: static; inset: auto; width: 800px; height: 900px; } }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="card">
+<p>Short body</p>
+<div class="footer">Footer</div>
+</div>
+
+<style>
+.slidev-page[data-slidev-no="29"] .slidev-layout { position: relative; height: 100%; padding: 40px; }
+.slidev-page[data-slidev-no="29"] .card { height: 900px; background: #eee; }
+.slidev-page[data-slidev-no="29"] .footer { position: absolute; bottom: 40px; left: 40px; }
+</style>

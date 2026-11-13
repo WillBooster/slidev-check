@@ -314,6 +314,7 @@ function analyzeZoom({
             : []
           : paintedRects(element);
       const marginFlow = flow.filter((element) => marginRects(element).length > 0);
+      const enclosingExtent = extentOf(layoutTarget ? flow.filter(encloses) : []);
       const margined = {
         left: Number.POSITIVE_INFINITY,
         right: Number.NEGATIVE_INFINITY,
@@ -378,7 +379,9 @@ function analyzeZoom({
           Math.min(scaled.left, anchored.left) >= bounds.left - 1 &&
           Math.max(scaled.right, anchored.right) <= bounds.right + 1 &&
           Math.min(scaled.top, anchored.top) >= bounds.top - 1 &&
-          anchored.bottom <= bounds.bottom + 1,
+          anchored.bottom <= bounds.bottom + 1 &&
+          // Boxes enclosing pinned content are left out of the margin but must stay on the slide.
+          enclosingExtent.bottom <= bounds.bottom + 1,
         bottom: limitedBy ? `\`${describe(limitedBy)}\`` : 'the slide bottom',
         outside: lowest && !target.contains(lowest) ? describe(lowest) : undefined,
       };
