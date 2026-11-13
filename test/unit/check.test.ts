@@ -637,6 +637,16 @@ describe('optimal-zoom', () => {
         ),
       ],
     ]);
+    // A full-slide layer that a candidate's layout puts back into the flow is content at that candidate.
+    const layerFlow = await runCliJson(fixture('layerFlow/slides.md'));
+    expect(zoomViolations(layerFlow.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d`\.$/
+        ),
+      ],
+    ]);
     // The same banner excluded with data-slidev-check-ignore is not measured, so no larger value is suggested.
     const ignored = await runCliJson(fixture('slideLayerIgnored/slides.md'));
     expect(zoomViolations(ignored.violations)).toEqual([]);

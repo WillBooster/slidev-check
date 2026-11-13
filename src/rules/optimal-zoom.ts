@@ -68,8 +68,13 @@ function analyzeZoom({
   const bounds = container.getBoundingClientRect();
 
   const isSvgInternal = (element: Element): boolean => element.tagName !== 'svg' && element.closest('svg') !== null;
+  // Up to the layout, or for a slide layer beside it up to Slidev's page, which is always positioned.
   const isPositioned = (element: Element): boolean => {
-    for (let current: Element | null = element; current && current !== layout; current = current.parentElement) {
+    for (
+      let current: Element | null = element;
+      current && current !== layout && !current.classList.contains('slidev-page');
+      current = current.parentElement
+    ) {
       const position = getComputedStyle(current).position;
       if (position === 'absolute' || position === 'fixed') return true;
     }
