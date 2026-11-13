@@ -621,6 +621,14 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.[5-6]\d` in the slide's frontmatter\.$/),
       ],
+      // A footer kept at the bottom of a container above the slide's middle still bounds the content before it.
+      [
+        32,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` overlaps `<p>Mid-slide footer`; `zoom: 0\.\d+` keeps the margin above `<p>Mid-slide footer`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

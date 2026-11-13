@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss 428 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
+// code-gauge-allow-file fileNcss 431 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
 import { perSlide, type SlideFinding } from '../perSlide.ts';
 import type { Fix, Rule } from '../types.ts';
 
@@ -270,11 +270,9 @@ function analyzeZoom({
       const steady = (element: Element): boolean => {
         const a = at.get(element);
         const b = nearby.get(element);
-        // Content anchored to the bottom sits near it: near the top, distances change too little to tell.
         return (
           a !== undefined &&
           b?.length === a.length &&
-          a.every((gap) => gap <= bounds.height / 2) &&
           a.every((gap, i) => {
             const other = b[i] ?? Number.NaN;
             return Math.abs(gap - other) <= 2 || Math.abs(gap / zoom - other / nearbyZoom) <= 2;
@@ -357,6 +355,16 @@ function analyzeZoom({
           if (marginRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
+      // Flow content that follows the element in the document and lies under it in its column.
+      const flowBelow = (element: Element, rect: DOMRect): boolean =>
+        marginFlow.some(
+          (other) =>
+            (element.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 &&
+            !element.contains(other) &&
+            marginRects(other).some(
+              (piece) => piece.top >= rect.bottom - 1 && piece.left < rect.right && piece.right > rect.left
+            )
+        );
       let limit = bounds.bottom;
       let limitedBy: Element | undefined;
       for (const element of container.querySelectorAll('*')) {
@@ -365,6 +373,10 @@ function analyzeZoom({
         }
         for (const rect of paintedRects(element)) {
           if (rect.top < scaled.top || beside(rect)) continue;
+          // Content anchored in the layout bounds the content before it from below: flow content after
+          // it and under it in its column shows it is not anchored there (near the top, its distance
+          // changes too little to tell apart).
+          if (layoutTarget && target.contains(element) && flowBelow(element, rect)) continue;
           if (rect.top < limit) {
             limit = rect.top;
             limitedBy = element;

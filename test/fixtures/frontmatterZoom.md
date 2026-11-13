@@ -362,3 +362,18 @@ zoom: 0.5
   <div style="height: 100px; background: #eee"></div>
   <p v-for="i in 34" :key="i" style="margin: 0; line-height: 24px">Right {{ i }}</p>
 </div>
+
+---
+zoom: 0.5
+---
+
+<style>
+.slidev-page[data-slidev-no="32"] .slidev-layout { padding: 0 !important; height: 100%; }
+</style>
+
+<div style="height: 45%; display: flex; flex-direction: column">
+  <div style="height: 100px">
+    <p v-for="i in 24" :key="i" style="margin: 0; line-height: 24px">Line {{ i }}</p>
+  </div>
+  <p style="margin-top: auto">Mid-slide footer</p>
+</div>
