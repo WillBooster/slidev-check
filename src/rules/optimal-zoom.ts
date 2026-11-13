@@ -352,7 +352,7 @@ function analyzeZoom({
         best = atHigh;
       } else {
         const atLow = measure(lo * step);
-        if (fits(atLow) && layoutTarget) {
+        if (layoutTarget) {
           // The page's zoom changes the layout's width, so container queries can make the fit
           // non-monotonic in the zoom: the hundredths are tried from the top instead of bisected.
           for (let candidate = hi - 1; candidate >= lo; candidate--) {
@@ -363,6 +363,7 @@ function analyzeZoom({
               break;
             }
           }
+          if (optimal === undefined && atLow.measurable && atLow.fitsBounds) blockedBy = atLow.outside;
         } else if (fits(atLow)) {
           let good = lo;
           let bad = hi;

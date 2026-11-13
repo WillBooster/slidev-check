@@ -533,8 +533,25 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
       ],
+      // Nor does a breakpoint that makes the smallest zoom fail.
+      [
+        20,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
     ]);
-    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too.
+    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
+    const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
+    expect(zoomViolations(defaultsOne.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 1` sticks out of the slide; `zoom: 0\.\d+` keeps the margin above the slide bottom\.$/
+        ),
+      ],
+    ]);
     const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));
     expect(zoomViolations(defaults.violations).map((v) => [v.slide.no, v.message])).toEqual([
       [

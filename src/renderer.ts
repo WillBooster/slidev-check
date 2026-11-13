@@ -47,6 +47,7 @@ const headmatterSettingsSchema = z.record(
   z.string(),
   z.union([severitySchema, z.tuple([severitySchema, z.record(z.string(), z.unknown())]).readonly()])
 );
+const defaultsSchema = z.object({ zoom: z.unknown() });
 const ignoresSchema = z.record(z.string(), z.string().trim().min(1, 'Give the reason for ignoring the rule.'));
 
 /** Parses the deck and loads its theme's rules without starting anything. */
@@ -63,7 +64,10 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
       title: slide.title,
       source: slide.source.raw,
       ignores: parseIgnores(slide.frontmatter['slidevCheckIgnore'], index + 1),
-      zoom: parseZoom(slide.frontmatter['zoom']),
+      // Slidev merges the headmatter's `defaults` into each slide's frontmatter when it serves the deck.
+      zoom: parseZoom(
+        slide.frontmatter['zoom'] ?? defaultsSchema.safeParse(resolved.data.headmatter['defaults']).data?.zoom
+      ),
     })),
     width,
     height: Math.round(width / resolved.data.config.aspectRatio),
