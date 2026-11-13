@@ -65,3 +65,27 @@ Card text in a transformed box
 <div style="container-type: size; height: 3rem">
 <div style="position: absolute; left: 3.5rem; right: 3.5rem; bottom: 3rem">Second pinned note</div>
 </div>
+
+---
+
+# Short body in a boxless positioned wrapper
+
+<div style="display: contents; position: relative">
+
+- one
+- two
+
+<div style="position: absolute; left: 3.5rem; right: 3.5rem; bottom: 0.5rem">Pinned note</div>
+
+</div>
+
+---
+
+# Badge in a card with implicit containment
+
+<div style="zoom: 1">
+<div style="content-visibility: auto; height: 100px; background: #cde">
+Some short text.
+<div style="position: absolute; right: 0; top: 0; background: #def">Badge</div>
+</div>
+</div>
