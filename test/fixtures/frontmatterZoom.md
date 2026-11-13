@@ -282,3 +282,14 @@ zoom: 0.5
 ---
 
 <div style="position: absolute; top: 40px; left: 40px; width: 800px; height: 900px; background: #eee">A diagram</div>
+
+---
+zoom: 0.5
+---
+
+<p>Short body</p><div class="footer">Footer<span style="position: absolute; top: 120px; left: 10px; font-size: 24px; line-height: 48px">Visible badge</span></div>
+
+<style>
+.slidev-page[data-slidev-no="26"] .slidev-layout { display: flex; flex-direction: column; position: relative; height: 100%; padding: 10px !important; }
+.slidev-page[data-slidev-no="26"] .footer { margin-top: auto; height: 60px; line-height: 48px; font-size: 24px; flex-shrink: 0; background: #ddd; }
+</style>

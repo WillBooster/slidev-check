@@ -269,9 +269,11 @@ function analyzeZoom({
           })
         );
       };
-      // An element is anchored when it and every element inside it with a measured distance keep their distances.
+      // An element is anchored when it and every element laid out within it keep their distances.
       for (const element of at.keys()) {
-        if (steady(element) && [...element.querySelectorAll('*')].every((inner) => !at.has(inner) || steady(inner))) {
+        // A descendant positioned against another box moves on its own and is pinned separately.
+        const insideMoves = (inner: Element): boolean => at.has(inner) && !steady(inner) && !isPinnedIn(inner, element);
+        if (steady(element) && ![...element.querySelectorAll('*')].some(insideMoves)) {
           anchored.add(element);
           for (const inner of element.querySelectorAll('*')) anchored.add(inner);
         }
