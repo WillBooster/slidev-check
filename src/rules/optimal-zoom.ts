@@ -80,14 +80,14 @@ function analyzeZoom({
     }
     return false;
   };
+  // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
+  // shrink boxes past the background threshold.
+  let decorations: Set<Element> | undefined;
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
    * border, or image. A positioned box covering the slide is a decoration, not content; a box in
    * the flow (a large image) is content whatever its size.
    */
-  // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
-  // shrink boxes past the background threshold.
-  let decorations: Set<Element> | undefined;
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
