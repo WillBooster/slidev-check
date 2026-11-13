@@ -600,7 +600,7 @@ describe('optimal-zoom', () => {
         expect.stringMatching(/^Consider setting `zoom: 0\.[5-9]\d` in the slide's frontmatter\.$/),
       ],
     ]);
-    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, unless the slide clears it with `zoom: null` (slide 3). even 1.
+    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
     expect(zoomViolations(defaultsOne.violations).map((v) => [v.slide.no, v.message])).toEqual([
       [
@@ -610,6 +610,7 @@ describe('optimal-zoom', () => {
         ),
       ],
     ]);
+    // A slide that clears the default with `zoom: null` (slide 3) is unzoomed.
     const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));
     expect(zoomViolations(defaults.violations).map((v) => [v.slide.no, v.message])).toEqual([
       [
