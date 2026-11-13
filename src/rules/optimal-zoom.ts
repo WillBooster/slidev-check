@@ -229,12 +229,17 @@ function analyzeZoom({
     // bottom while the flow content moves, so content whose distance divided by the zoom stays the
     // same at a candidate zoom and at a slightly smaller one is anchored to the bottom in that
     // candidate's layout and bounds the space like a pinned element.
-    const gapsAt = (zoom: number): Map<Element, number> => {
+    // The distances of an element's painting and of its own text, which can move apart (a card kept
+    // at the bottom around text that moves with the zoom).
+    const gapsAt = (zoom: number): Map<Element, number[]> => {
       scaler.apply(String(zoom));
-      const gaps = new Map<Element, number>();
+      const gaps = new Map<Element, number[]>();
+      const gapOf = (rects: DOMRect[]): number[] =>
+        rects.length > 0 ? [(bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))) / zoom] : [];
       for (const element of descendants) {
-        const rects = paintedRects(element);
-        if (rects.length > 0) gaps.set(element, (bounds.bottom - Math.max(...rects.map((rect) => rect.bottom))) / zoom);
+        const own = textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0);
+        const elementGaps = [...gapOf(paintedRects(element)), ...gapOf(own)];
+        if (elementGaps.length > 0) gaps.set(element, elementGaps);
       }
       return gaps;
     };
@@ -246,7 +251,9 @@ function analyzeZoom({
       const steady = (element: Element): boolean => {
         const a = at.get(element);
         const b = nearby.get(element);
-        return a !== undefined && b !== undefined && Math.abs(a - b) <= 2;
+        return (
+          a !== undefined && b?.length === a.length && a.every((gap, i) => Math.abs(gap - (b[i] ?? Number.NaN)) <= 2)
+        );
       };
       // An element is anchored when it and every painted element inside it keep their distance.
       for (const element of at.keys()) {
@@ -270,11 +277,25 @@ function analyzeZoom({
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
       // A box enclosing a pinned or anchored element (a card around its footer) spans that element,
-      // so its own painting stays in the bounds but not in the margin, which its flow content keeps.
-      const marginFlow = flow.filter(
-        (element) => ![...pinned].some((inner) => inner !== element && element.contains(inner))
-      );
-      const margined = extentOf(marginFlow);
+      // so its own painting stays in the bounds but not in the margin, which keeps its text and the
+      // rest of its flow content.
+      const encloses = (element: Element): boolean =>
+        [...pinned].some((inner) => inner !== element && element.contains(inner));
+      const marginRects = (element: Element): DOMRect[] =>
+        encloses(element)
+          ? textFragments(element).filter((rect) => rect.width > 0 && rect.height > 0)
+          : paintedRects(element);
+      const marginFlow = flow.filter((element) => marginRects(element).length > 0);
+      const margined = {
+        left: Number.POSITIVE_INFINITY,
+        right: Number.NEGATIVE_INFINITY,
+        bottom: Number.NEGATIVE_INFINITY,
+      };
+      for (const rect of marginFlow.flatMap(marginRects)) {
+        margined.left = Math.min(margined.left, rect.left);
+        margined.right = Math.max(margined.right, rect.right);
+        margined.bottom = Math.max(margined.bottom, rect.bottom);
+      }
       // A layout whose painted content is all pinned or anchored to its bottom has no flow to keep a
       // margin under; that content must still stay on the slide (the bounds below).
       const pinnedExtent = extentOf(pinned);
@@ -302,7 +323,7 @@ function analyzeZoom({
       if (lowest === undefined) {
         // The target itself is the lowest: find which of its elements ends the content.
         for (const element of marginFlow) {
-          if (paintedRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
+          if (marginRects(element).some((rect) => rect.bottom >= bottom - 0.5)) lowest ??= element;
         }
       }
       let limit = bounds.bottom;

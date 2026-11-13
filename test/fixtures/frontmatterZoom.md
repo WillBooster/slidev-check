@@ -239,3 +239,15 @@ zoom: 0.5
 .slidev-page[data-slidev-no="21"] .card { display: flex; flex-direction: column; height: 100%; background: #eee; }
 .slidev-page[data-slidev-no="21"] .footer { margin-top: auto; height: 40px; flex-shrink: 0; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="card">{{ "Body line 0\nBody line 1\nBody line 2\nBody line 3\nBody line 4\nBody line 5\nBody line 6\nBody line 7\nBody line 8\nBody line 9\nBody line 10\nBody line 11\nBody line 12\nBody line 13\nBody line 14\nBody line 15\nBody line 16\nBody line 17" }}<div class="footer">Footer</div></div>
+
+<style>
+.slidev-page[data-slidev-no="22"] .slidev-layout { padding: 40px; height: 100%; }
+.slidev-page[data-slidev-no="22"] .card { display: flex; flex-direction: column; height: 100%; background: #eee; white-space: pre-line; font-size: 16px; line-height: 24px; }
+.slidev-page[data-slidev-no="22"] .footer { margin-top: auto; height: 40px; flex-shrink: 0; }
+</style>

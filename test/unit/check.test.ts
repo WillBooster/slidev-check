@@ -549,6 +549,14 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // Text directly inside such a card moves with the zoom, so the card is not anchored with its footer.
+      [
+        22,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above `<div\.footer>Footer` at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));
