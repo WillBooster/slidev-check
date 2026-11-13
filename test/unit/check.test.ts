@@ -380,6 +380,19 @@ describe('optimal-zoom', () => {
       ],
       // The note is positioned only while the zoom keeps its container wide, so zoom 1 measures it as flow.
       [9, expect.stringMatching(/still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/)],
+      // A `display: contents` wrapper generates no box, so its positioning leaves its children in the flow.
+      [
+        10,
+        expect.stringMatching(
+          /^Element `<div>Line 1[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.9\d\.$/
+        ),
+      ],
+      [
+        11,
+        expect.stringMatching(
+          /^Element `<div>Line 1[^`]*` is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.9\d\.$/
+        ),
+      ],
     ]);
   }, 90_000);
 

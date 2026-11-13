@@ -116,10 +116,10 @@ function analyzeZoom({
    */
   const isPinnedIn = (element: Element, target: Element): boolean => {
     for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
-      // SVG content is laid out by its `<svg>`, whatever its `position`.
+      // SVG content is laid out by its `<svg>`, and `display: contents` generates no box, whatever their `position`.
       if (isSvgInternal(current)) continue;
-      const { position } = getComputedStyle(current);
-      if (position !== 'absolute' && position !== 'fixed') continue;
+      const { display, position } = getComputedStyle(current);
+      if (display === 'contents' || (position !== 'absolute' && position !== 'fixed')) continue;
       const block = containingBlockOf(current, position);
       if (!block || !target.contains(block)) return true;
     }

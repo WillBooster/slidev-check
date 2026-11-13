@@ -106,3 +106,23 @@ Some short text.
   .responsive-note { position: absolute; left: 56px; right: 56px; bottom: 80px; }
 }
 </style>
+
+---
+
+# Boxless absolute wrapper around the body
+
+<div style="zoom: 0.5">
+<div style="display: contents; position: absolute">
+<p v-for="i in 12" :key="i">Line {{ i }}</p>
+</div>
+</div>
+
+---
+
+# Boxless fixed wrapper around the body
+
+<div style="zoom: 0.5">
+<div style="display: contents; position: fixed">
+<p v-for="i in 12" :key="i">Line {{ i }}</p>
+</div>
+</div>
