@@ -238,3 +238,31 @@ Some short body text.
 .structural-card:has(> .structural-badge:nth-child(1)) { position: relative; height: 200px; background: #cde; }
 .structural-badge { position: absolute; right: 0; bottom: 0; }
 </style>
+
+---
+
+# SVG badge in a card positioned by a structural selector (:first-child)
+
+<div class="svg-structural-card" style="zoom: 0.5">
+<svg class="svg-structural-badge" width="40" height="40"><rect width="40" height="40" fill="red" /></svg>
+<p v-for="i in 3" :key="i">Card line {{ i }}</p>
+</div>
+
+<style>
+.svg-structural-card:has(> .svg-structural-badge:first-child) { position: relative; height: 200px; background: #cde; }
+.svg-structural-badge { position: absolute; right: 0; bottom: 0; }
+</style>
+
+---
+
+# SVG badge in a card positioned by a structural selector (:nth-child(1))
+
+<div class="svg-structural-card-nth" style="zoom: 0.5">
+<svg class="svg-structural-badge-nth" width="40" height="40"><rect width="40" height="40" fill="red" /></svg>
+<p v-for="i in 3" :key="i">Card line {{ i }}</p>
+</div>
+
+<style>
+.svg-structural-card-nth:has(> .svg-structural-badge-nth:nth-child(1)) { position: relative; height: 200px; background: #cde; }
+.svg-structural-badge-nth { position: absolute; right: 0; bottom: 0; }
+</style>

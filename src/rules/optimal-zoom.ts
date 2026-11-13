@@ -99,9 +99,10 @@ function analyzeZoom({
   /**
    * The containing block of an absolutely positioned or fixed element as the browser lays it out,
    * or `null` for the viewport, read from `offsetParent` with as little change to the page as
-   * possible, since any change can alter which rules match.
+   * possible, since any change can alter which rules match; `undefined` when it cannot be read
+   * without restyling the page.
    */
-  const containingBlockOf = (element: Element, position: string): Element | null => {
+  const containingBlockOf = (element: Element, position: string): Element | null | undefined => {
     if (element instanceof HTMLElement) {
       if (getComputedStyle(element).zoom === '1') return element.offsetParent;
       // An element's own zoom stops `offsetParent` at its parent; the box is out of flow, so
@@ -114,12 +115,24 @@ function analyzeZoom({
       return block;
     }
     // SVG elements have no `offsetParent`: an out-of-flow HTML probe beside one shares its containing block.
+    // Inserting it can change which structural selectors (`:first-child`, `:has(> …)`) match, so the
+    // answer is kept only when the element and its ancestors are styled as they were without it.
+    const styled = (): string[] => {
+      const styles: string[] = [];
+      for (let current: Element | null = element; current; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        styles.push([...style].map((property) => style.getPropertyValue(property)).join(';'));
+      }
+      return styles;
+    };
+    const before = styled().join('\n');
     const probe = document.createElement('div');
     probe.style.cssText = `position: ${position} !important; display: block !important; zoom: 1 !important`;
     element.before(probe);
     const block = probe.offsetParent;
+    const unchanged = styled().join('\n') === before;
     probe.remove();
-    return block;
+    return unchanged ? block : undefined;
   };
   /**
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
@@ -132,6 +145,8 @@ function analyzeZoom({
       const { display, position } = getComputedStyle(current);
       if (display === 'contents' || (position !== 'absolute' && position !== 'fixed')) continue;
       const block = containingBlockOf(current, position);
+      // An unreadable containing block counts as content, as before pinned elements were recognized.
+      if (block === undefined) continue;
       if (!block || !target.contains(block)) return true;
     }
     return false;
