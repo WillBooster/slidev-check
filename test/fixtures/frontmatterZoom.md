@@ -293,3 +293,15 @@ zoom: 0.5
 .slidev-page[data-slidev-no="26"] .slidev-layout { display: flex; flex-direction: column; position: relative; height: 100%; padding: 10px !important; }
 .slidev-page[data-slidev-no="26"] .footer { margin-top: auto; height: 60px; line-height: 48px; font-size: 24px; flex-shrink: 0; background: #ddd; }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div class="coverbox">A long course title that must remain inside this slide</div>
+<p style="margin-top: 200px">A short body</p>
+
+<style>
+.slidev-page[data-slidev-no="27"] .slidev-layout { display: flow-root; position: relative; height: 100%; }
+.slidev-page[data-slidev-no="27"] .coverbox { position: absolute; inset: 0; background: #eee; white-space: nowrap; font-size: 64px; line-height: 1.2; }
+</style>

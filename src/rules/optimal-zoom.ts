@@ -83,12 +83,14 @@ function analyzeZoom({
   // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
   // shrink boxes past the background threshold.
   let decorations: Set<Element> | undefined;
-  const isDecoration = (element: Element, rect: DOMRect): boolean =>
-    decorations ? decorations.has(element) : paints(element) && isPositioned(element) && isBackground(rect, bounds);
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
+    const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
+    // A frozen decoration's own text is still content; only its box is left out.
+    if (decorations?.has(element)) return textFragments(element).filter(nonEmpty);
+    const decoration = !decorations && paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !isDecoration(element, rect));
+    return rects.filter((rect) => nonEmpty(rect) && !(decoration && isBackground(rect, bounds)));
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
