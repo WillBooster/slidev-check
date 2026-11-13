@@ -35,7 +35,7 @@ interface ZoomAnalysis {
   optimalBottom: string;
   /** Content outside the target that already takes the margin at the smallest zoom, when nothing fits. */
   blockedBy: string | undefined;
-  /** For the `slide` and `frontmatter` kinds: whether a heading precedes the body. */
+  /** For the `slide` kind: whether a heading precedes the body that would be wrapped. */
   belowHeading?: boolean;
 }
 
@@ -124,11 +124,8 @@ function analyzeZoom({
   };
   /**
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
-   * containing block lies outside the target, so that the target's flow does not move it.
-   */
-  /**
-   * Whether the element is pinned within the target. A box anchored to the target itself is pinned
-   * when the target is the slide's layout, which a frontmatter zoom scales as a whole.
+   * containing block lies outside the target, so that the target's flow does not move it. When the
+   * target is the slide's layout (`layoutTarget`), a box anchored to the layout itself counts too.
    */
   const isPinnedIn = (element: Element, target: Element, layoutTarget = false): boolean => {
     for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
@@ -364,7 +361,6 @@ function analyzeZoom({
   // a theme keeps unscaled, on the layout itself so that no selector matches differently.
   const property = '--slidev-slide-zoom-scale';
   const page = layout.closest<HTMLElement>('.slidev-page');
-  const heading = layout.querySelector('h1, h2, h3, h4, h5, h6');
   if (frontmatterZoom !== undefined && page && layout instanceof HTMLElement) {
     const analysis = analyze(layout, 'frontmatter', -1, {
       current: frontmatterZoom,
@@ -374,15 +370,16 @@ function analyzeZoom({
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
       return [];
     }
-    // The zoom also scales elements excluded with `data-slidev-check-ignore`, which are not
-    // measured, so a larger value is not suggested for a slide that holds one.
-    const unmeasured = layout.querySelector('[data-slidev-check-ignore]') !== null;
+    // The zoom also scales elements excluded with `data-slidev-check-ignore` (in the layout or the
+    // layers beside it), which are not measured, so a larger value is not suggested for a slide that holds one.
+    const unmeasured = page.querySelector('[data-slidev-check-ignore]') !== null;
     if (unmeasured && analysis.optimal !== undefined && analysis.optimal > analysis.current) return [];
-    return [{ ...analysis, belowHeading: heading !== null }];
+    return [analysis];
   }
 
   // Without a wrapper, the body below the heading is what a wrapper would zoom: it is wrapped
   // for the measurement so that the suggestion describes exactly what was measured.
+  const heading = layout.querySelector('h1, h2, h3, h4, h5, h6');
   if (heading && heading.parentElement !== layout) return [];
   const children = [...layout.children];
   const body = children.filter(

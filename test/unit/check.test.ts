@@ -501,6 +501,9 @@ describe('optimal-zoom', () => {
         ),
       ],
     ]);
+    // The same banner excluded with data-slidev-check-ignore is not measured, so no larger value is suggested.
+    const ignored = await runCliJson(fixture('slideLayerIgnored/slides.md'));
+    expect(zoomViolations(ignored.violations)).toEqual([]);
   }, 90_000);
 
   test('--fix rewrites the zoom declarations to the optimal values in one pass', async () => {
