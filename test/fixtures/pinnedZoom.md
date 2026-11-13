@@ -170,3 +170,11 @@ Some short body text.
 <style>
 .mt-0-important { margin-top: 0 !important; }
 </style>
+
+---
+
+# Logical margin after a physical reset on the wrapper
+
+<div style="zoom: 0.5; margin: 0 !important; margin-block-start: 80px !important">
+<p v-for="i in 12" :key="i">Line {{ i }}</p>
+</div>

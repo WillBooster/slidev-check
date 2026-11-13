@@ -404,6 +404,13 @@ describe('optimal-zoom', () => {
       ],
       // An important stylesheet margin does not keep the measurement from telling the pinned note apart.
       [14, expect.stringMatching(/still keeps a margin of 1 line above `<div>Pinned note` at zoom: 1\.$/)],
+      // Measuring keeps the order of the wrapper's inline margins, so the later logical margin still wins.
+      [
+        15,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.8\d\.$/
+        ),
+      ],
     ]);
   }, 90_000);
 
