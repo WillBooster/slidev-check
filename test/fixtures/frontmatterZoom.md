@@ -175,3 +175,15 @@ zoom: 0.5
 .slidev-page[data-slidev-no="16"] .footer { margin-top: auto; height: 30px; background: #ddd; }
 @container (max-width: 1200px) { .slidev-page[data-slidev-no="16"] .footer { margin-top: 32px; } }
 </style>
+
+---
+zoom: 0.5
+---
+
+<div style="position: absolute; top: 40px; left: 40px">A short label</div>
+
+---
+zoom: 1
+---
+
+<div style="position: absolute; top: 40px; left: 40px; width: 800px; height: 900px; background: #eee">A diagram</div>

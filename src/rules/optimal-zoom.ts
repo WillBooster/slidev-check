@@ -76,14 +76,21 @@ function analyzeZoom({
   };
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
-   * border, or image. A positioned box covering the slide is a decoration, not content; a box in
-   * the flow (a large image) is content whatever its size.
+   * border, or image. A positioned box covering the slide within its edges is a decoration, not
+   * content; a box in the flow (a large image) is content whatever its size.
    */
   const paintedRects = (element: Element): DOMRect[] => {
     if (!isChecked(element) || isSvgInternal(element)) return [];
     const decoration = paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
-    return rects.filter((rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds)));
+    const within = (rect: DOMRect): boolean =>
+      rect.left >= bounds.left - 1 &&
+      rect.top >= bounds.top - 1 &&
+      rect.right <= bounds.right + 1 &&
+      rect.bottom <= bounds.bottom + 1;
+    return rects.filter(
+      (rect) => rect.width > 0 && rect.height > 0 && !(decoration && isBackground(rect, bounds) && within(rect))
+    );
   };
   /** Whether the element sits in a flex or grid item beside the target's, rather than above or below it. */
   const inOtherColumn = (element: Element, target: Element): boolean => {
@@ -268,7 +275,10 @@ function analyzeZoom({
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
-      const onlyAnchored = scaled.right <= scaled.left && bottomAnchored.size > 0;
+      // A layout whose painted content is all pinned or anchored to its bottom has no flow to keep a
+      // margin under; that content must still stay on the slide (the bounds below).
+      const pinnedExtent = extentOf(pinned);
+      const noFlow = layoutTarget && scaled.right <= scaled.left && pinnedExtent.right > pinnedExtent.left;
       const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
@@ -309,9 +319,7 @@ function analyzeZoom({
       // so that wrappers with different text sizes agree on how much space is left.
       const line = lowest ? lineHeightAt(lowest) : Number.NaN;
       return {
-        // A layout whose painted content is all anchored to its bottom has no flow to keep a margin
-        // under; the anchored content must still stay on the slide (the bounds below).
-        measurable: (line > 0 && scaled.right > scaled.left) || (layoutTarget && onlyAnchored),
+        measurable: (line > 0 && scaled.right > scaled.left) || noFlow,
         lines: line > 0 ? (limit - bottom) / line : marginLines,
         fitsBounds:
           Math.min(scaled.left, anchored.left) >= bounds.left - 1 &&
