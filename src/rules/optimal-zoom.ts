@@ -99,10 +99,10 @@ function analyzeZoom({
   /**
    * The containing block of an absolutely positioned or fixed element as the browser lays it out,
    * or `null` for the viewport, read from `offsetParent` with as little change to the page as
-   * possible, since any change can alter which rules match; `undefined` when it cannot be read
-   * without moving a box.
+   * possible, since any change can alter which rules match; `undefined` for an SVG box, which has
+   * no `offsetParent` and whose containing block cannot be read without changing the page.
    */
-  const containingBlockOf = (element: Element, position: string): Element | null | undefined => {
+  const containingBlockOf = (element: Element): Element | null | undefined => {
     if (element instanceof HTMLElement) {
       if (getComputedStyle(element).zoom === '1') return element.offsetParent;
       // An element's own zoom stops `offsetParent` at its parent; the box is out of flow, so
@@ -114,26 +114,7 @@ function analyzeZoom({
       else element.setAttribute('style', attribute);
       return block;
     }
-    // SVG elements have no `offsetParent`: an out-of-flow HTML probe beside one shares its containing block.
-    // Inserting it can change which structural selectors (`:first-child`, `:has(> …)`) match. A change
-    // that alters the containing block moves the element or an ancestor, so the answer is kept only
-    // when they are laid out where they were without the probe; restyling alone (e.g. a color) is kept.
-    const placed = (): string => {
-      const rects: string[] = [];
-      for (let current: Element | null = element; current; current = current.parentElement) {
-        const { left, top, width, height } = current.getBoundingClientRect();
-        rects.push(`${left},${top},${width},${height}`);
-      }
-      return rects.join(';');
-    };
-    const before = placed();
-    const probe = document.createElement('div');
-    probe.style.cssText = `position: ${position} !important; display: block !important; zoom: 1 !important`;
-    element.before(probe);
-    const block = probe.offsetParent;
-    const unchanged = placed() === before;
-    probe.remove();
-    return unchanged ? block : undefined;
+    return undefined;
   };
   /**
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
@@ -145,8 +126,8 @@ function analyzeZoom({
       if (isSvgInternal(current)) continue;
       const { display, position } = getComputedStyle(current);
       if (display === 'contents' || (position !== 'absolute' && position !== 'fixed')) continue;
-      const block = containingBlockOf(current, position);
-      // An unreadable containing block counts as content, as before pinned elements were recognized.
+      const block = containingBlockOf(current);
+      // An SVG box counts as content, as before pinned elements were recognized.
       if (block === undefined) continue;
       if (!block || !target.contains(block)) return true;
     }

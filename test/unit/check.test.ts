@@ -418,18 +418,11 @@ describe('optimal-zoom', () => {
           /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.\d+\.$/
         ),
       ]),
-      // Classifying the badge, an HTML box or an SVG icon, does not change which structural selectors position its card.
+      // Classifying the badge does not change which structural selectors position its card; an SVG badge is content.
       ...[19, 20, 21, 22].map((no) => [
         no,
         expect.stringMatching(
           /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 1\.$/
-        ),
-      ]),
-      // A structural selector that only colors an SVG note keeps it pinned to the slide.
-      ...[23, 24].map((no) => [
-        no,
-        expect.stringMatching(
-          /is zoomed to 0\.5 but still keeps a margin of 1 line above `<svg\.svg-colored-note[^`]*` at zoom: 1\.$/
         ),
       ]),
     ]);
