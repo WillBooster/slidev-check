@@ -66,7 +66,10 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
       ignores: parseIgnores(slide.frontmatter['slidevCheckIgnore'], index + 1),
       // Slidev merges the headmatter's `defaults` into each slide's frontmatter when it serves the deck.
       zoom: parseZoom(
-        slide.frontmatter['zoom'] ?? defaultsSchema.safeParse(resolved.data.headmatter['defaults']).data?.zoom
+        // As Slidev spreads the slide's frontmatter over the defaults, a slide's own `zoom: null` clears the default.
+        'zoom' in slide.frontmatter
+          ? slide.frontmatter['zoom']
+          : defaultsSchema.safeParse(resolved.data.headmatter['defaults']).data?.zoom
       ),
     })),
     width,

@@ -12,3 +12,12 @@ defaults:
 
 - one
 - two
+
+---
+zoom: null
+---
+
+# Cleared zoom
+
+- one
+- two
