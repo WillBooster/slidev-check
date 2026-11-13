@@ -510,6 +510,20 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.1` does not fit on the slide with a margin of 1 line above the slide bottom at any zoom down to 0.1.',
         'Consider splitting the content into multiple slides.',
       ],
+      // Content that is all anchored to the bottom still gets a value that keeps it on the slide.
+      [
+        15,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // A footer anchored to the bottom only in a wide container is flow at the larger zooms that narrow it.
+      [
+        16,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.9\d`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.9\d` in the slide's frontmatter\.$/),
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too.
     const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));

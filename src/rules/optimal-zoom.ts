@@ -225,7 +225,8 @@ function analyzeZoom({
     // When the layout is the target, the layout can hold content at its own bottom edge (a bottom
     // slot, a footer pushed down by `margin-top: auto`): the zoom scales its distance to the slide
     // bottom while the flow content moves, so content whose distance divided by the zoom stays the
-    // same at two zooms is anchored to the bottom and bounds the space like a pinned element.
+    // same at a candidate zoom and at a slightly smaller one is anchored to the bottom in that
+    // candidate's layout and bounds the space like a pinned element.
     const gapsAt = (zoom: number): Map<Element, number> => {
       scaler.apply(String(zoom));
       const gaps = new Map<Element, number>();
@@ -235,29 +236,27 @@ function analyzeZoom({
       }
       return gaps;
     };
-    const bottomAnchored = new Set<Element>();
-    if (layoutTarget) {
-      const atCurrent = gapsAt(scaler.current);
-      // Half of the current zoom, unclamped, so that the two samples always differ.
-      const atHalf = gapsAt(scaler.current / 2);
+    const bottomAnchoredAt = (zoom: number): Set<Element> => {
+      const anchored = new Set<Element>();
+      if (!layoutTarget) return anchored;
+      const nearby = gapsAt(zoom * 0.9);
+      const at = gapsAt(zoom);
       const steady = (element: Element): boolean => {
-        const a = atCurrent.get(element);
-        const b = atHalf.get(element);
+        const a = at.get(element);
+        const b = nearby.get(element);
         return a !== undefined && b !== undefined && Math.abs(a - b) <= 2;
       };
       // An element is anchored when it and every painted element inside it keep their distance.
-      for (const element of atCurrent.keys()) {
-        if (
-          steady(element) &&
-          [...element.querySelectorAll('*')].every((inner) => !atCurrent.has(inner) || steady(inner))
-        ) {
-          bottomAnchored.add(element);
-          for (const inner of element.querySelectorAll('*')) bottomAnchored.add(inner);
+      for (const element of at.keys()) {
+        if (steady(element) && [...element.querySelectorAll('*')].every((inner) => !at.has(inner) || steady(inner))) {
+          anchored.add(element);
+          for (const inner of element.querySelectorAll('*')) anchored.add(inner);
         }
       }
-      scaler.apply(scaler.original);
-    }
+      return anchored;
+    };
     const measure = (zoom: number): Measurement => {
+      const bottomAnchored = bottomAnchoredAt(zoom);
       scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
       const pinned = new Set(
@@ -268,6 +267,7 @@ function analyzeZoom({
       // elements anchored outside the target do not move with the flow and bound the space
       // instead; those inside the target still scale with it and must stay on the slide.
       const scaled = extentOf(flow);
+      const onlyAnchored = scaled.right <= scaled.left && bottomAnchored.size > 0;
       const anchored = extentOf([...pinned, ...layers]);
       const beside = (rect: DOMRect): boolean => rect.right <= scaled.left || rect.left >= scaled.right;
       // Flow content moves with the target unless it sits in another column beside it.
@@ -308,8 +308,10 @@ function analyzeZoom({
       // so that wrappers with different text sizes agree on how much space is left.
       const line = lowest ? lineHeightAt(lowest) : Number.NaN;
       return {
-        measurable: line > 0 && scaled.right > scaled.left,
-        lines: (limit - bottom) / line,
+        // A layout whose painted content is all anchored to its bottom has no flow to keep a margin
+        // under; the anchored content must still stay on the slide (the bounds below).
+        measurable: (line > 0 && scaled.right > scaled.left) || (layoutTarget && onlyAnchored),
+        lines: line > 0 ? (limit - bottom) / line : marginLines,
         fitsBounds:
           Math.min(scaled.left, anchored.left) >= bounds.left - 1 &&
           Math.max(scaled.right, anchored.right) <= bounds.right + 1 &&

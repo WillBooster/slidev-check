@@ -148,3 +148,30 @@ zoom: 0.1
 ---
 
 <div style="height: 20000px; background: gray"></div>
+
+---
+zoom: 0.5
+---
+
+<style>
+.slidev-page[data-slidev-no="15"] .slidev-layout { display: flex; flex-direction: column; height: 100%; }
+</style>
+
+<div style="margin-top: auto">Only line kept at the bottom</div>
+
+---
+zoom: 0.5
+---
+
+<h1>Short heading</h1>
+<div class="body">A fixed-height diagram</div>
+<div class="footer">Footer</div>
+
+<style>
+.slidev-page[data-slidev-no="16"] .slidev-layout { display: flex; flex-direction: column; padding: 40px; height: 100%; container-type: inline-size; }
+.slidev-page[data-slidev-no="16"] .slidev-layout > * { flex-shrink: 0; }
+.slidev-page[data-slidev-no="16"] .slidev-layout h1 { font-size: 32px; line-height: 40px; height: 40px; margin: 0; }
+.slidev-page[data-slidev-no="16"] .body { height: 400px; background: #eee; }
+.slidev-page[data-slidev-no="16"] .footer { margin-top: auto; height: 30px; background: #ddd; }
+@container (max-width: 1200px) { .slidev-page[data-slidev-no="16"] .footer { margin-top: 32px; } }
+</style>
