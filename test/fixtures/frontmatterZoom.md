@@ -377,3 +377,12 @@ zoom: 0.5
   </div>
   <p style="margin-top: auto">Mid-slide footer</p>
 </div>
+
+---
+zoom: 0.995
+---
+
+# Short body with a three-decimal zoom
+
+- one
+- two

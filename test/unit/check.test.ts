@@ -629,6 +629,12 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
       ],
+      // The message names the frontmatter value as written.
+      [
+        33,
+        'The slide content with the frontmatter `zoom: 0.995` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
     ]);
     // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too, even 1.
     const defaultsOne = await runCliJson(fixture('frontmatterZoomDefaultsOne.md'));

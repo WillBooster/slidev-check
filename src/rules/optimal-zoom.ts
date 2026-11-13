@@ -707,7 +707,8 @@ function toFinding(
     ? `cannot keep a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}, because \`${blockedBy}\` outside it already reaches that far`
     : `does not fit on the slide with a margin of ${lines(marginLines)} above ${bottom} at any zoom down to ${MIN_ZOOM}`;
   if (kind === 'frontmatter') {
-    const zoomed = `The slide content with the frontmatter \`zoom: ${formatZoom(current)}\``;
+    // The value as written, so that the message names the slide's own frontmatter.
+    const zoomed = `The slide content with the frontmatter \`zoom: ${String(current)}\``;
     if (optimal === undefined) return { message: `${zoomed} ${unfit}.`, help: split };
     const suggestion = `zoom: ${formatZoom(optimal)}`;
     return {
