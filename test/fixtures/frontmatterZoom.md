@@ -28,3 +28,13 @@ zoom: 0.5
 # Body that needs half of the zoom
 
 <p v-for="i in 26" :key="i">Line {{ i }}</p>
+
+---
+zoom: 0.5
+---
+
+# Body whose ignored table is not measured
+
+<div data-slidev-check-ignore>
+<p v-for="i in 26" :key="i">Line {{ i }}</p>
+</div>

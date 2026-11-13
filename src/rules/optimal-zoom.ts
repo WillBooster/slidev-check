@@ -363,7 +363,14 @@ function analyzeZoom({
   const page = layout.closest<HTMLElement>(`[style*="${property}"]`);
   const frontmatter = page ? Number.parseFloat(page.style.getPropertyValue(property)) : Number.NaN;
   let analysis: ZoomAnalysis | undefined;
+  // The frontmatter zoom also scales elements excluded with `data-slidev-check-ignore`, which are
+  // not measured, so no value can be suggested for a body that holds one.
+  const unmeasured = wrapper.querySelector('[data-slidev-check-ignore]') !== null;
   if (page && Number.isFinite(frontmatter) && frontmatter > 0) {
+    if (unmeasured) {
+      wrapper.replaceWith(...wrapper.childNodes);
+      return [];
+    }
     analysis = analyze(wrapper, 'frontmatter', -1, {
       current: frontmatter,
       original: page.style.getPropertyValue(property),
