@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss 431 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
+// code-gauge-allow-file fileNcss 437 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
 import { perSlide, type SlideFinding } from '../perSlide.ts';
 import type { Fix, Rule } from '../types.ts';
 
@@ -68,13 +68,11 @@ function analyzeZoom({
   const bounds = container.getBoundingClientRect();
 
   const isSvgInternal = (element: Element): boolean => element.tagName !== 'svg' && element.closest('svg') !== null;
-  // Up to the layout, or for a slide layer beside it up to Slidev's page, which is always positioned.
+  // Up to the layout, or for a slide layer beside it up to Slidev's always positioned page, which
+  // counts only for itself.
   const isPositioned = (element: Element): boolean => {
-    for (
-      let current: Element | null = element;
-      current && current !== layout && !current.classList.contains('slidev-page');
-      current = current.parentElement
-    ) {
+    for (let current: Element | null = element; current && current !== layout; current = current.parentElement) {
+      if (current !== element && current.classList.contains('slidev-page')) return false;
       const position = getComputedStyle(current).position;
       if (position === 'absolute' || position === 'fixed') return true;
     }
@@ -83,6 +81,7 @@ function analyzeZoom({
   // When set, the decorations as classified at the current zoom, kept while candidate zooms grow or
   // shrink boxes past the background threshold.
   let decorations: Set<Element> | undefined;
+  let frozenIn: Element | undefined;
   /**
    * Painted pieces of one element: its text lines, and its boxes when it paints a background,
    * border, or image. A positioned box covering the slide is a decoration, not content; a box in
@@ -93,10 +92,14 @@ function analyzeZoom({
     const nonEmpty = (rect: DOMRect): boolean => rect.width > 0 && rect.height > 0;
     // A frozen decoration's own text is still content; only its box is left out, while it is still a
     // positioned painted box (a candidate's layout can put it back into the flow).
-    if (decorations?.has(element) && paints(element) && isPositioned(element)) {
+    // The frozen classification covers the page's content; the page itself and anything outside it
+    // keep the classification at each zoom.
+    const frozen =
+      decorations !== undefined && frozenIn !== undefined && frozenIn !== element && frozenIn.contains(element);
+    if (frozen && decorations?.has(element) && paints(element) && isPositioned(element)) {
       return textFragments(element).filter(nonEmpty);
     }
-    const decoration = !decorations && paints(element) && isPositioned(element);
+    const decoration = !frozen && paints(element) && isPositioned(element);
     const rects = paints(element) ? fragments(element) : textFragments(element);
     return rects.filter((rect) => nonEmpty(rect) && !(decoration && isBackground(rect, bounds)));
   };
@@ -502,6 +505,7 @@ function analyzeZoom({
   const unmeasured = page !== null && page.querySelector('[data-slidev-check-ignore]') !== null;
   if (usesProperty && !unmeasured && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
     const attribute = page.getAttribute('style');
+    frozenIn = page;
     decorations = new Set(
       [...page.querySelectorAll('*')].filter(
         (element) =>
@@ -514,6 +518,7 @@ function analyzeZoom({
       apply: (zoom) => page.style.setProperty(property, zoom === '1' ? '' : zoom),
     });
     decorations = undefined;
+    frozenIn = undefined;
     if (attribute === null) page.removeAttribute('style');
     else page.setAttribute('style', attribute);
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {

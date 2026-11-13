@@ -678,6 +678,14 @@ describe('optimal-zoom', () => {
         ),
       ],
     ]);
+    // A background painted on the page itself does not bound the content it covers.
+    const pageBackground = await runCliJson(fixture('pageBackground/slides.md'));
+    expect(zoomViolations(pageBackground.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.5` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+      ],
+    ]);
     // The same banner excluded with data-slidev-check-ignore is not measured, so no larger value is suggested.
     const ignored = await runCliJson(fixture('slideLayerIgnored/slides.md'));
     expect(zoomViolations(ignored.violations)).toEqual([]);
