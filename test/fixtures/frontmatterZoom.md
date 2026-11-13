@@ -133,3 +133,18 @@ zoom: 0.7
 <p>Some body text.</p>
 
 <div class="footer">Footer</div>
+
+---
+zoom: 70%
+---
+
+# Short body with a percentage zoom
+
+- one
+- two
+
+---
+zoom: 0.1
+---
+
+<div style="height: 20000px; background: gray"></div>

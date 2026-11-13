@@ -238,7 +238,8 @@ function analyzeZoom({
     const bottomAnchored = new Set<Element>();
     if (layoutTarget) {
       const atCurrent = gapsAt(scaler.current);
-      const atHalf = gapsAt(Math.max(minZoom, scaler.current / 2));
+      // Half of the current zoom, unclamped, so that the two samples always differ.
+      const atHalf = gapsAt(scaler.current / 2);
       const steady = (element: Element): boolean => {
         const a = atCurrent.get(element);
         const b = atHalf.get(element);
@@ -392,24 +393,29 @@ function analyzeZoom({
     return analyses;
   }
 
-  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page (omitting it for
-  // 1); setting it measures the slide as the author would by editing the frontmatter, including what
-  // a theme keeps unscaled, on the layout itself so that no selector matches differently.
+  // Slidev applies the slide's frontmatter `zoom` (also one set through the headmatter's `defaults`, or
+  // as a percentage) to its page: as this custom property since Slidev 52.10, and as an inline
+  // `transform: scale(…)` with a widened `width` and `height` before. Both leave no trace for
+  // `zoom: 1`, which the parsed frontmatter tells apart. Changing the page's zoom the same way
+  // measures the slide as the author would by editing the frontmatter, including what a theme
+  // keeps unscaled, on the layout itself so that no selector matches differently.
   const property = '--slidev-slide-zoom-scale';
   const page = layout.closest<HTMLElement>('.slidev-page');
-  if (frontmatterZoom !== undefined && page && layout instanceof HTMLElement) {
-    // Slidev before 52.10 scaled the page with inline `width`, `height`, and `transform` instead of
-    // the property, so the mechanism is told apart by whether the property moves the page's `scale`.
+  const parseZoom = (value: string | undefined): number | undefined => {
+    const match = /^\s*(\d*\.?\d+)(%?)\s*$/.exec(value ?? '');
+    if (!match) return undefined;
+    const zoom = Number(match[1]) / (match[2] ? 100 : 1);
+    return zoom > 0 ? zoom : undefined;
+  };
+  const byTransform = parseZoom(/scale\(([^)]*)\)/.exec(page?.style.transform ?? '')?.[1]);
+  const pageZoom = parseZoom(page?.style.getPropertyValue(property)) ?? byTransform ?? frontmatterZoom;
+  if (pageZoom !== undefined && page && layout instanceof HTMLElement) {
     const attribute = page.getAttribute('style');
-    page.style.setProperty(property, '0.5');
-    const byProperty = getComputedStyle(page).scale === '0.5';
-    if (attribute === null) page.removeAttribute('style');
-    else page.setAttribute('style', attribute);
     const analysis = analyze(layout, 'frontmatter', -1, {
-      current: frontmatterZoom,
-      original: String(frontmatterZoom),
+      current: pageZoom,
+      original: String(pageZoom),
       apply: (zoom) => {
-        if (byProperty) {
+        if (byTransform === undefined) {
           page.style.setProperty(property, zoom === '1' ? '' : zoom);
           return;
         }

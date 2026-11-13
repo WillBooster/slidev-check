@@ -498,6 +498,26 @@ describe('optimal-zoom', () => {
         'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above `<div.footer>Footer` at `zoom: 1`.',
         "Consider setting `zoom: 1` in the slide's frontmatter.",
       ],
+      // The rendered scale is the current zoom, whatever notation set it.
+      [
+        13,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+        "Consider setting `zoom: 1` in the slide's frontmatter.",
+      ],
+      // The smallest zoom is still compared with a different one to find content anchored to the bottom.
+      [
+        14,
+        'The slide content with the frontmatter `zoom: 0.1` does not fit on the slide with a margin of 1 line above the slide bottom at any zoom down to 0.1.',
+        'Consider splitting the content into multiple slides.',
+      ],
+    ]);
+    // A zoom set for every slide through the headmatter's `defaults` is the slide's zoom too.
+    const defaults = await runCliJson(fixture('frontmatterZoomDefaults.md'));
+    expect(zoomViolations(defaults.violations).map((v) => [v.slide.no, v.message])).toEqual([
+      [
+        2,
+        'The slide content with the frontmatter `zoom: 0.7` still keeps a margin of 1 line above the slide bottom at `zoom: 1`.',
+      ],
     ]);
   }, 90_000);
 
