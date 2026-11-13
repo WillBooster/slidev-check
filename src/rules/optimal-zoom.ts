@@ -1,3 +1,4 @@
+// code-gauge-allow-file fileNcss 406 -- analyzeZoom is serialized into the page as one function, so its frontmatter analysis cannot move to another module.
 import { perSlide, type SlideFinding } from '../perSlide.ts';
 import type { Fix, Rule } from '../types.ts';
 
