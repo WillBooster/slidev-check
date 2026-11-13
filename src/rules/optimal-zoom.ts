@@ -44,12 +44,15 @@ interface ZoomAnalysis {
 /* oxlint-disable unicorn/consistent-function-scoping */
 function analyzeZoom({
   containerSelector,
+  frontmatterZoom,
   marginLines,
   maxZoom,
   minZoom,
   step,
 }: {
   containerSelector: string;
+  /** The slide's `zoom` frontmatter, if it sets one. */
+  frontmatterZoom: number | undefined;
   marginLines: number;
   maxZoom: number;
   minZoom: number;
@@ -349,25 +352,25 @@ function analyzeZoom({
     return analyses;
   }
 
-  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page; setting it
-  // measures the slide as the author would by editing the frontmatter, including what a theme
-  // keeps unscaled, on the layout itself so that no selector matches differently.
+  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page (omitting it for
+  // 1); setting it measures the slide as the author would by editing the frontmatter, including what
+  // a theme keeps unscaled, on the layout itself so that no selector matches differently.
   const property = '--slidev-slide-zoom-scale';
-  const page = layout.closest<HTMLElement>(`[style*="${property}"]`);
-  const frontmatter = page ? Number.parseFloat(page.style.getPropertyValue(property)) : Number.NaN;
+  const page = layout.closest<HTMLElement>('.slidev-page');
   const heading = layout.querySelector('h1, h2, h3, h4, h5, h6');
-  if (page && Number.isFinite(frontmatter) && frontmatter > 0 && layout instanceof HTMLElement) {
-    // The frontmatter zoom also scales elements excluded with `data-slidev-check-ignore`, which are
-    // not measured, so no value can be suggested for a slide that holds one.
-    if (layout.querySelector('[data-slidev-check-ignore]')) return [];
+  if (frontmatterZoom !== undefined && page && layout instanceof HTMLElement) {
     const analysis = analyze(layout, 'frontmatter', -1, {
-      current: frontmatter,
+      current: frontmatterZoom,
       original: page.style.getPropertyValue(property),
       apply: (zoom) => page.style.setProperty(property, zoom),
     });
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
       return [];
     }
+    // The zoom also scales elements excluded with `data-slidev-check-ignore`, which are not
+    // measured, so a larger value is not suggested for a slide that holds one.
+    const unmeasured = layout.querySelector('[data-slidev-check-ignore]') !== null;
+    if (unmeasured && analysis.optimal !== undefined && analysis.optimal > analysis.current) return [];
     return [{ ...analysis, belowHeading: heading !== null }];
   }
 
@@ -588,13 +591,14 @@ export const optimalZoom: Rule = {
   defaultSetting: ['warn', { marginLines: DEFAULT_MARGIN_LINES, maxZoom: DEFAULT_MAX_ZOOM }],
   description:
     'A zoomed slide must use the largest zoom up to the maximum that keeps a margin above the slide bottom, unless a larger zoom still keeps it.',
-  check: perSlide(async ({ page, containerSelector, options, source, slide }) => {
+  check: perSlide(async ({ page, containerSelector, options, source, slide, zoom }) => {
     const settings = {
       marginLines: Number(options?.['marginLines'] ?? DEFAULT_MARGIN_LINES),
       maxZoom: Number(options?.['maxZoom'] ?? DEFAULT_MAX_ZOOM),
     };
     const analyses = await page.evaluate(analyzeZoom, {
       containerSelector,
+      frontmatterZoom: zoom,
       ...settings,
       minZoom: MIN_ZOOM,
       step: ZOOM_STEP,

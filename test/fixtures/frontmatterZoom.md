@@ -52,3 +52,46 @@ zoom: 0.5
 <style>
 .slidev-layout > p { font-size: 48px; line-height: 1.5; }
 </style>
+
+---
+zoom: 1
+---
+
+# Long body with an explicit frontmatter zoom of 1
+
+<p v-for="i in 30" :key="i">Line {{ i }}</p>
+
+---
+zoom: 0.9
+---
+
+# Long body beside an ignored note
+
+<p v-for="i in 30" :key="i">Line {{ i }}</p>
+
+<span data-slidev-check-ignore>note</span>
+
+---
+zoom: 0.5
+---
+
+<h1 style="white-space: nowrap; font-size: 64px">A much longer heading that is intentionally kept on a single line for readability on a narrow slide</h1>
+
+A short body.
+
+---
+layout: two-cols
+zoom: 0.5
+---
+
+# Left
+
+- One
+- Two
+
+::right::
+
+# Right
+
+- Three
+- Four

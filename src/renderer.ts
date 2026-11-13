@@ -22,6 +22,8 @@ export interface RenderedSlide extends SlideLocation {
   source: string;
   /** Reasons by rule id from the `slidevCheckIgnore` key of the slide's frontmatter. */
   ignores: Record<string, string>;
+  /** The slide's `zoom` frontmatter, when it sets a positive number. */
+  zoom: number | undefined;
 }
 
 export interface ResolvedDeck {
@@ -61,12 +63,18 @@ export async function resolveDeck(options: RenderOptions): Promise<ResolvedDeck>
       title: slide.title,
       source: slide.source.raw,
       ignores: parseIgnores(slide.frontmatter['slidevCheckIgnore'], index + 1),
+      zoom: parseZoom(slide.frontmatter['zoom']),
     })),
     width,
     height: Math.round(width / resolved.data.config.aspectRatio),
     themeRules: await loadThemeRules(resolved.themeRoots[0]),
     settings: headmatterSettingsSchema.parse(resolved.data.headmatter['slidevCheck'] ?? {}),
   };
+}
+
+function parseZoom(value: unknown): number | undefined {
+  const zoom = Number(value);
+  return value !== undefined && value !== null && Number.isFinite(zoom) && zoom > 0 ? zoom : undefined;
 }
 
 function parseIgnores(value: unknown, no: number): Record<string, string> {

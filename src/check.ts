@@ -109,11 +109,11 @@ async function collectViolations(
 
 async function visibleSlides(deck: ResolvedDeck, rendered: RenderedDeck): Promise<DeckSlide[]> {
   const slides = await Promise.all(
-    deck.slides.map(async ({ no, filepath, line, title, source }) => {
+    deck.slides.map(async ({ no, filepath, line, title, source, zoom }) => {
       const slide = { no, filepath, line, title };
       const containerSelector = `.print-slide-container[id^="${String(slide.no).padStart(3, '0')}-"]`;
       const visible = (await rendered.page.locator(containerSelector).count()) > 0;
-      return visible ? { slide, source, containerSelector } : undefined;
+      return visible ? { slide, source, containerSelector, ...(zoom !== undefined && { zoom }) } : undefined;
     })
   );
   return slides.filter((slide) => slide !== undefined);

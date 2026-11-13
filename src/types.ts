@@ -39,6 +39,8 @@ export interface DeckSlide {
   source: string;
   /** CSS selector of the `.print-slide-container` for the slide. */
   containerSelector: string;
+  /** The slide's `zoom` frontmatter, when it sets a positive number. */
+  zoom?: number;
 }
 
 /** What `Rule.check` receives. */
