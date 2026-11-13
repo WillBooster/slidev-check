@@ -35,6 +35,20 @@ zoom: 0.5
 
 # Body whose ignored table is not measured
 
+<p>Short</p>
+
 <div data-slidev-check-ignore>
 <p v-for="i in 26" :key="i">Line {{ i }}</p>
 </div>
+
+---
+zoom: 0.5
+---
+
+# Body styled by a direct-child selector
+
+<p v-for="i in 8" :key="i" class="large-line">Line {{ i }}</p>
+
+<style>
+.slidev-layout > p { font-size: 48px; line-height: 1.5; }
+</style>

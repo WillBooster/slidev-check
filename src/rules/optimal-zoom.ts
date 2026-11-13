@@ -123,7 +123,11 @@ function analyzeZoom({
    * Whether the element is laid out by an absolutely positioned or fixed ancestor-or-self whose
    * containing block lies outside the target, so that the target's flow does not move it.
    */
-  const isPinnedIn = (element: Element, target: Element): boolean => {
+  /**
+   * Whether the element is pinned within the target. A box anchored to the target itself is pinned
+   * when the target is the slide's layout, which a frontmatter zoom scales as a whole.
+   */
+  const isPinnedIn = (element: Element, target: Element, layoutTarget = false): boolean => {
     for (let current: Element | null = element; current && current !== target; current = current.parentElement) {
       // SVG content is laid out by its `<svg>`, and `display: contents` generates no box, whatever their `position`.
       if (isSvgInternal(current)) continue;
@@ -132,7 +136,7 @@ function analyzeZoom({
       const block = containingBlockOf(current);
       // An SVG box counts as content, as before pinned elements were recognized.
       if (block === undefined) continue;
-      if (!block || !target.contains(block)) return true;
+      if (!block || !target.contains(block) || (layoutTarget && block === target)) return true;
     }
     return false;
   };
@@ -208,11 +212,13 @@ function analyzeZoom({
     index: number,
     scaler: Scaler = ownZoom(target)
   ): ZoomAnalysis | undefined => {
-    const descendants = [target, ...target.querySelectorAll('*')];
+    // The slide's layout, measured for a frontmatter zoom, paints the whole slide: only its descendants are content.
+    const layoutTarget = target === layout;
+    const descendants = [...(layoutTarget ? [] : [target]), ...target.querySelectorAll('*')];
     const measure = (zoom: number): Measurement => {
       scaler.apply(String(zoom));
       // Classified at each zoom: the zoom changes widths, and with them container queries may change positioning.
-      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target)));
+      const pinned = new Set(descendants.filter((element) => isPinnedIn(element, target, layoutTarget)));
       const flow = descendants.filter((element) => !pinned.has(element));
       // The target's flow scales with the zoom, and the rest of the flow moves with it. Positioned
       // elements anchored outside the target do not move with the flow and bound the space
@@ -343,9 +349,30 @@ function analyzeZoom({
     return analyses;
   }
 
+  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page; setting it
+  // measures the slide as the author would by editing the frontmatter, including what a theme
+  // keeps unscaled, on the layout itself so that no selector matches differently.
+  const property = '--slidev-slide-zoom-scale';
+  const page = layout.closest<HTMLElement>(`[style*="${property}"]`);
+  const frontmatter = page ? Number.parseFloat(page.style.getPropertyValue(property)) : Number.NaN;
+  const heading = layout.querySelector('h1, h2, h3, h4, h5, h6');
+  if (page && Number.isFinite(frontmatter) && frontmatter > 0 && layout instanceof HTMLElement) {
+    // The frontmatter zoom also scales elements excluded with `data-slidev-check-ignore`, which are
+    // not measured, so no value can be suggested for a slide that holds one.
+    if (layout.querySelector('[data-slidev-check-ignore]')) return [];
+    const analysis = analyze(layout, 'frontmatter', -1, {
+      current: frontmatter,
+      original: page.style.getPropertyValue(property),
+      apply: (zoom) => page.style.setProperty(property, zoom),
+    });
+    if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
+      return [];
+    }
+    return [{ ...analysis, belowHeading: heading !== null }];
+  }
+
   // Without a wrapper, the body below the heading is what a wrapper would zoom: it is wrapped
   // for the measurement so that the suggestion describes exactly what was measured.
-  const heading = layout.querySelector('h1, h2, h3, h4, h5, h6');
   if (heading && heading.parentElement !== layout) return [];
   const children = [...layout.children];
   const body = children.filter(
@@ -356,40 +383,10 @@ function analyzeZoom({
   const wrapper = document.createElement('div');
   body[0]?.before(wrapper);
   wrapper.append(...body);
-  // Slidev applies a frontmatter `zoom` as this custom property on the slide's page; setting it
-  // measures the slide as the author would by editing the frontmatter, including what a theme
-  // keeps unscaled.
-  const property = '--slidev-slide-zoom-scale';
-  const page = layout.closest<HTMLElement>(`[style*="${property}"]`);
-  const frontmatter = page ? Number.parseFloat(page.style.getPropertyValue(property)) : Number.NaN;
-  let analysis: ZoomAnalysis | undefined;
-  // The frontmatter zoom also scales elements excluded with `data-slidev-check-ignore`, which are
-  // not measured, so no value can be suggested for a body that holds one.
-  const unmeasured = wrapper.querySelector('[data-slidev-check-ignore]') !== null;
-  if (page && Number.isFinite(frontmatter) && frontmatter > 0) {
-    if (unmeasured) {
-      wrapper.replaceWith(...wrapper.childNodes);
-      return [];
-    }
-    analysis = analyze(wrapper, 'frontmatter', -1, {
-      current: frontmatter,
-      original: page.style.getPropertyValue(property),
-      apply: (zoom) => page.style.setProperty(property, zoom),
-    });
-  } else {
-    wrapper.style.zoom = '1';
-    analysis = analyze(wrapper, 'slide', -1);
-  }
+  wrapper.style.zoom = '1';
+  const analysis = analyze(wrapper, 'slide', -1);
   wrapper.replaceWith(...wrapper.childNodes);
-  if (!analysis) return [];
-  const { kind, optimal, current } = analysis;
-  // A body without a zoom is only reported when it needs one; a frontmatter zoom also when a larger one fits.
-  if (
-    optimal !== undefined &&
-    (kind === 'slide' ? optimal > current - step / 2 : Math.abs(optimal - current) < step / 2)
-  ) {
-    return [];
-  }
+  if (!analysis || (analysis.optimal !== undefined && analysis.optimal > analysis.current - step / 2)) return [];
   return [{ ...analysis, belowHeading: heading !== null }];
 }
 

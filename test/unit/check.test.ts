@@ -450,6 +450,15 @@ describe('optimal-zoom', () => {
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
       ],
+      // Slide 5 holds an ignored element the zoom would also scale, so it gets no suggestion. Slide 6
+      // is measured on its own layout, so its direct-child selector still applies (zoom 1 would overflow).
+      [
+        6,
+        expect.stringMatching(
+          /^The slide content with the frontmatter `zoom: 0\.5` still keeps a margin of 1 line above the slide bottom at `zoom: 0\.[5-9]\d?`\.$/
+        ),
+        expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
+      ],
     ]);
   }, 90_000);
 
