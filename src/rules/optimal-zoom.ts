@@ -425,7 +425,10 @@ function analyzeZoom({
   const usesProperty = page !== null && getComputedStyle(page).getPropertyValue(property).trim() !== '';
   const inline = page?.style.getPropertyValue(property).trim() ?? '';
   const pageZoom = inline === '' ? frontmatterZoom : /^\d*\.?\d+$/.test(inline) ? Number(inline) : undefined;
-  if (usesProperty && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
+  // The zoom also scales elements excluded with `data-slidev-check-ignore`, which are not measured,
+  // so a slide that holds one keeps the analysis of a slide without a zoom.
+  const unmeasured = page !== null && page.querySelector('[data-slidev-check-ignore]') !== null;
+  if (usesProperty && !unmeasured && pageZoom !== undefined && pageZoom > 0 && page && layout instanceof HTMLElement) {
     const attribute = page.getAttribute('style');
     const analysis = analyze(layout, 'frontmatter', -1, {
       current: pageZoom,
@@ -437,10 +440,6 @@ function analyzeZoom({
     if (!analysis || (analysis.optimal !== undefined && Math.abs(analysis.optimal - analysis.current) < step / 2)) {
       return [];
     }
-    // The zoom also scales elements excluded with `data-slidev-check-ignore` (in the layout or the
-    // layers beside it), which are not measured, so a larger value is not suggested for a slide that holds one.
-    const unmeasured = page.querySelector('[data-slidev-check-ignore]') !== null;
-    if (unmeasured && analysis.optimal !== undefined && analysis.optimal > analysis.current) return [];
     return [analysis];
   }
 

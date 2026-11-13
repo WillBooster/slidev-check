@@ -460,19 +460,21 @@ describe('optimal-zoom', () => {
         expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
       ],
       // Slidev sets no page property for `zoom: 1`, but the frontmatter value is still the one to change.
-      // An ignored element does not keep a smaller value from being suggested, since it shrinks too.
-      ...[
-        [7, '1'],
-        [8, String.raw`0\.9`],
-      ].map(([no, zoom]) => [
-        Number(no),
+      [
+        7,
         expect.stringMatching(
-          new RegExp(
-            `^The slide content with the frontmatter \`zoom: ${zoom}\` overflows the slide bottom; \`zoom: 0\\.\\d+\` keeps the margin above the slide bottom\\.$`
-          )
+          /^The slide content with the frontmatter `zoom: 1` overflows the slide bottom; `zoom: 0\.\d+` keeps the margin above the slide bottom\.$/
         ),
         expect.stringMatching(/^Consider setting `zoom: 0\.\d+` in the slide's frontmatter\.$/),
-      ]),
+      ],
+      // A slide holding an ignored element, which the zoom would also scale, keeps the analysis of a slide without a zoom.
+      [
+        8,
+        expect.stringMatching(
+          /^The slide content overflows the slide bottom; wrapping it in `<div style="zoom: 0\.\d+">` keeps the margin\.$/
+        ),
+        expect.stringMatching(/^Consider wrapping the content below the heading in `<div style="zoom: 0\.\d+">`\.$/),
+      ],
       // The frontmatter zoom scales the heading too, so it must stay on the slide.
       [
         9,
