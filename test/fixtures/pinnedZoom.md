@@ -200,3 +200,13 @@ Some short body text.
 <p style="margin-top: auto">Footer</p>
 </div>
 </div>
+
+---
+
+# Wrapper beside a floated image
+
+<canvas width="400" height="360" style="float: left; background: #cde"></canvas>
+<div style="zoom: 0.5; width: 400px">
+<p>Some short body text that wraps around the image.</p>
+<p>Footer</p>
+</div>
