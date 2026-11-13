@@ -411,6 +411,13 @@ describe('optimal-zoom', () => {
           /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.8\d\.$/
         ),
       ],
+      // A footer aligned to the bottom of a flexible card moves with the card, so it is content.
+      ...[16, 17].map((no) => [
+        no,
+        expect.stringMatching(
+          /is zoomed to 0\.5 but still keeps a margin of 1 line above the slide bottom at zoom: 0\.\d+\.$/
+        ),
+      ]),
     ]);
   }, 90_000);
 

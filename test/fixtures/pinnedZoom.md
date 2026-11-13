@@ -178,3 +178,25 @@ Some short body text.
 <div style="zoom: 0.5; margin: 0 !important; margin-block-start: 80px !important">
 <p v-for="i in 12" :key="i">Line {{ i }}</p>
 </div>
+
+---
+
+# Footer aligned to the bottom of a flexible card (justify-content: space-between)
+
+<div style="height: 400px; display: flex; flex-direction: column">
+<div style="zoom: 0.5; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; background: #eee">
+<div><p v-for="i in 12" :key="i">Line {{ i }}</p></div>
+<p>Footer</p>
+</div>
+</div>
+
+---
+
+# Footer aligned to the bottom of a flexible card (justify-content: flex-start)
+
+<div style="height: 400px; display: flex; flex-direction: column">
+<div style="zoom: 0.5; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; background: #eee">
+<div><p v-for="i in 12" :key="i">Line {{ i }}</p></div>
+<p style="margin-top: auto">Footer</p>
+</div>
+</div>

@@ -107,15 +107,25 @@ function analyzeZoom({
     // The whole attribute is restored: declaration order and priority decide between `margin-top`
     // and its shorthands and logical aliases.
     const attribute = target.getAttribute('style');
+    const { width, height } = getComputedStyle(target);
+    const box = target.getBoundingClientRect();
     // The margin scales with the zoom and collapses with the margin above, so it is made large
-    // enough to move the target at any zoom, and important to override any other margin.
-    target.style.setProperty('margin-top', '2000px', 'important');
+    // enough to move the target at any zoom. The size is held so that a flex or grid parent cannot
+    // resize the target and reflow its content; important declarations override any other rule.
+    const probe = { 'margin-top': '2000px', width, height, flex: 'none' };
+    const unbounded = { 'min-width': '0', 'min-height': '0', 'max-width': 'none', 'max-height': 'none' };
+    for (const [name, value] of Object.entries({ ...probe, ...unbounded })) {
+      target.style.setProperty(name, value, 'important');
+    }
     const after = elements.map(topOf);
+    const moved = target.getBoundingClientRect();
     if (attribute === null) target.removeAttribute('style');
     else target.setAttribute('style', attribute);
     const shift = (after[0] ?? 0) - (before[0] ?? 0);
-    // A target that the margin does not move (an inline one) cannot tell pinned elements apart.
-    if (Math.abs(shift) <= 1) return new Set();
+    const resized = Math.abs(moved.width - box.width) > 0.5 || Math.abs(moved.height - box.height) > 0.5;
+    // A target that the margin does not move (an inline one) or that the probe resizes cannot tell
+    // pinned elements apart.
+    if (Math.abs(shift) <= 1 || resized) return new Set();
     return new Set(
       elements.filter((_, i) => {
         const [top, moved] = [before[i], after[i]];
