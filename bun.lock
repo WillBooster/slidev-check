@@ -5,14 +5,14 @@
     "": {
       "name": "slidev-check",
       "dependencies": {
-        "@willbooster/shared-lib": "11.1.0",
+        "@willbooster/shared-lib": "11.1.1",
         "picocolors": "1.1.1",
         "zod": "4.6.7",
       },
       "devDependencies": {
         "@slidev/cli": "53.1.0",
         "@slidev/theme-default": "latest",
-        "@tsconfig/bun": "1.0.11",
+        "@tsconfig/bun": "1.0.12",
         "@types/bun": "1.4.4",
         "@willbooster/oxlint-config": "1.4.9",
         "@willbooster/wb": "23.4.0",
@@ -432,7 +432,7 @@
 
     "@textlint/utils": ["@textlint/utils@15.8.0", "", {}, "sha512-waINJCI7sBVs1A3K05UFKe8QoNAsdJFCXr3PJ1QsgAf0BeEgCtyrLVcZUdbOtKxRkF4QB4NuClB0By1Ty4znpQ=="],
 
-    "@tsconfig/bun": ["@tsconfig/bun@1.0.11", "", {}, "sha512-DQA3HOKFQ+/yPTUa73k5QGcuEM1ExtL6uWQMR0QrfOTitm0oLHqHd1tI74WtEtMqlIu+tvSMELJ6p5uNxVE7lw=="],
+    "@tsconfig/bun": ["@tsconfig/bun@1.0.12", "", {}, "sha512-/7sosWfGyWpPtJGwQtTcq8piOWZF8Xjy57lx//8MGBdn5a03Q6qcDTcZ9Zo3Qv3Ui764mp1HZiMlL+RYU6WarA=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.4", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A=="],
 
@@ -646,7 +646,7 @@
 
     "@willbooster/oxlint-config": ["@willbooster/oxlint-config@1.4.9", "", { "peerDependencies": { "oxlint": ">=1.60.0", "oxlint-tsgolint": ">=0.18.1" } }, "sha512-xqWuKdEzT4LqYc+WiK7g6sLGjvRj1iAb6CtYW1AA2qa6U1Sfa0rRFoSCJ7bBbrMxG+wS8IgKTJkz/FY/RrW1Iw=="],
 
-    "@willbooster/shared-lib": ["@willbooster/shared-lib@11.1.0", "", {}, "sha512-TmwbLj2nJwATkxbBsWg7kDRp2n8AwnduaEKLwk6FQMpO6dYdGM0eCBtfUnTUNEFcpt6/Jkv+j4K3yXG9wydUpg=="],
+    "@willbooster/shared-lib": ["@willbooster/shared-lib@11.1.1", "", {}, "sha512-snBLyc2+d9svXGTdl/80MKeTH6zupxkFFPNIgtDeUWdJPbXoDUBayZ9K8M4arYAinEPXkCYtg73vwpq7vvtTkw=="],
 
     "@willbooster/wb": ["@willbooster/wb@23.4.0", "", { "dependencies": { "@textlint-rule/textlint-rule-no-invalid-control-character": "3.0.0", "@textlint/kernel": "15.8.0", "@textlint/module-interop": "15.8.0", "@textlint/textlint-plugin-markdown": "15.8.0", "chalk": "6.0.1", "code-gauge": "10.4.3", "dotenv": "18.0.9", "dotenv-expand": "13.0.0", "fast-glob": "3.3.3", "fastest-levenshtein": "1.0.16", "globby": "16.2.4", "jsonc-parser": "3.3.1", "minimal-promise-pool": "6.0.4", "semver": "7.8.6", "smol-toml": "1.9.1", "textlint-filter-rule-node-types": "1.1.0", "textlint-rule-ja-space-between-half-and-full-width": "3.0.4", "textlint-rule-no-zero-width-spaces": "1.0.1", "yaml": "2.9.1", "yargs": "18.2.0", "zod": "4.6.7" }, "bin": { "wb": "bin/index.js" } }, "sha512-tBsXecLG12WIIQ4WEVszqkRFKuPfmfLQFxy/DYi+Yv2g8E9ykmx722O10a273/6AB3Wlf2HIxZYnXGHyzl/CpQ=="],
 
