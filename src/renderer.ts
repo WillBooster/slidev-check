@@ -97,7 +97,7 @@ function parseIgnores(value: unknown, no: number): Record<string, string> {
  * Starts Slidev's own dev server and opens its print page in Chromium, the same
  * way `slidev export` does, so the checked DOM is exactly what Slidev renders.
  */
-// code-gauge-allow functionNcss 36 -- the startup steps are sequential and share the server and browser handles.
+// code-gauge-allow functionNcss -- the startup steps are sequential and share the server and browser handles.
 export async function renderDeck(deck: ResolvedDeck, options: RenderOptions): Promise<RenderedDeck> {
   debug('createServer');
   const server = await createServer(deck.options, {

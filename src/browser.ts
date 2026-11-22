@@ -150,8 +150,8 @@ function defineHelpers(): void {
   } as BrowserHelpers;
 }
 
-// code-gauge-allow functionCognitiveComplexity 23 -- the helpers must be nested to be serialized into the page.
-// code-gauge-allow functionNcss 31 -- the helpers must be nested to be serialized into the page.
+// code-gauge-allow functionCognitiveComplexity -- the helpers must be nested to be serialized into the page.
+// code-gauge-allow functionNcss -- the helpers must be nested to be serialized into the page.
 function defineFontScales(): void {
   const renderedFontSize = (element: Element): number => {
     let size = Number.parseFloat(getComputedStyle(element).fontSize);
