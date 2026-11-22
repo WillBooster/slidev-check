@@ -3,7 +3,7 @@ import type { Rule } from '../types.ts';
 
 const DEFAULT_MAX = 1;
 
-// code-gauge-allow functionCognitiveComplexity 27 -- page.evaluate serializes this function alone, so its DOM helpers must nest inside it.
+// code-gauge-allow functionCognitiveComplexity -- page.evaluate serializes this function alone, so its DOM helpers must nest inside it.
 function findWrappedHeading({ containerSelector, max }: { containerSelector: string; max: number }): SlideFinding[] {
   const { describe, isChecked } = globalThis.slidevCheck;
   // The slide heading is the first visible heading directly in a title region: the root of `default` (image-*/iframe-*
