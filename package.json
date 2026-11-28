@@ -47,7 +47,7 @@
     "verify-full": "bun wb verify --full"
   },
   "dependencies": {
-    "@willbooster/shared-lib": "11.2.1",
+    "@willbooster/shared-lib": "11.4.1",
     "picocolors": "1.1.1",
     "zod": "4.6.7"
   },
@@ -57,7 +57,7 @@
     "@tsconfig/bun": "1.0.12",
     "@types/bun": "1.4.5",
     "@willbooster/oxlint-config": "1.4.9",
-    "@willbooster/wb": "23.6.0",
+    "@willbooster/wb": "23.7.0",
     "conventional-changelog-conventionalcommits": "10.4.1",
     "lefthook": "2.2.2",
     "oxlint": "1.94.0",
